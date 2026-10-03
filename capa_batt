@@ -1,0 +1,1416 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="auto">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Gestionnaire de Piles</title>
+    <style>
+        :root {
+            --bg-color: #f4f4f9;
+            --card-bg: white;
+            --text-color: #333;
+            --border-color: #ccc;
+            --header-bg: #e2e8f0;
+            --input-bg: #fff;
+            --input-disabled: #f0f3f4;
+            --text-muted: #7f8c8d;
+            --graph-line: #3498db;
+            --graph-dot: #e74c3c;
+        }
+
+        :root[data-theme="dark"] {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+            --border-color: #444;
+            --header-bg: #2c3e50;
+            --input-bg: #2c2c2c;
+            --input-disabled: #1a1a1a;
+            --text-muted: #aaa;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root[data-theme="auto"] {
+                --bg-color: #121212;
+                --card-bg: #1e1e1e;
+                --text-color: #e0e0e0;
+                --border-color: #444;
+                --header-bg: #2c3e50;
+                --input-bg: #2c2c2c;
+                --input-disabled: #1a1a1a;
+                --text-muted: #aaa;
+            }
+        }
+
+        body { 
+            font-family: Arial, sans-serif; 
+            background-color: var(--bg-color); 
+            margin: 0; 
+            color: var(--text-color); 
+            transition: background 0.3s, color 0.3s; 
+            padding-top: max(15px, env(safe-area-inset-top));
+            padding-right: max(15px, env(safe-area-inset-right));
+            padding-bottom: max(15px, env(safe-area-inset-bottom));
+            padding-left: max(15px, env(safe-area-inset-left));
+        }
+        
+        .header-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        h1 { margin: 0; font-size: 1.4rem; }
+        .theme-btn { background: var(--header-bg); border: 1px solid var(--border-color); color: var(--text-color); padding: 6px 12px; border-radius: 20px; cursor: pointer; font-size: 0.85rem; width: auto; margin: 0; }
+
+        .tab-bar { display: flex; gap: 4px; margin-bottom: 18px; border-bottom: 2px solid var(--border-color); position: sticky; top: env(safe-area-inset-top); background: var(--bg-color); z-index: 50; padding-top: 2px; }
+        .tab-btn { flex: 1; width: auto; background: none; border: none; border-bottom: 3px solid transparent; padding: 10px 4px; margin: 0; font-size: 0.85rem; font-weight: bold; color: var(--text-muted); cursor: pointer; border-radius: 0; white-space: nowrap; }
+        .tab-btn.active { color: var(--text-color); border-bottom-color: #27ae60; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .backup-reminder { background: #fdebd0; border: 1px solid #f39c12; color: #7d5a00; padding: 10px 14px; border-radius: 6px; margin-bottom: 15px; display: none; align-items: center; justify-content: space-between; gap: 10px; font-size: 0.85rem; font-weight: bold; flex-wrap: wrap; }
+        .backup-reminder button { width: auto; margin: 0; padding: 6px 10px; font-size: 0.8rem; }
+        :root[data-theme="dark"] .backup-reminder { background: #4a3b00; border-color: #f39c12; color: #f5d78e; }
+
+        .dashboard { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+        .dash-card { flex: 1 1 18%; min-width: 60px; padding: 10px 5px; border-radius: 6px; text-align: center; font-size: 0.85rem; font-weight: bold; color: white; box-shadow: 0 1px 3px rgba(0,0,0,0.2); cursor: pointer; transition: transform 0.1s, opacity 0.2s; }
+        .dash-card:active { transform: scale(0.95); }
+        .dash-total { background: #34495e; }
+        .dash-exc { background: #27ae60; }
+        .dash-bon { background: #2ecc71; }
+        .dash-fat { background: #e67e22; }
+        .dash-rec { background: #c0392b; }
+        .dash-val { font-size: 1.2rem; display: block; margin-top: 4px; }
+        
+        .dashboard.filtered .dash-card:not(.active-filter) { opacity: 0.4; }
+        .dashboard.filtered .dash-total { opacity: 1; }
+
+        .card { background: var(--card-bg); padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; border: 1px solid var(--border-color); }
+        label { display: block; margin-top: 10px; font-weight: bold; font-size: 0.85rem; }
+        input, select, button { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid var(--border-color); border-radius: 5px; box-sizing: border-box; font-size: 1rem; background-color: var(--input-bg); color: var(--text-color); }
+        input:disabled, select:disabled { background-color: var(--input-disabled); color: var(--text-muted); cursor: not-allowed; }
+        
+        button.btn-primary { background-color: #27ae60; color: white; border: none; font-weight: bold; margin-top: 15px; cursor: pointer; }
+        button.btn-primary:hover { background-color: #219653; }
+        .btn-action { background: #34495e; color: white; border: none; padding: 9px 12px; border-radius: 5px; cursor: pointer; font-size: 0.9rem; font-weight: bold; width: 100%; margin-top: 5px; }
+        .btn-action.secondary { background: #7f8c8d; }
+        
+        .marque-section { margin-bottom: 20px; }
+        .marque-header { display: flex; justify-content: space-between; align-items: center; background: var(--header-bg); padding: 10px 12px; border-radius: 6px; font-weight: bold; margin-bottom: 10px; cursor: pointer; user-select: none; border: 1px solid var(--border-color); }
+        
+        .pile-card { background: var(--card-bg); border-radius: 6px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-left: 6px solid var(--border-color); padding: 12px; border: 1px solid var(--border-color); }
+        .pile-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 8px; }
+        .pile-title { font-size: 1.05rem; font-weight: bold; display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+        .warning-icon { font-size: 1.1rem; cursor: pointer; display: inline-block; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
+
+        .badge { background: var(--header-bg); color: var(--text-color); padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; margin-right: 4px; display: inline-block; margin-top: 3px; border: 1px solid var(--border-color); }
+        .badge-cycles { background: #e8eaf6; color: #3f51b5; font-weight: bold; border-color: #c5cae9; }
+        .badge-specs { background: #fdf2e9; color: #d35400; border-color: #fad7a1; }
+        .badge-appareil { background: #e1f5fe; color: #0277bd; border-color: #81d4fa; }
+        
+        :root[data-theme="dark"] .badge-cycles, :root[data-theme="dark"] .badge-specs { background: var(--header-bg); color: #82b1ff; border-color: var(--border-color); }
+        :root[data-theme="dark"] .badge-appareil { background: #01579b; color: #e1f5fe; border-color: #0277bd; }
+        
+        .mesures-list { list-style: none; padding: 0; margin: 0; }
+        .mesure-item { display: flex; justify-content: space-between; align-items: center; font-size: 0.88rem; padding: 6px 0; border-bottom: 1px dashed var(--border-color); }
+        .mesure-item:last-child { border-bottom: none; }
+        .mesure-date { color: var(--text-muted); font-size: 0.8rem; }
+        .cycle-num { font-weight: bold; margin-right: 4px; }
+        .etat-tag { font-weight: bold; font-size: 0.75rem; padding: 2px 6px; border-radius: 3px; }
+        .tag-Excellent { background: #e8f8f5; color: #27ae60; }
+        .tag-Bon { background: #eafaf1; color: #2ecc71; }
+        .tag-Fatigue { background: #fef5e7; color: #e67e22; }
+        .tag-Recycler { background: #fdedec; color: #c0392b; }
+        :root[data-theme="dark"] .etat-tag { filter: brightness(0.9); }
+        
+        .action-btns { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+        .small-btn { border: none; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; cursor: pointer; color: white; margin-bottom: 2px; width: auto; font-weight: bold; }
+        .edit-btn { background: #2980b9; }
+        .clone-btn { background: #8e44ad; }
+        .delete-btn { background: #c0392b; }
+        
+        @media (max-width: 500px) {
+            .pile-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+            .pile-header .action-btns { width: 100%; justify-content: space-between; margin-top: 4px; }
+            .pile-header .small-btn { flex: 1; margin: 0 2px; text-align: center; padding: 8px 0; font-size: 0.8rem; }
+        }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .section-info { background: var(--header-bg); border-radius: 6px; padding: 10px; margin-top: 10px; border: 1px solid var(--border-color); }
+        .status-reconnu { font-size: 0.85rem; font-weight: bold; color: #27ae60; margin-top: 10px; margin-bottom: 5px; display: none; background: #eafaf1; padding: 8px 12px; border-radius: 6px; border: 1px solid #2ecc71; text-align: center; }
+        :root[data-theme="dark"] .status-reconnu { background: #0b4a22; color: #69f0ae; border-color: #00e676; }
+        .sort-bar { display: flex; gap: 10px; margin-bottom: 15px; }
+
+        .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); overflow-y: auto; padding-top: env(safe-area-inset-top); }
+        .modal-content { background: var(--card-bg); margin: 10% auto; padding: 20px; border-radius: 8px; width: 90%; max-width: 450px; border: 1px solid var(--border-color); }
+        
+        .graph-container { margin-top: 8px; padding-top: 15px; border-top: 1px dashed var(--border-color); text-align: center; position: relative; }
+        .graph-tooltip { position: absolute; display: none; background: rgba(0,0,0,0.85); color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 0.8rem; z-index: 1000; pointer-events: none; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.3); transform: translate(-50%, -100%); margin-top: -10px; white-space: nowrap; }
+        :root[data-theme="light"] .graph-tooltip { background: rgba(52, 73, 94, 0.95); }
+
+        .fab-top { position: fixed; bottom: max(20px, env(safe-area-inset-bottom)); right: max(20px, env(safe-area-inset-right)); background: #34495e; color: white; border: none; border-radius: 50%; width: 45px; height: 45px; font-size: 1.2rem; box-shadow: 0 2px 5px rgba(0,0,0,0.3); cursor: pointer; display: none; z-index: 99; padding: 0; align-items: center; justify-content: center; }
+        .fab-top:hover { background: #2c3e50; }
+
+        .toast {
+            visibility: hidden; min-width: 250px; background-color: #27ae60; color: #fff;
+            text-align: center; border-radius: 8px; padding: 12px; position: fixed;
+            z-index: 2000; left: 50%; bottom: max(30px, env(safe-area-inset-bottom)); transform: translateX(-50%);
+            font-size: 1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.2); font-weight: bold;
+        }
+        .toast.show { visibility: visible; animation: fadein 0.3s, fadeout 0.3s 2.5s; }
+        .toast.error { background-color: #e74c3c; }
+        @keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: max(30px, env(safe-area-inset-bottom)); opacity: 1;} }
+        @keyframes fadeout { from {bottom: max(30px, env(safe-area-inset-bottom)); opacity: 1;} to {bottom: 0; opacity: 0;} }
+        
+        .list-header-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        .list-header-actions h3 { margin: 0; }
+        .btn-group-small { display: flex; gap: 5px; }
+        .btn-group-small button { padding: 4px 8px; font-size: 0.75rem; background: var(--header-bg); color: var(--text-color); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-group-small button:hover { background: var(--border-color); }
+    </style>
+</head>
+<body>
+
+    <div class="header-container">
+        <h1>Mon Stock de Piles</h1>
+        <div style="display:flex; gap:6px;">
+            <button class="theme-btn" onclick="toggleLang()" id="langBtn">EN</button>
+            <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">Auto</button>
+        </div>
+    </div>
+
+    <!-- Rappel de sauvegarde -->
+    <div id="backupReminder" class="backup-reminder">
+        <span id="backupReminderTxt"></span>
+        <button onclick="ouvrirOnglet('sauvegarde')">Sauvegarder</button>
+    </div>
+
+    <!-- Navigation par onglets -->
+    <div class="tab-bar" id="tabBar">
+        <button class="tab-btn active" data-tab="liste" onclick="ouvrirOnglet('liste')">📋 Mes piles</button>
+        <button class="tab-btn" data-tab="ajouter" onclick="ouvrirOnglet('ajouter')">➕ Ajouter</button>
+        <button class="tab-btn" data-tab="sauvegarde" onclick="ouvrirOnglet('sauvegarde')">💾 Sauvegarde</button>
+    </div>
+
+    <!-- Onglet 1 : Mes piles -->
+    <div class="tab-content active" id="tab-liste">
+        <div class="dashboard" id="dashboard">
+            <div class="dash-card dash-total" onclick="filtrerParEtat('')">Piles <span class="dash-val" id="dash-tot">0</span></div>
+            <div class="dash-card dash-exc" onclick="filtrerParEtat('Excellent')">Exc. <span class="dash-val" id="dash-exc">0</span></div>
+            <div class="dash-card dash-bon" onclick="filtrerParEtat('Bon')">Bon <span class="dash-val" id="dash-bon">0</span></div>
+            <div class="dash-card dash-fat" onclick="filtrerParEtat('Fatigue')">Fatigue <span class="dash-val" id="dash-fat">0</span></div>
+            <div class="dash-card dash-rec" onclick="filtrerParEtat('Recycler')">Recycler <span class="dash-val" id="dash-rec">0</span></div>
+        </div>
+
+        <div class="list-header-actions">
+            <h3>Mes Piles Enregistrées</h3>
+            <div class="btn-group-small">
+                <button onclick="toutOuvrirFermer(true)">Tout ouvrir</button>
+                <button onclick="toutOuvrirFermer(false)">Tout fermer</button>
+            </div>
+        </div>
+
+        <div class="sort-bar">
+            <input type="text" id="searchInput" placeholder="Rechercher..." style="flex: 2; margin: 0;" oninput="chargerPiles()">
+            <select id="sortSelect" onchange="chargerPiles()" style="flex: 1; margin: 0;">
+                <option value="marque">Tri : Marque</option>
+                <option value="pire">Tri : Pire état d'abord</option>
+                <option value="cap_desc">Tri : Capacité descendante</option>
+            </select>
+        </div>
+
+        <div id="listePiles"></div>
+    </div>
+
+    <!-- Onglet 2 : Ajouter -->
+    <div class="tab-content" id="tab-ajouter">
+        <div class="card">
+            <h3 style="margin-top: 0;">Ajouter une mesure / lot (Grad)</h3>
+            <form id="pileForm">
+                <div class="grid-2">
+                    <div>
+                        <label>ID :</label>
+                        <input type="text" id="pileId" placeholder="Ex: 01 ou A-01" required autocomplete="off">
+                    </div>
+                    <div>
+                        <label>À (création lot) :</label>
+                        <input type="text" id="pileIdEnd" placeholder="Ex: 04 ou A-04" autocomplete="off" title="Laissez vide pour une seule pile">
+                    </div>
+                </div>
+
+                <label>Marque :</label>
+                <input type="text" id="marque" list="marquesList" placeholder="Ex: Eneloop (2015)" required autocomplete="off">
+                <datalist id="marquesList"></datalist>
+
+                <!-- Bloc masqué intelligemment -->
+                <div id="reconnuBadge" class="status-reconnu">✅ Pile reconnue : infos masquées pour gain de place</div>
+
+                <div class="section-info" id="specsBlock">
+                    <div style="font-weight: bold; font-size: 0.85rem; margin-bottom: 5px;">Caractéristiques nominales / indiquées</div>
+                    <div class="grid-2">
+                        <div>
+                            <label>Année (opt.) :</label>
+                            <input type="number" inputmode="numeric" id="annee" min="1990" max="2099" placeholder="Ex: 2022">
+                        </div>
+                        <div>
+                            <label>Chimie :</label>
+                            <select id="type">
+                                <option value="NiMH">NiMH</option>
+                                <option value="NiCd">NiCd</option>
+                                <option value="Li-ion">Li-ion</option>
+                                <option value="LiFePO4">LiFePO4</option>
+                                <option value="Alcaline">Alcaline</option>
+                                <option value="Autre">Autre</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="grid-2">
+                        <div>
+                            <label>Format :</label>
+                            <select id="format">
+                                <option value="AA">AA (LR6, HR6, Mignon)</option>
+                                <option value="AAA">AAA (LR03, HR03, Micro)</option>
+                                <option value="18650">18650 (Ø18 x 65 mm)</option>
+                                <option value="C">C (LR14, HR14, Baby)</option>
+                                <option value="D">D (LR20, HR20, Mono)</option>
+                                <option value="21700">21700 (Ø21 x 70 mm)</option>
+                                <option value="Autre">Autre</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label>Appareil / Affectation :</label>
+                            <input type="text" id="appareil" placeholder="Ex: Horloge salon">
+                        </div>
+                    </div>
+                    <div class="grid-2">
+                        <div>
+                            <label>Volt indiqué :</label>
+                            <input type="text" inputmode="decimal" id="voltNominal" placeholder="Ex: 1.20">
+                        </div>
+                        <div>
+                            <label>mAh indiqué :</label>
+                            <input type="number" inputmode="numeric" id="mahNominal" placeholder="Ex: 2000">
+                        </div>
+                    </div>
+                </div>
+
+                <label>Date et heure du relevé :</label>
+                <input type="datetime-local" id="dateEntree" required>
+
+                <div class="grid-2">
+                    <div>
+                        <label>Tension (V) :</label>
+                        <input type="text" inputmode="decimal" id="voltage" placeholder="Ex: 1.39" required>
+                    </div>
+                    <div>
+                        <label>Capacité (mAh) :</label>
+                        <input type="number" inputmode="numeric" id="mah" placeholder="Ex: 165" required>
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <div>
+                        <label>Rés. interne (mΩ) :</label>
+                        <input type="number" inputmode="numeric" id="ir" placeholder="Ex: 45">
+                    </div>
+                    <div>
+                        <label>Test effort (Max) :</label>
+                        <select id="stressTest">
+                            <option value="">Non testé</option>
+                            <option value="1000mA">Passe 1000mA (Haute conso)</option>
+                            <option value="500mA">Passe 500mA (Moyenne)</option>
+                            <option value="250mA">Échec >250mA (Faible conso)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-primary">Enregistrer</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Onglet 3 : Sauvegarde -->
+    <div class="tab-content" id="tab-sauvegarde">
+        <div class="card">
+            <h3 style="margin-top: 0;">Sauvegarde & Transfert</h3>
+            <div class="grid-2">
+                <button class="btn-action" onclick="exporterJSON()">Export JSON</button>
+                <button class="btn-action" onclick="exporterCSV()">Export CSV</button>
+            </div>
+            <label style="margin-top: 15px;">Importer (JSON ou CSV) :</label>
+            <input type="file" id="importFileInput" accept=".json,.csv" style="margin-top: 5px;">
+            <div class="grid-2" style="margin-top: 8px;">
+                <button class="btn-action" onclick="importerFichier(false)">Fusionner</button>
+                <button class="btn-action secondary" onclick="importerFichier(true)">Remplacer tout</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Elements Volants -->
+    <div id="grapheTooltip" class="graph-tooltip"></div>
+    <button id="fabTop" class="fab-top" onclick="window.scrollTo({ top: 0, behavior: 'smooth' });">⬆️</button>
+    <div id="toastMessage" class="toast"></div>
+
+    <!-- Modale Édition Pile -->
+    <div id="editPileModal" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-top: 0;">Modifier la pile</h3>
+            <form id="editPileForm">
+                <input type="hidden" id="editPileIndex">
+                <div class="grid-2">
+                    <div>
+                        <label>Numéro / ID :</label>
+                        <input type="text" id="editPileId" required>
+                    </div>
+                    <div>
+                        <label>Marque :</label>
+                        <input type="text" id="editMarque" required>
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <div>
+                        <label>Année :</label>
+                        <input type="number" inputmode="numeric" id="editAnnee">
+                    </div>
+                    <div>
+                        <label>Chimie :</label>
+                        <select id="editType">
+                            <option value="NiMH">NiMH</option><option value="NiCd">NiCd</option>
+                            <option value="Li-ion">Li-ion</option><option value="LiFePO4">LiFePO4</option>
+                            <option value="Alcaline">Alcaline</option><option value="Autre">Autre</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <div>
+                        <label>Format :</label>
+                        <select id="editFormat">
+                            <option value="AA">AA (LR6, HR6, Mignon)</option>
+                            <option value="AAA">AAA (LR03, HR03, Micro)</option>
+                            <option value="18650">18650 (Ø18 x 65 mm)</option>
+                            <option value="C">C (LR14, HR14, Baby)</option>
+                            <option value="D">D (LR20, HR20, Mono)</option>
+                            <option value="21700">21700 (Ø21 x 70 mm)</option>
+                            <option value="Autre">Autre</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Appareil :</label>
+                        <input type="text" id="editAppareil" placeholder="Ex: Lampe torche">
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <div>
+                        <label>Volt indiqué :</label>
+                        <input type="text" inputmode="decimal" id="editVoltNominal">
+                    </div>
+                    <div>
+                        <label>mAh indiqué :</label>
+                        <input type="number" inputmode="numeric" id="editMahNominal">
+                    </div>
+                </div>
+                <div class="grid-2" style="margin-top: 15px;">
+                    <button type="submit" class="btn-primary" style="margin: 0;">Sauvegarder</button>
+                    <button type="button" class="btn-action secondary" style="margin: 0;" onclick="fermerModales()">Annuler</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modale Édition Mesure -->
+    <div id="editMesureModal" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-top: 0;">Modifier le cycle</h3>
+            <form id="editMesureForm">
+                <input type="hidden" id="editMesurePileIndex">
+                <input type="hidden" id="editMesureIndex">
+                <label>Date et heure :</label>
+                <input type="datetime-local" id="editMesureDate" required>
+                <div class="grid-2">
+                    <div>
+                        <label>Tension (V) :</label>
+                        <input type="text" inputmode="decimal" id="editMesureVolt" required>
+                    </div>
+                    <div>
+                        <label>Capacité (mAh) :</label>
+                        <input type="number" inputmode="numeric" id="editMesureMah" required>
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <div>
+                        <label>Rés. int. (mΩ) :</label>
+                        <input type="number" inputmode="numeric" id="editMesureIr">
+                    </div>
+                    <div>
+                        <label>Test effort :</label>
+                        <select id="editMesureStress">
+                            <option value="">Non testé</option>
+                            <option value="1000mA">1000mA (Haute)</option>
+                            <option value="500mA">500mA (Moyenne)</option>
+                            <option value="250mA">Échec >250mA (Faible)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid-2" style="margin-top: 15px;">
+                    <button type="submit" class="btn-primary" style="margin: 0;">Sauvegarder</button>
+                    <button type="button" class="btn-action secondary" style="margin: 0;" onclick="fermerModales()">Annuler</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        /* ===================== i18n FR / EN ===================== */
+        // Textes statiques : clé = texte français exact de la page
+        const EN = {
+            "Gestionnaire de Piles XTAR":"XTAR Battery Manager",
+            "Mon Stock de Piles":"My Battery Stock",
+            "Sauvegarder":"Back up",
+            "📋 Mes piles":"📋 My batteries",
+            "➕ Ajouter":"➕ Add",
+            "💾 Sauvegarde":"💾 Backup",
+            "Piles":"Batteries","Exc.":"Exc.","Bon":"Good","Fatigue":"Worn","Recycler":"Recycle",
+            "Mes Piles Enregistrées":"My Saved Batteries",
+            "Tout ouvrir":"Expand all","Tout fermer":"Collapse all",
+            "Rechercher...":"Search...",
+            "Tri : Marque":"Sort: Brand","Tri : Pire état d'abord":"Sort: Worst condition first","Tri : Capacité descendante":"Sort: Capacity (high to low)",
+            "Ajouter une mesure / lot (Grad)":"Add a measurement / batch (Grad)",
+            "ID :":"ID:","Ex: 01 ou A-01":"E.g. 01 or A-01",
+            "À (création lot) :":"To (batch creation):","Ex: 04 ou A-04":"E.g. 04 or A-04",
+            "Laissez vide pour une seule pile":"Leave empty for a single battery",
+            "Marque :":"Brand:","Ex: Eneloop (2015)":"E.g. Eneloop (2015)",
+            "✅ Pile reconnue : infos masquées pour gain de place":"✅ Battery recognized: details hidden to save space",
+            "Caractéristiques nominales / indiquées":"Rated / labeled specifications",
+            "Année (opt.) :":"Year (opt.):","Ex: 2022":"E.g. 2022",
+            "Chimie :":"Chemistry:","Alcaline":"Alkaline","Autre":"Other",
+            "Format :":"Size:",
+            "AA (LR6, HR6, Mignon)":"AA (LR6, HR6)","AAA (LR03, HR03, Micro)":"AAA (LR03, HR03)",
+            "C (LR14, HR14, Baby)":"C (LR14, HR14)","D (LR20, HR20, Mono)":"D (LR20, HR20)",
+            "Appareil / Affectation :":"Device / Assignment:","Ex: Horloge salon":"E.g. Living room clock",
+            "Volt indiqué :":"Labeled volts:","Ex: 1.20":"E.g. 1.20",
+            "mAh indiqué :":"Labeled mAh:","Ex: 2000":"E.g. 2000",
+            "Date et heure du relevé :":"Measurement date & time:",
+            "Tension (V) :":"Voltage (V):","Ex: 1.39":"E.g. 1.39",
+            "Capacité (mAh) :":"Capacity (mAh):","Ex: 165":"E.g. 165",
+            "Rés. interne (mΩ) :":"Internal res. (mΩ):","Ex: 45":"E.g. 45",
+            "Test effort (Max) :":"Load test (Max):","Non testé":"Not tested",
+            "Passe 1000mA (Haute conso)":"Passes 1000mA (High drain)","Passe 500mA (Moyenne)":"Passes 500mA (Medium)","Échec >250mA (Faible conso)":"Fails >250mA (Low drain)",
+            "Enregistrer":"Save",
+            "Sauvegarde & Transfert":"Backup & Transfer",
+            "Importer (JSON ou CSV) :":"Import (JSON or CSV):",
+            "Fusionner":"Merge","Remplacer tout":"Replace all",
+            "Modifier la pile":"Edit battery","Numéro / ID :":"Number / ID:","Année :":"Year:",
+            "Appareil :":"Device:","Ex: Lampe torche":"E.g. Flashlight",
+            "Annuler":"Cancel","Modifier le cycle":"Edit cycle",
+            "Date et heure :":"Date & time:","Rés. int. (mΩ) :":"Int. res. (mΩ):","Test effort :":"Load test:",
+            "1000mA (Haute)":"1000mA (High)","500mA (Moyenne)":"500mA (Medium)","Échec >250mA (Faible)":"Fails >250mA (Low)"
+        };
+        // Textes dynamiques (messages, cartes générées…)
+        const D = {
+            fr: {
+                themeAuto:'🌓 Auto', themeDark:'🌙 Sombre', themeLight:'☀️ Clair',
+                noBackup:"⚠️ Aucune sauvegarde n'a encore été faite.",
+                lastBackup:n=>`⚠️ Dernière sauvegarde il y a ${n} jours.`,
+                at:'à', yrs:n=>`${n} ans`, nom:'nom.',
+                noMatch:'Aucune pile ne correspond à ces critères.', noBrand:'Sans marque',
+                evol:n=>`Évolution capacité (${n} cycles)`, clickInfo:'Cliquez pour info',
+                clone:'Cloner', del:'Suppr.', pileWord:'Pile',
+                st_Excellent:'Excellent', st_Bon:'Bon', st_Fatigue:'Fatigue', st_Recycler:'Recycler',
+                tip:(a,b)=>`💡 Conseil d'Expert :\n\nLa capacité de cette pile n'augmente plus (${a} mAh contre ${b} mAh au cycle précédent).\n\nLe processus de « réveil chimique » est terminé. Inutile de faire d'autres cycles Grad, vous connaissez sa véritable capacité finale maximale !`,
+                saved:'✅ Relevé enregistré avec succès !', saveErr:'Erreur lors de la sauvegarde : ',
+                pileEdited:'✅ Pile modifiée !', cycleEdited:'✅ Cycle modifié !',
+                savedDocs:'✅ Sauvegardé dans le dossier Documents !', androidErr:"Erreur d'écriture native Android : ",
+                downloaded:'✅ Fichier téléchargé !',
+                badFormat:"Format de fichier non reconnu. Vérifiez que c'est bien une sauvegarde de l'application.",
+                pickFile:'❌ Veuillez sélectionner un fichier.',
+                confirmReplace:'Attention : toutes les données actuelles seront remplacées. Continuer ?',
+                importedReplace:'✅ Importation réussie ! Base remplacée.',
+                importedMerge:n=>`✅ Importation réussie ! (${n} ajouts)`,
+                importErr:"Erreur lors de l'importation :\n", readFail:'❌ Échec de la lecture',
+                cantRead:'Impossible de lire le fichier :\n', unknownErr:'erreur inconnue', readImpossible:'❌ Lecture du fichier impossible'
+            },
+            en: {
+                themeAuto:'🌓 Auto', themeDark:'🌙 Dark', themeLight:'☀️ Light',
+                noBackup:'⚠️ No backup has been made yet.',
+                lastBackup:n=>`⚠️ Last backup was ${n} days ago.`,
+                at:'at', yrs:n=>`${n} yrs`, nom:'rated',
+                noMatch:'No battery matches these criteria.', noBrand:'No brand',
+                evol:n=>`Capacity trend (${n} cycles)`, clickInfo:'Click for info',
+                clone:'Clone', del:'Del.', pileWord:'Battery',
+                st_Excellent:'Excellent', st_Bon:'Good', st_Fatigue:'Worn', st_Recycler:'Recycle',
+                tip:(a,b)=>`💡 Expert tip:\n\nThis battery's capacity is no longer increasing (${a} mAh vs ${b} mAh on the previous cycle).\n\nThe "chemical wake-up" process is complete. There's no point in running more Grad cycles: you now know its true maximum capacity!`,
+                saved:'✅ Measurement saved successfully!', saveErr:'Error while saving: ',
+                pileEdited:'✅ Battery updated!', cycleEdited:'✅ Cycle updated!',
+                savedDocs:'✅ Saved to the Documents folder!', androidErr:'Native Android write error: ',
+                downloaded:'✅ File downloaded!',
+                badFormat:"Unrecognized file format. Make sure it is a backup made by this app.",
+                pickFile:'❌ Please select a file.',
+                confirmReplace:'Warning: all current data will be replaced. Continue?',
+                importedReplace:'✅ Import successful! Database replaced.',
+                importedMerge:n=>`✅ Import successful! (${n} added)`,
+                importErr:'Import error:\n', readFail:'❌ Failed to read file',
+                cantRead:'Unable to read the file:\n', unknownErr:'unknown error', readImpossible:'❌ Unable to read the file'
+            }
+        };
+        let LANG = localStorage.getItem('lang_piles') || ((navigator.language || 'fr').toLowerCase().startsWith('fr') ? 'fr' : 'en');
+        if (LANG !== 'fr' && LANG !== 'en') LANG = 'fr';
+        function T(key, ...args) { const v = D[LANG][key]; return typeof v === 'function' ? v(...args) : v; }
+        function etatLabel(e) { return T('st_' + e) || e; }
+        function dateLocale() { return LANG === 'en' ? 'en-GB' : 'fr-FR'; }
+
+        // Parcours du DOM statique : mémorise le texte FR d'origine pour pouvoir basculer dans les deux sens
+        const I18N_REFS = [];
+        (function scanI18N() {
+            const w = document.createTreeWalker(document.body, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT);
+            let n;
+            while ((n = w.nextNode())) {
+                if (n.nodeType === 3) {
+                    if (n.parentNode.closest('script,style')) continue;
+                    const k = n.nodeValue.trim();
+                    if (EN[k] !== undefined) I18N_REFS.push({ node: n, fr: n.nodeValue, key: k });
+                } else {
+                    for (const a of ['placeholder', 'title']) {
+                        const v = n.getAttribute(a);
+                        if (v && EN[v] !== undefined) I18N_REFS.push({ el: n, attr: a, fr: v, key: v });
+                    }
+                }
+            }
+        })();
+        function applyLang() {
+            I18N_REFS.forEach(r => {
+                if (r.node) r.node.nodeValue = LANG === 'en' ? r.fr.replace(r.key, EN[r.key]) : r.fr;
+                else r.el.setAttribute(r.attr, LANG === 'en' ? EN[r.key] : r.fr);
+            });
+            document.documentElement.lang = LANG;
+            document.title = LANG === 'en' ? EN["Gestionnaire de Piles XTAR"] : "Gestionnaire de Piles XTAR";
+            document.getElementById('langBtn').innerText = LANG === 'en' ? 'FR' : 'EN';
+            localStorage.setItem('lang_piles', LANG);
+        }
+        function toggleLang() {
+            LANG = LANG === 'fr' ? 'en' : 'fr';
+            applyLang(); applyTheme(); verifierRappelSauvegarde(); chargerPiles();
+        }
+        window.toggleLang = toggleLang;
+        /* ===================== fin i18n ===================== */
+        // --- LOGIQUE JAVASCRIPT ---
+        
+        let etatFiltreActif = '';
+        let etatsMarques = {}; 
+
+        window.onscroll = function() {
+            const fab = document.getElementById('fabTop');
+            if (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) {
+                fab.style.display = 'flex';
+            } else {
+                fab.style.display = 'none';
+            }
+            document.getElementById('grapheTooltip').style.display = 'none';
+        };
+
+        function showToast(msg, isError = false) {
+            const t = document.getElementById('toastMessage');
+            t.innerText = msg;
+            t.className = isError ? "toast show error" : "toast show";
+            setTimeout(() => { t.className = "toast"; }, 3500);
+        }
+
+        const themes = ['auto', 'dark', 'light'];
+        let currentThemeIndex = themes.indexOf(localStorage.getItem('theme_piles') || 'auto');
+        if (currentThemeIndex === -1) currentThemeIndex = 0;
+        
+        function applyTheme() {
+            const t = themes[currentThemeIndex];
+            document.documentElement.setAttribute('data-theme', t);
+            localStorage.setItem('theme_piles', t);
+            const labels = { 'auto': T('themeAuto'), 'dark': T('themeDark'), 'light': T('themeLight') };
+            document.getElementById('themeBtn').innerText = labels[t];
+        }
+        function toggleTheme() {
+            currentThemeIndex = (currentThemeIndex + 1) % themes.length;
+            applyTheme();
+        }
+        applyTheme();
+
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        window.ouvrirOnglet = function(nom) {
+            tabContents.forEach(tc => tc.classList.toggle('active', tc.id === `tab-${nom}`));
+            tabBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.tab === nom));
+            localStorage.setItem('tab_actif', nom);
+        };
+        ouvrirOnglet(localStorage.getItem('tab_actif') || 'liste');
+
+        const SEUIL_RAPPEL_JOURS = 14;
+
+        function verifierRappelSauvegarde() {
+            const banniere = document.getElementById('backupReminder');
+            const txt = document.getElementById('backupReminderTxt');
+            const inventaire = JSON.parse(localStorage.getItem('stock_piles')) || [];
+
+            if (inventaire.length === 0) { banniere.style.display = 'none'; return; }
+
+            const dernierExport = localStorage.getItem('dernier_export');
+            if (!dernierExport) {
+                txt.innerText = T('noBackup');
+                banniere.style.display = 'flex';
+                return;
+            }
+            const jours = Math.floor((Date.now() - new Date(dernierExport).getTime()) / 86400000);
+            if (jours >= SEUIL_RAPPEL_JOURS) {
+                txt.innerText = T('lastBackup', jours);
+                banniere.style.display = 'flex';
+            } else {
+                banniere.style.display = 'none';
+            }
+        }
+
+        function marquerExportEffectue() {
+            localStorage.setItem('dernier_export', new Date().toISOString());
+            verifierRappelSauvegarde();
+        }
+
+        const form = document.getElementById('pileForm');
+        const liste = document.getElementById('listePiles');
+        const searchInput = document.getElementById('searchInput');
+        searchInput.addEventListener('input', () => window.chargerPiles());
+        const sortSelect = document.getElementById('sortSelect');
+        const pileIdInput = document.getElementById('pileId');
+        const pileIdEndInput = document.getElementById('pileIdEnd');
+        const marqueInput = document.getElementById('marque');
+        const marquesList = document.getElementById('marquesList');
+        const reconnuBadge = document.getElementById('reconnuBadge');
+        const specsBlock = document.getElementById('specsBlock');
+        const dateInput = document.getElementById('dateEntree');
+
+        const anneeInput = document.getElementById('annee');
+        const typeInput = document.getElementById('type');
+        const formatInput = document.getElementById('format');
+        const voltNominalInput = document.getElementById('voltNominal');
+        const mahNominalInput = document.getElementById('mahNominal');
+        const appareilInput = document.getElementById('appareil');
+
+        function setDateNow() {
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            dateInput.value = now.toISOString().slice(0, 16);
+        }
+        setDateNow();
+
+        function normaliserCle(marque, id) { return `${(marque || '').trim().toLowerCase()}__${(id || '').trim().toLowerCase()}`; }
+
+        function evaluerEtat(mahReleve, mahNominal, chimie, format) {
+            if (mahNominal && mahNominal > 0) {
+                const ratio = (mahReleve / mahNominal) * 100;
+                if (ratio >= 85) return 'Excellent';
+                if (ratio >= 65) return 'Bon';
+                if (ratio >= 45) return 'Fatigue';
+                return 'Recycler';
+            }
+            if (format === 'AA') {
+                if (mahReleve < 800) return 'Recycler'; if (mahReleve < 1400) return 'Fatigue'; if (mahReleve < 1900) return 'Bon'; return 'Excellent';
+            }
+            if (format === 'AAA') {
+                if (mahReleve < 350) return 'Recycler'; if (mahReleve < 550) return 'Fatigue'; if (mahReleve < 700) return 'Bon'; return 'Excellent';
+            }
+            return mahReleve > 0 ? 'Bon' : 'Recycler';
+        }
+
+        let tooltipTimeout;
+        window.afficherTooltip = function(e, dateStr, mah, volt, ir, stress) {
+            const tt = document.getElementById('grapheTooltip');
+            const d = new Date(dateStr);
+            const formatD = d.toLocaleDateString(dateLocale()) + ' ' + T('at') + ' ' + d.toLocaleTimeString(dateLocale(), {hour: '2-digit', minute:'2-digit'});
+            const irTxt = (ir !== 'null' && ir !== '') ? `${ir} mΩ` : '?';
+            const stressTxt = (stress !== 'null' && stress !== '') ? `<br><small>Max: ${stress}</small>` : '';
+
+            tt.innerHTML = `<strong>${mah} mAh</strong><br>${volt}V | IR: ${irTxt}${stressTxt}<br><small style="color:var(--text-muted);">${formatD}</small>`;
+            tt.style.display = 'block';
+
+            const rect = e.target.getBoundingClientRect();
+            tt.style.left = (rect.left + window.scrollX) + 'px';
+            tt.style.top = (rect.top + window.scrollY) + 'px';
+
+            clearTimeout(tooltipTimeout);
+            tooltipTimeout = setTimeout(() => { tt.style.display = 'none'; }, 4000);
+        };
+
+        window.afficherConseilStagnation = function(mahActuel, mahPrecedent) {
+            alert(T('tip', mahActuel, mahPrecedent));
+        };
+
+        function genererGrapheDegradation(mesures) {
+            if (mesures.length < 2) return '';
+            const arr = mesures.slice().sort((a,b) => new Date(a.date) - new Date(b.date));
+            const max = Math.max(...arr.map(m => m.mah));
+            const min = Math.min(...arr.map(m => m.mah));
+            const diff = max - min === 0 ? 1 : max - min;
+            
+            const w = 200, h = 40; 
+            const step = w / (arr.length - 1);
+            
+            let polyline = arr.map((m, i) => {
+                const x = i * step;
+                const y = h - (((m.mah - min) / diff) * (h - 10)) - 5;
+                return `${x},${y}`;
+            }).join(' ');
+            
+            let elements = arr.map((m, i) => {
+                const x = i * step;
+                const y = h - (((m.mah - min) / diff) * (h - 10)) - 5;
+                const irSafe = m.ir ? m.ir : 'null';
+                const stressSafe = m.stress ? m.stress : 'null';
+                
+                return `
+                    <circle cx="${x}" cy="${y}" r="3.5" fill="var(--graph-dot)" pointer-events="none" />
+                    <circle cx="${x}" cy="${y}" r="15" fill="transparent" style="cursor:pointer;" 
+                        onclick="afficherTooltip(event, '${m.date}', ${m.mah}, ${m.voltage}, '${irSafe}', '${stressSafe}')" />
+                `;
+            }).join('');
+
+            return `
+                <div class="graph-container">
+                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom:4px;">${T('evol', arr.length)}</div>
+                    <svg width="${w}" height="${h}" style="overflow: visible;">
+                        <polyline points="${polyline}" fill="none" stroke="var(--graph-line)" stroke-width="2" />
+                        ${elements}
+                    </svg>
+                </div>
+            `;
+        }
+
+        window.filtrerParEtat = function(etat) {
+            const dash = document.getElementById('dashboard');
+            if (etat === '') {
+                etatFiltreActif = '';
+                dash.classList.remove('filtered');
+            } else {
+                etatFiltreActif = etatFiltreActif === etat ? '' : etat;
+                if (etatFiltreActif === '') dash.classList.remove('filtered');
+                else dash.classList.add('filtered');
+            }
+            
+            document.querySelectorAll('.dash-card').forEach(card => card.classList.remove('active-filter'));
+            if (etatFiltreActif) {
+                if(etatFiltreActif === 'Excellent') document.querySelector('.dash-exc').classList.add('active-filter');
+                if(etatFiltreActif === 'Bon') document.querySelector('.dash-bon').classList.add('active-filter');
+                if(etatFiltreActif === 'Fatigue') document.querySelector('.dash-fat').classList.add('active-filter');
+                if(etatFiltreActif === 'Recycler') document.querySelector('.dash-rec').classList.add('active-filter');
+            }
+            chargerPiles();
+        };
+
+        function majDashboard(inventaireTraite) {
+            let stats = { total: inventaireTraite.length, Excellent: 0, Bon: 0, Fatigue: 0, Recycler: 0 };
+            inventaireTraite.forEach(item => { if(stats[item.etatGlobal] !== undefined) stats[item.etatGlobal]++; });
+            document.getElementById('dash-tot').innerText = stats.total;
+            document.getElementById('dash-exc').innerText = stats.Excellent;
+            document.getElementById('dash-bon').innerText = stats.Bon;
+            document.getElementById('dash-fat').innerText = stats.Fatigue;
+            document.getElementById('dash-rec').innerText = stats.Recycler;
+        }
+
+        window.clonerPile = function(index) {
+            const inventaire = JSON.parse(localStorage.getItem('stock_piles')) || [];
+            const pile = inventaire[index];
+            if (!pile) return;
+
+            pileIdInput.value = pile.id || '';
+            marqueInput.value = pile.marque || '';
+            anneeInput.value = pile.annee || '';
+            typeInput.value = pile.type || 'NiMH';
+            formatInput.value = pile.format || 'AA';
+            voltNominalInput.value = pile.voltNominal || '';
+            mahNominalInput.value = pile.mahNominal || '';
+            appareilInput.value = pile.appareil || '';
+            
+            pileIdEndInput.value = '';
+            
+            ouvrirOnglet('ajouter');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            verifierPileExistante();
+            
+            setTimeout(() => {
+                document.getElementById('voltage').focus();
+            }, 300);
+        };
+
+        window.toggleMarque = function(headerElem) {
+            const content = headerElem.nextElementSibling;
+            const chevron = headerElem.querySelector('.chevron');
+            const nomMarque = headerElem.getAttribute('data-marque');
+
+            if (content.style.display === 'none') { 
+                content.style.display = 'block'; 
+                chevron.innerText = '▼';
+                etatsMarques[nomMarque] = true;
+            } else { 
+                content.style.display = 'none'; 
+                chevron.innerText = '▶';
+                etatsMarques[nomMarque] = false;
+            }
+        };
+
+        window.toutOuvrirFermer = function(ouvrir) {
+            const marques = document.querySelectorAll('.marque-section');
+            marques.forEach(sec => {
+                const header = sec.querySelector('.marque-header');
+                const content = sec.querySelector('.marque-content');
+                const chevron = sec.querySelector('.chevron');
+                const nomMarque = header.getAttribute('data-marque');
+                
+                if (ouvrir) {
+                    content.style.display = 'block';
+                    chevron.innerText = '▼';
+                    etatsMarques[nomMarque] = true;
+                } else {
+                    content.style.display = 'none';
+                    chevron.innerText = '▶';
+                    etatsMarques[nomMarque] = false;
+                }
+            });
+        };
+
+        window.chargerPiles = function() {
+            liste.innerHTML = '';
+            const inventaire = JSON.parse(localStorage.getItem('stock_piles')) || [];
+            
+            const marquesUniques = new Set();
+            inventaire.forEach(p => { if (p.marque && p.marque.trim() !== '') marquesUniques.add(p.marque.trim()); });
+            marquesList.innerHTML = '';
+            Array.from(marquesUniques).sort().forEach(m => marquesList.appendChild(new Option(m, m)));
+
+            let pilesTraitees = inventaire.map((pile, originalIndex) => {
+                pile.mesures.sort((m1, m2) => new Date(m1.date) - new Date(m2.date));
+                const totalCycles = pile.mesures.length;
+                
+                let stagnation = false;
+                let lastMah = 0, prevMah = 0;
+                if (totalCycles >= 2) {
+                    lastMah = pile.mesures[totalCycles - 1].mah;
+                    prevMah = pile.mesures[totalCycles - 2].mah;
+                    if (lastMah <= prevMah) stagnation = true;
+                }
+
+                const mesuresAffichees = pile.mesures.map((m, index) => ({
+                    ...m, cycleNumero: index + 1, indexOriginal: index
+                })).reverse();
+
+                const derniere = mesuresAffichees[0] || { mah: 0, voltage: 0 };
+                const etatGlobal = evaluerEtat(derniere.mah, pile.mahNominal, pile.type, pile.format);
+                const scoreEtat = { 'Recycler':0, 'Fatigue':1, 'Bon':2, 'Excellent':3 }[etatGlobal] ?? 4;
+
+                return { pile, originalIndex, totalCycles, mesuresAffichees, derniere, etatGlobal, scoreEtat, stagnation, lastMah, prevMah };
+            });
+
+            majDashboard(pilesTraitees);
+            verifierRappelSauvegarde();
+
+            const query = searchInput.value.trim().toLowerCase();
+            const modeTri = sortSelect.value;
+
+            if (query) {
+                pilesTraitees = pilesTraitees.filter(item => {
+                    const txt = `${item.pile.id} ${item.pile.marque} ${item.pile.format} ${item.pile.type} ${item.pile.annee || ''} ${item.etatGlobal} ${etatLabel(item.etatGlobal)} ${item.pile.appareil || ''}`.toLowerCase();
+                    return txt.includes(query);
+                });
+            }
+            if (etatFiltreActif) {
+                pilesTraitees = pilesTraitees.filter(item => item.etatGlobal === etatFiltreActif);
+            }
+
+            if (pilesTraitees.length === 0) {
+                liste.innerHTML = `<p style="color:var(--text-muted); font-size:0.9rem;">${T('noMatch')}</p>`;
+                return;
+            }
+
+            const genererCarteHtml = (item) => {
+                const bordureCouleur = item.etatGlobal === 'Excellent' ? '#27ae60' : item.etatGlobal === 'Bon' ? '#2ecc71' : item.etatGlobal === 'Fatigue' ? '#e67e22' : '#c0392b';
+                let specsTxt = '';
+                if (item.pile.mahNominal || item.pile.voltNominal) {
+                    const v = item.pile.voltNominal ? `${item.pile.voltNominal}V` : '';
+                    const m = item.pile.mahNominal ? `${item.pile.mahNominal}mAh` : '';
+                    specsTxt = `<span class="badge badge-specs">${[m, v].filter(Boolean).join(' - ')} ${T('nom')}</span>`;
+                }
+                
+                let anneeTxt = '';
+                if (item.pile.annee) {
+                    const age = new Date().getFullYear() - item.pile.annee;
+                    anneeTxt = `<span class="badge">${item.pile.annee} (${T('yrs', age)})</span>`;
+                }
+                
+                let appareilTxt = '';
+                if (item.pile.appareil) {
+                    appareilTxt = `<span class="badge badge-appareil">📍 ${item.pile.appareil}</span>`;
+                }
+
+                let formatDisplay = item.pile.format;
+                if (formatDisplay === '18650') formatDisplay = '18650';
+
+                let cyclesTxt = `<span class="badge badge-cycles">Cycles: ${item.totalCycles}</span>`;
+                let warningStagnation = item.stagnation ? `<span class="warning-icon" title="${T('clickInfo')}" onclick="afficherConseilStagnation(${item.lastMah}, ${item.prevMah})">⚠️</span>` : '';
+
+                let mesuresHtml = item.mesuresAffichees.map(m => {
+                    const etat = evaluerEtat(m.mah, item.pile.mahNominal, item.pile.type, item.pile.format);
+                    const dateAffichage = m.date ? m.date.replace('T', ' ') : '-';
+                    let ratioTxt = item.pile.mahNominal ? ` <small class="text-muted">(${Math.round((m.mah / item.pile.mahNominal) * 100)}%)</small>` : '';
+                    let irTxt = m.ir ? ` | ${m.ir}mΩ` : '';
+                    let stressTxt = m.stress ? ` | Max: ${m.stress}` : '';
+
+                    return `
+                        <li class="mesure-item">
+                            <div>
+                                <span class="cycle-num">#${m.cycleNumero}</span>
+                                <span class="mesure-date">${dateAffichage}</span><br>
+                                <strong>${m.mah} mAh</strong>${ratioTxt} (${m.voltage}V${irTxt}${stressTxt})
+                                <span class="etat-tag tag-${etat}">${etatLabel(etat)}</span>
+                            </div>
+                            <div class="action-btns">
+                                <button class="small-btn edit-btn" onclick="ouvrirModaleMesure(${item.originalIndex}, ${m.indexOriginal})">✏️ Cycle</button>
+                                <button class="small-btn delete-btn" onclick="supprimerMesure(${item.originalIndex}, ${m.indexOriginal})">❌</button>
+                            </div>
+                        </li>
+                    `;
+                }).join('');
+                
+                const grapheHtml = genererGrapheDegradation(item.pile.mesures);
+
+                return `
+                    <div class="pile-card" style="border-left-color: ${bordureCouleur};">
+                        <div class="pile-header">
+                            <div>
+                                <div class="pile-title">#${item.pile.id} ${item.pile.marque || ''} ${warningStagnation}</div>
+                                <span class="badge">${formatDisplay}</span>
+                                <span class="badge">${item.pile.type}</span>
+                                ${cyclesTxt} ${anneeTxt} ${specsTxt} ${appareilTxt}
+                            </div>
+                            <div class="action-btns">
+                                <button class="small-btn clone-btn" onclick="clonerPile(${item.originalIndex})">${T('clone')}</button>
+                                <button class="small-btn edit-btn" onclick="ouvrirModalePile(${item.originalIndex})">✏️ ${T('pileWord')}</button>
+                                <button class="small-btn delete-btn" onclick="supprimerPile(${item.originalIndex})">${T('del')}</button>
+                            </div>
+                        </div>
+                        <ul class="mesures-list">${mesuresHtml}</ul>
+                        ${grapheHtml}
+                    </div>
+                `;
+            };
+
+            if (modeTri === 'marque') {
+                const groupes = {};
+                pilesTraitees.forEach(item => {
+                    const m = (item.pile.marque || T('noBrand')).trim();
+                    if(!groupes[m]) groupes[m] = [];
+                    groupes[m].push(item);
+                });
+
+                Object.keys(groupes).sort((a,b) => a.localeCompare(b)).forEach(marque => {
+                    groupes[marque].sort((a,b) => (a.pile.id || '').localeCompare(b.pile.id || '', undefined, {numeric: true}));
+                    const cartesHtml = groupes[marque].map(genererCarteHtml).join('');
+                    
+                    const isOuvert = etatsMarques[marque] !== false; 
+                    const contentStyle = isOuvert ? 'display: block;' : 'display: none;';
+                    const chevron = isOuvert ? '▼' : '▶';
+
+                    const section = document.createElement('div');
+                    section.className = 'marque-section';
+                    section.innerHTML = `
+                        <div class="marque-header" onclick="toggleMarque(this)" data-marque="${marque.replace(/"/g, '&quot;')}">
+                            <span>🏷️ ${marque} <small style="font-weight:normal;">(${groupes[marque].length})</small></span>
+                            <span class="chevron">${chevron}</span>
+                        </div>
+                        <div class="marque-content" style="${contentStyle}">${cartesHtml}</div>
+                    `;
+                    liste.appendChild(section);
+                });
+            } else {
+                if (modeTri === 'pire') pilesTraitees.sort((a,b) => a.scoreEtat - b.scoreEtat);
+                else if (modeTri === 'cap_desc') pilesTraitees.sort((a,b) => b.derniere.mah - a.derniere.mah);
+                liste.innerHTML = pilesTraitees.map(genererCarteHtml).join('');
+            }
+        }
+
+        function genererIdsLot(startStr, endStr) {
+            if (!endStr) return [startStr];
+            const regex = /^(.*?)(\d+)$/;
+            const matchStart = startStr.match(regex);
+            const matchEnd = endStr.match(regex);
+            if (matchStart && matchEnd && matchStart[1] === matchEnd[1]) {
+                const prefix = matchStart[1];
+                const startNum = parseInt(matchStart[2], 10);
+                const endNum = parseInt(matchEnd[2], 10);
+                const len = matchStart[2].length;
+                if (startNum <= endNum) {
+                    const ids = [];
+                    for (let i = startNum; i <= endNum; i++) {
+                        ids.push(prefix + i.toString().padStart(len, '0'));
+                    }
+                    return ids;
+                }
+            }
+            return [startStr];
+        }
+
+        ['input', 'change', 'blur'].forEach(evt => {
+            pileIdInput.addEventListener(evt, verifierPileExistante);
+            marqueInput.addEventListener(evt, verifierPileExistante);
+        });
+
+        function verifierPileExistante() {
+            const idVal = pileIdInput.value.trim(), marqueVal = marqueInput.value.trim();
+            if (!idVal || !marqueVal) return deverrouillerChampsFixes();
+            const inventaire = JSON.parse(localStorage.getItem('stock_piles')) || [];
+            const pile = inventaire.find(p => normaliserCle(p.marque, p.id) === normaliserCle(marqueVal, idVal));
+            if (pile) {
+                anneeInput.value = pile.annee || ''; typeInput.value = pile.type || 'NiMH'; formatInput.value = pile.format || 'AA';
+                voltNominalInput.value = pile.voltNominal || ''; mahNominalInput.value = pile.mahNominal || '';
+                appareilInput.value = pile.appareil || '';
+                verrouillerChampsFixes(true);
+            } else verrouillerChampsFixes(false);
+        }
+
+        function verrouillerChampsFixes(v) {
+            [anneeInput, typeInput, formatInput, voltNominalInput, mahNominalInput, appareilInput].forEach(el => el.disabled = v);
+            reconnuBadge.style.display = v ? 'block' : 'none';
+            specsBlock.style.display = v ? 'none' : 'block';
+        }
+        function deverrouillerChampsFixes() { verrouillerChampsFixes(false); }
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            try {
+                const idStart = pileIdInput.value.trim();
+                const idEnd = pileIdEndInput.value.trim();
+                const marque = marqueInput.value.trim();
+                const date = dateInput.value;
+                const appareil = appareilInput.value.trim();
+                
+                let vStr = document.getElementById('voltage').value.replace(',', '.');
+                const voltage = parseFloat(vStr);
+                const mah = parseInt(document.getElementById('mah').value, 10);
+                const ir = document.getElementById('ir').value ? parseInt(document.getElementById('ir').value, 10) : null;
+                const stress = document.getElementById('stressTest').value;
+                
+                const nouvelleMesure = { date, voltage, mah, ir, stress };
+                const idsACreer = idEnd ? genererIdsLot(idStart, idEnd) : [idStart];
+                let inventaire = JSON.parse(localStorage.getItem('stock_piles')) || [];
+
+                idsACreer.forEach(id => {
+                    let pile = inventaire.find(p => normaliserCle(p.marque, p.id) === normaliserCle(marque, id));
+                    if (pile) {
+                        pile.mesures.push({ ...nouvelleMesure });
+                    } else {
+                        let vnStr = voltNominalInput.value ? voltNominalInput.value.replace(',', '.') : '';
+                        inventaire.push({ 
+                            id, marque, 
+                            annee: anneeInput.value ? parseInt(anneeInput.value, 10) : null, 
+                            type: typeInput.value, format: formatInput.value, 
+                            appareil: appareil,
+                            voltNominal: vnStr ? parseFloat(vnStr) : null, 
+                            mahNominal: mahNominalInput.value ? parseInt(mahNominalInput.value, 10) : null, 
+                            mesures: [{ ...nouvelleMesure }] 
+                        });
+                    }
+                });
+                
+                localStorage.setItem('stock_piles', JSON.stringify(inventaire));
+                document.getElementById('voltage').value = ''; 
+                document.getElementById('mah').value = '';
+                document.getElementById('ir').value = '';
+                document.getElementById('stressTest').value = '';
+                pileIdEndInput.value = '';
+                setDateNow(); 
+                verifierPileExistante(); 
+                
+                etatsMarques[marque] = true; 
+                chargerPiles();
+                showToast(T('saved'));
+                
+            } catch (err) {
+                alert(T('saveErr') + err.message);
+            }
+        });
+
+        window.ouvrirModalePile = function(index) {
+            const pile = (JSON.parse(localStorage.getItem('stock_piles')) || [])[index];
+            if (!pile) return;
+            document.getElementById('editPileIndex').value = index; document.getElementById('editPileId').value = pile.id || '';
+            document.getElementById('editMarque').value = pile.marque || ''; document.getElementById('editAnnee').value = pile.annee || '';
+            document.getElementById('editType').value = pile.type || 'NiMH'; document.getElementById('editFormat').value = pile.format || 'AA';
+            document.getElementById('editVoltNominal').value = pile.voltNominal || ''; document.getElementById('editMahNominal').value = pile.mahNominal || '';
+            document.getElementById('editAppareil').value = pile.appareil || '';
+            document.getElementById('editPileModal').style.display = 'block';
+        };
+
+        document.getElementById('editPileForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const index = parseInt(document.getElementById('editPileIndex').value, 10);
+            let inv = JSON.parse(localStorage.getItem('stock_piles')) || [];
+            inv[index].id = document.getElementById('editPileId').value.trim(); inv[index].marque = document.getElementById('editMarque').value.trim();
+            inv[index].annee = document.getElementById('editAnnee').value ? parseInt(document.getElementById('editAnnee').value, 10) : null;
+            inv[index].type = document.getElementById('editType').value; inv[index].format = document.getElementById('editFormat').value;
+            inv[index].appareil = document.getElementById('editAppareil').value.trim();
+            let vnStr = document.getElementById('editVoltNominal').value ? document.getElementById('editVoltNominal').value.replace(',', '.') : '';
+            inv[index].voltNominal = vnStr ? parseFloat(vnStr) : null;
+            inv[index].mahNominal = document.getElementById('editMahNominal').value ? parseInt(document.getElementById('editMahNominal').value, 10) : null;
+            localStorage.setItem('stock_piles', JSON.stringify(inv)); fermerModales(); chargerPiles();
+            showToast(T('pileEdited'));
+        });
+
+        window.ouvrirModaleMesure = function(pIdx, mIdx) {
+            const m = (JSON.parse(localStorage.getItem('stock_piles')) || [])[pIdx]?.mesures[mIdx];
+            if (!m) return;
+            document.getElementById('editMesurePileIndex').value = pIdx; document.getElementById('editMesureIndex').value = mIdx;
+            document.getElementById('editMesureDate').value = m.date; 
+            document.getElementById('editMesureVolt').value = m.voltage; 
+            document.getElementById('editMesureMah').value = m.mah;
+            document.getElementById('editMesureIr').value = m.ir || '';
+            document.getElementById('editMesureStress').value = m.stress || '';
+            document.getElementById('editMesureModal').style.display = 'block';
+        };
+
+        document.getElementById('editMesureForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const pIdx = parseInt(document.getElementById('editMesurePileIndex').value, 10), mIdx = parseInt(document.getElementById('editMesureIndex').value, 10);
+            let inv = JSON.parse(localStorage.getItem('stock_piles')) || [];
+            
+            let vStr = document.getElementById('editMesureVolt').value.replace(',', '.');
+            
+            inv[pIdx].mesures[mIdx] = { 
+                date: document.getElementById('editMesureDate').value, 
+                voltage: parseFloat(vStr), 
+                mah: parseInt(document.getElementById('editMesureMah').value, 10),
+                ir: document.getElementById('editMesureIr').value ? parseInt(document.getElementById('editMesureIr').value, 10) : null,
+                stress: document.getElementById('editMesureStress').value
+            };
+            localStorage.setItem('stock_piles', JSON.stringify(inv)); fermerModales(); chargerPiles();
+            showToast(T('cycleEdited'));
+        });
+
+        window.fermerModales = function() { document.getElementById('editPileModal').style.display = 'none'; document.getElementById('editMesureModal').style.display = 'none'; };
+        
+        window.onclick = function(e) { 
+            if (e.target.classList.contains('modal')) fermerModales(); 
+            if (e.target.tagName !== 'circle' && e.target.className !== 'warning-icon') {
+                document.getElementById('grapheTooltip').style.display = 'none';
+            }
+        };
+        
+        window.supprimerMesure = function(pIdx, mIdx) { let inv = JSON.parse(localStorage.getItem('stock_piles')) || []; inv[pIdx].mesures.splice(mIdx, 1); if (inv[pIdx].mesures.length === 0) inv.splice(pIdx, 1); localStorage.setItem('stock_piles', JSON.stringify(inv)); chargerPiles(); };
+        window.supprimerPile = function(idx) { let inv = JSON.parse(localStorage.getItem('stock_piles')) || []; inv.splice(idx, 1); localStorage.setItem('stock_piles', JSON.stringify(inv)); deverrouillerChampsFixes(); chargerPiles(); };
+
+        function obtenirDateNomFichier() {
+            const d = new Date();
+            const pad = n => n.toString().padStart(2, '0');
+            return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}_${pad(d.getHours())}h${pad(d.getMinutes())}m${pad(d.getSeconds())}s`;
+        }
+
+        async function telechargerFichier(contenu, nomFichier, mimeType) {
+            if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+                try {
+                    const { Filesystem, Directory, Encoding } = window.Capacitor.Plugins;
+                    if(Filesystem) {
+                        await Filesystem.writeFile({
+                            path: nomFichier,
+                            data: contenu,
+                            directory: Directory.Documents,
+                            encoding: Encoding.UTF8
+                        });
+                        showToast(T('savedDocs'));
+                        return;
+                    }
+                } catch (err) {
+                    alert(T('androidErr') + err.message);
+                }
+            }
+            
+            const blob = new Blob([contenu], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = nomFichier;
+            document.body.appendChild(a); a.click();
+            document.body.removeChild(a); URL.revokeObjectURL(url);
+            showToast(T('downloaded'));
+        }
+
+        window.exporterJSON = function() {
+            const inventaire = localStorage.getItem('stock_piles') || '[]';
+            telechargerFichier(inventaire, `piles_backup_${obtenirDateNomFichier()}.json`, 'application/json');
+            marquerExportEffectue();
+        };
+
+        window.exporterCSV = function() {
+            const inventaire = JSON.parse(localStorage.getItem('stock_piles')) || [];
+            let csv = 'marque,id,annee,format,type,appareil,cycle_grad,volt_indique,mah_indique,date_releve,voltage_releve,mah_releve,ir_mohm,courant_max,etat\n';
+
+            inventaire.forEach(p => {
+                p.mesures.sort((m1, m2) => new Date(m1.date) - new Date(m2.date));
+                p.mesures.forEach((m, idx) => {
+                    const etat = evaluerEtat(m.mah, p.mahNominal, p.type, p.format);
+                    const clean = val => `"${String(val ?? '').replace(/"/g, '""')}"`;
+                    csv += [
+                        clean(p.marque), clean(p.id), p.annee || '', clean(p.format), clean(p.type), clean(p.appareil),
+                        idx + 1, p.voltNominal || '', p.mahNominal || '',
+                        clean(m.date), m.voltage, m.mah, m.ir || '', clean(m.stress), clean(etat)
+                    ].join(',') + '\n';
+                });
+            });
+
+            telechargerFichier(csv, `piles_backup_${obtenirDateNomFichier()}.csv`, 'text/csv;charset=utf-8;');
+            marquerExportEffectue();
+        };
+
+        function parserCSV(texte) {
+            texte = texte.replace(/^\uFEFF/, '').trim();
+            const lignes = texte.split(/\r?\n/);
+            if (lignes.length < 2) return [];
+
+            const sep = (lignes[0].match(/;/g) || []).length > (lignes[0].match(/,/g) || []).length ? ';' : ',';
+
+            function parseLigne(str) {
+                let result = [], curVal = '', inQuotes = false;
+                for (let i = 0; i < str.length; i++) {
+                    let char = str[i];
+                    if (inQuotes) {
+                        if (char === '"') {
+                            if (i + 1 < str.length && str[i + 1] === '"') { curVal += '"'; i++; } 
+                            else { inQuotes = false; }
+                        } else { curVal += char; }
+                    } else {
+                        if (char === '"') { inQuotes = true; } 
+                        else if (char === sep) { result.push(curVal.trim()); curVal = ''; } 
+                        else { curVal += char; }
+                    }
+                }
+                result.push(curVal.trim());
+                return result;
+            }
+
+            const entetes = parseLigne(lignes[0]).map(h => h.toLowerCase());
+            
+            const idxMarque = entetes.indexOf('marque'); 
+            const idxId = entetes.indexOf('id');
+            const idxAnnee = entetes.indexOf('annee'); 
+            const idxFormat = entetes.indexOf('format');
+            const idxType = entetes.indexOf('type'); 
+            const idxVoltNom = entetes.indexOf('volt_indique');
+            const idxMahNom = entetes.indexOf('mah_indique'); 
+            const idxDate = entetes.indexOf('date_releve') !== -1 ? entetes.indexOf('date_releve') : entetes.indexOf('date_heure');
+            const idxVoltRel = entetes.indexOf('voltage_releve') !== -1 ? entetes.indexOf('voltage_releve') : entetes.indexOf('voltage_v');
+            const idxMahRel = entetes.indexOf('mah_releve') !== -1 ? entetes.indexOf('mah_releve') : entetes.indexOf('capacite_mah');
+            const idxIr = entetes.indexOf('ir_mohm'); 
+            const idxStress = entetes.indexOf('courant_max');
+            const idxAppareil = entetes.indexOf('appareil');
+
+            if (idxId === -1 || idxVoltRel === -1 || idxMahRel === -1) {
+                throw new Error(T('badFormat'));
+            }
+
+            const inventaire = [];
+
+            for (let i = 1; i < lignes.length; i++) {
+                if (!lignes[i].trim()) continue;
+                const cols = parseLigne(lignes[i]);
+                
+                const id = cols[idxId]; 
+                if (!id) continue;
+
+                const marque = idxMarque !== -1 ? cols[idxMarque] : '';
+                const annee = idxAnnee !== -1 && cols[idxAnnee] ? parseInt(cols[idxAnnee], 10) : null;
+                const format = idxFormat !== -1 ? cols[idxFormat] : 'AA';
+                const type = idxType !== -1 ? cols[idxType] : 'NiMH';
+                
+                const voltNominalStr = idxVoltNom !== -1 && cols[idxVoltNom] ? cols[idxVoltNom].replace(',', '.') : '';
+                const voltNominal = voltNominalStr ? parseFloat(voltNominalStr) : null;
+                
+                const mahNominal = idxMahNom !== -1 && cols[idxMahNom] ? parseInt(cols[idxMahNom], 10) : null;
+                const date = idxDate !== -1 ? cols[idxDate] : '';
+                
+                const voltRelStr = idxVoltRel !== -1 && cols[idxVoltRel] ? cols[idxVoltRel].replace(',', '.') : '';
+                const voltage = parseFloat(voltRelStr) || 0;
+                
+                const mah = parseInt(cols[idxMahRel], 10) || 0;
+                const ir = idxIr !== -1 && cols[idxIr] ? parseInt(cols[idxIr], 10) : null;
+                const stress = idxStress !== -1 ? cols[idxStress] : '';
+                const appareil = idxAppareil !== -1 ? cols[idxAppareil] : '';
+
+                const cle = normaliserCle(marque, id);
+                let pile = inventaire.find(p => normaliserCle(p.marque, p.id) === cle);
+                if (!pile) {
+                    pile = { id, marque, annee, format, type, appareil, voltNominal, mahNominal, mesures: [] };
+                    inventaire.push(pile);
+                }
+                pile.mesures.push({ date, voltage, mah, ir, stress });
+            }
+            return inventaire;
+        }
+
+        window.importerFichier = function(ecraserTout) {
+            const fileInput = document.getElementById('importFileInput');
+            const file = fileInput.files[0];
+            if (!file) return showToast(T('pickFile'), true);
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    let dataImport = [];
+                    const content = e.target.result;
+                    if (file.name.toLowerCase().endsWith('.csv')) {
+                        dataImport = parserCSV(content);
+                    } else {
+                        dataImport = JSON.parse(content.replace(/^\uFEFF/, ''));
+                        if (!Array.isArray(dataImport)) throw new Error('Structure JSON invalide.');
+                    }
+
+                    if (ecraserTout) {
+                        if (!confirm(T('confirmReplace'))) return;
+                        localStorage.setItem('stock_piles', JSON.stringify(dataImport));
+                        fileInput.value = ''; 
+                        chargerPiles();
+                        showToast(T('importedReplace'));
+                    } else {
+                        let existant = JSON.parse(localStorage.getItem('stock_piles')) || [];
+                        let nouvellesMesures = 0; 
+                        
+                        dataImport.forEach(itemImport => {
+                            const cleImport = normaliserCle(itemImport.marque, itemImport.id);
+                            let match = existant.find(p => normaliserCle(p.marque, p.id) === cleImport);
+                            if (match) {
+                                if (itemImport.annee) match.annee = itemImport.annee;
+                                if (itemImport.type) match.type = itemImport.type;
+                                if (itemImport.format) match.format = itemImport.format;
+                                if (itemImport.voltNominal) match.voltNominal = itemImport.voltNominal;
+                                if (itemImport.mahNominal) match.mahNominal = itemImport.mahNominal;
+                                if (itemImport.appareil) match.appareil = itemImport.appareil;
+                                
+                                itemImport.mesures.forEach(mImport => {
+                                    const doublon = match.mesures.some(mExist => mExist.date === mImport.date && mExist.voltage === mImport.voltage && mExist.mah === mImport.mah);
+                                    if (!doublon) {
+                                        match.mesures.push(mImport);
+                                        nouvellesMesures++;
+                                    }
+                                });
+                            } else {
+                                existant.push(itemImport);
+                                nouvellesMesures += itemImport.mesures.length;
+                            }
+                        });
+                        localStorage.setItem('stock_piles', JSON.stringify(existant));
+                        fileInput.value = ''; 
+                        chargerPiles();
+                        showToast(T('importedMerge', nouvellesMesures));
+                    }
+                } catch (err) { 
+                    alert(T('importErr') + err.message);
+                    showToast(T('readFail'), true);
+                }
+            };
+            reader.onerror = function() {
+                alert(T('cantRead') + (reader.error ? reader.error.message : T('unknownErr')));
+                showToast(T('readImpossible'), true);
+            };
+            reader.readAsText(file);
+        };
+
+        applyLang(); applyTheme(); verifierRappelSauvegarde();
+        chargerPiles();
+    </script>
+</body>
+</html>
