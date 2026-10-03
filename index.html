@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Gestionnaire de Piles</title>
+    <meta name="theme-color" content="#27ae60">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Piles">
     <style>
         :root {
             --bg-color: #f4f4f9;
@@ -1221,6 +1225,19 @@
                 }
             }
             
+            try {
+                const dl = window.claude && window.claude.use ? await window.claude.use('downloads') : null;
+                if (dl) {
+                    await dl.save({ filename: nomFichier, data: contenu });
+                    showToast(T('downloaded'));
+                    return;
+                }
+            } catch (err) {
+                if (err && err.code === 'declined') return;
+                showToast(T('saveErr') + (err && err.message ? err.message : ''), true);
+                return;
+            }
+
             const blob = new Blob([contenu], { type: mimeType });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
