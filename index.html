@@ -358,6 +358,17 @@
     <button id="fabTop" class="fab-top" onclick="window.scrollTo({ top: 0, behavior: 'smooth' });">⬆️</button>
     <div id="toastMessage" class="toast"></div>
 
+    <!-- Boîte de dialogue (remplace alert/confirm natifs : textes dans la langue de l'appli) -->
+    <div id="dialogModal" class="modal" style="z-index: 3000;">
+        <div class="modal-content" style="max-width: 380px; margin: 25vh auto;">
+            <div id="dialogMsg" style="white-space: pre-line; line-height: 1.4; margin-bottom: 18px;"></div>
+            <div class="grid-2">
+                <button type="button" id="dialogCancel" class="btn-action secondary" style="margin: 0;"></button>
+                <button type="button" id="dialogOk" class="btn-primary" style="margin: 0;"></button>
+            </div>
+        </div>
+    </div>
+
     <!-- Modale Édition Pile -->
     <div id="editPileModal" class="modal">
         <div class="modal-content">
@@ -539,6 +550,7 @@
                 badFormat:"Format de fichier non reconnu. Vérifiez que c'est bien une sauvegarde de l'application.",
                 pickFile:'❌ Veuillez sélectionner un fichier.',
                 confirmReplace:'Attention : toutes les données actuelles seront remplacées. Continuer ?',
+                btnOk:'OK', btnCancel:'Annuler',
                 confirmDelPile:(id,marque,n)=>`Supprimer la pile #${id}${marque ? ' (' + marque + ')' : ''} et ses ${n} relevé(s) ?\n\nCette action est irréversible.`,
                 importedReplace:'✅ Importation réussie ! Base remplacée.',
                 importedMerge:n=>`✅ Importation réussie ! (${n} ajouts)`,
@@ -569,6 +581,7 @@
                 badFormat:"Unrecognized file format. Make sure it is a backup made by this app.",
                 pickFile:'❌ Please select a file.',
                 confirmReplace:'Warning: all current data will be replaced. Continue?',
+                btnOk:'OK', btnCancel:'Cancel',
                 confirmDelPile:(id,marque,n)=>`Delete battery #${id}${marque ? ' (' + marque + ')' : ''} and its ${n} measurement(s)?\n\nThis cannot be undone.`,
                 importedReplace:'✅ Import successful! Database replaced.',
                 importedMerge:n=>`✅ Import successful! (${n} added)`,
@@ -721,6 +734,34 @@
         }
         setDateNow();
 
+        /* ===== Boîtes de dialogue maison (alert / confirm) ===== */
+        function dialogue(message, { confirm = false, danger = false } = {}) {
+            return new Promise(resolve => {
+                const m = document.getElementById('dialogModal');
+                const ok = document.getElementById('dialogOk');
+                const cancel = document.getElementById('dialogCancel');
+                document.getElementById('dialogMsg').innerText = message;
+                ok.innerText = T('btnOk');
+                cancel.innerText = T('btnCancel');
+                cancel.style.display = confirm ? '' : 'none';
+                ok.style.gridColumn = confirm ? '' : '1 / -1';
+                ok.style.backgroundColor = danger ? '#c0392b' : '';
+                const onKey = e => { if (e.key === 'Escape') fin(false); };
+                const fin = v => {
+                    m.style.display = 'none';
+                    ok.onclick = null; cancel.onclick = null;
+                    document.removeEventListener('keydown', onKey);
+                    resolve(v);
+                };
+                ok.onclick = () => fin(true);
+                cancel.onclick = () => fin(false);
+                document.addEventListener('keydown', onKey);
+                m.style.display = 'block';
+                ok.focus();
+            });
+        }
+        const alerter = msg => dialogue(msg);
+
         /* ===== Date flexible : année, année+mois ou date complète ===== */
         function parseDateFlex(v) {
             if (v === null || v === undefined) return null;
@@ -846,7 +887,7 @@
         };
 
         window.afficherConseilStagnation = function(mahActuel, mahPrecedent) {
-            alert(T('tip', mahActuel, mahPrecedent));
+            alerter(T('tip', mahActuel, mahPrecedent));
         };
 
         function genererGrapheDegradation(mesures) {
@@ -1245,7 +1286,7 @@
                 showToast(nouvelleMesure ? T('saved') : (nbCrees ? T('stockAdded', nbCrees) : T('alreadyStock')));
                 
             } catch (err) {
-                alert(T('saveErr') + err.message);
+                alerter(T('saveErr') + err.message);
             }
         });
 
@@ -1316,7 +1357,7 @@
         };
         
         window.supprimerMesure = function(pIdx, mIdx) { let inv = JSON.parse(localStorage.getItem('stock_piles')) || []; inv[pIdx].mesures.splice(mIdx, 1);  localStorage.setItem('stock_piles', JSON.stringify(inv)); chargerPiles(); };
-        window.supprimerPile = function(idx) { let inv = JSON.parse(localStorage.getItem('stock_piles')) || []; const p = inv[idx]; if (!p) return; if (!confirm(T('confirmDelPile', p.id, p.marque, (p.mesures || []).length))) return; inv.splice(idx, 1); localStorage.setItem('stock_piles', JSON.stringify(inv)); deverrouillerChampsFixes(); chargerPiles(); };
+        window.supprimerPile = async function(idx) { let inv = JSON.parse(localStorage.getItem('stock_piles')) || []; const p = inv[idx]; if (!p) return; if (!(await dialogue(T('confirmDelPile', p.id, p.marque, (p.mesures || []).length), { confirm: true, danger: true }))) return; inv.splice(idx, 1); localStorage.setItem('stock_piles', JSON.stringify(inv)); deverrouillerChampsFixes(); chargerPiles(); };
 
         function obtenirDateNomFichier() {
             const d = new Date();
@@ -1339,7 +1380,7 @@
                         return;
                     }
                 } catch (err) {
-                    alert(T('androidErr') + err.message);
+                    alerter(T('androidErr') + err.message);
                 }
             }
             
@@ -1474,7 +1515,7 @@
             if (!file) return showToast(T('pickFile'), true);
 
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = async function(e) {
                 try {
                     let dataImport = [];
                     const content = e.target.result;
@@ -1486,7 +1527,7 @@
                     }
 
                     if (ecraserTout) {
-                        if (!confirm(T('confirmReplace'))) return;
+                        if (!(await dialogue(T('confirmReplace'), { confirm: true, danger: true }))) return;
                         localStorage.setItem('stock_piles', JSON.stringify(dataImport));
                         fileInput.value = ''; 
                         chargerPiles();
@@ -1524,12 +1565,12 @@
                         showToast(T('importedMerge', nouvellesMesures));
                     }
                 } catch (err) { 
-                    alert(T('importErr') + err.message);
+                    alerter(T('importErr') + err.message);
                     showToast(T('readFail'), true);
                 }
             };
             reader.onerror = function() {
-                alert(T('cantRead') + (reader.error ? reader.error.message : T('unknownErr')));
+                alerter(T('cantRead') + (reader.error ? reader.error.message : T('unknownErr')));
                 showToast(T('readImpossible'), true);
             };
             reader.readAsText(file);
