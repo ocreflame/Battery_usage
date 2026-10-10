@@ -539,6 +539,7 @@
                 badFormat:"Format de fichier non reconnu. Vérifiez que c'est bien une sauvegarde de l'application.",
                 pickFile:'❌ Veuillez sélectionner un fichier.',
                 confirmReplace:'Attention : toutes les données actuelles seront remplacées. Continuer ?',
+                confirmDelPile:(id,marque,n)=>`Supprimer la pile #${id}${marque ? ' (' + marque + ')' : ''} et ses ${n} relevé(s) ?\n\nCette action est irréversible.`,
                 importedReplace:'✅ Importation réussie ! Base remplacée.',
                 importedMerge:n=>`✅ Importation réussie ! (${n} ajouts)`,
                 importErr:"Erreur lors de l'importation :\n", readFail:'❌ Échec de la lecture',
@@ -568,6 +569,7 @@
                 badFormat:"Unrecognized file format. Make sure it is a backup made by this app.",
                 pickFile:'❌ Please select a file.',
                 confirmReplace:'Warning: all current data will be replaced. Continue?',
+                confirmDelPile:(id,marque,n)=>`Delete battery #${id}${marque ? ' (' + marque + ')' : ''} and its ${n} measurement(s)?\n\nThis cannot be undone.`,
                 importedReplace:'✅ Import successful! Database replaced.',
                 importedMerge:n=>`✅ Import successful! (${n} added)`,
                 importErr:'Import error:\n', readFail:'❌ Failed to read file',
@@ -1314,7 +1316,7 @@
         };
         
         window.supprimerMesure = function(pIdx, mIdx) { let inv = JSON.parse(localStorage.getItem('stock_piles')) || []; inv[pIdx].mesures.splice(mIdx, 1);  localStorage.setItem('stock_piles', JSON.stringify(inv)); chargerPiles(); };
-        window.supprimerPile = function(idx) { let inv = JSON.parse(localStorage.getItem('stock_piles')) || []; inv.splice(idx, 1); localStorage.setItem('stock_piles', JSON.stringify(inv)); deverrouillerChampsFixes(); chargerPiles(); };
+        window.supprimerPile = function(idx) { let inv = JSON.parse(localStorage.getItem('stock_piles')) || []; const p = inv[idx]; if (!p) return; if (!confirm(T('confirmDelPile', p.id, p.marque, (p.mesures || []).length))) return; inv.splice(idx, 1); localStorage.setItem('stock_piles', JSON.stringify(inv)); deverrouillerChampsFixes(); chargerPiles(); };
 
         function obtenirDateNomFichier() {
             const d = new Date();
