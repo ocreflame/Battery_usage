@@ -248,6 +248,17 @@
                 <input type="text" id="marque" list="marquesList" placeholder="Ex: Eneloop (2015)" required autocomplete="off">
                 <datalist id="marquesList"></datalist>
 
+                <label>Format :</label>
+                <select id="format">
+                                <option value="AA">AA (LR6, HR6, Mignon)</option>
+                                <option value="AAA">AAA (LR03, HR03, Micro)</option>
+                                <option value="18650">18650 (Ø18 x 65 mm)</option>
+                                <option value="C">C (LR14, HR14, Baby)</option>
+                                <option value="D">D (LR20, HR20, Mono)</option>
+                                <option value="21700">21700 (Ø21 x 70 mm)</option>
+                                <option value="Autre">Autre</option>
+                            </select>
+
                 <!-- Bloc masqué intelligemment -->
                 <div id="reconnuBadge" class="status-reconnu">✅ Pile reconnue : infos masquées pour gain de place</div>
 
@@ -270,24 +281,8 @@
                             </select>
                         </div>
                     </div>
-                    <div class="grid-2">
-                        <div>
-                            <label>Format :</label>
-                            <select id="format">
-                                <option value="AA">AA (LR6, HR6, Mignon)</option>
-                                <option value="AAA">AAA (LR03, HR03, Micro)</option>
-                                <option value="18650">18650 (Ø18 x 65 mm)</option>
-                                <option value="C">C (LR14, HR14, Baby)</option>
-                                <option value="D">D (LR20, HR20, Mono)</option>
-                                <option value="21700">21700 (Ø21 x 70 mm)</option>
-                                <option value="Autre">Autre</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label>Appareil / Affectation :</label>
+                    <label>Appareil / Affectation :</label>
                             <input type="text" id="appareil" placeholder="Ex: Horloge salon">
-                        </div>
-                    </div>
                     <div class="grid-2">
                         <div>
                             <label>Volt indiqué :</label>
@@ -861,7 +856,18 @@
         }, true);
         syncMesureRequired();
 
-        function normaliserCle(marque, id) { return `${(marque || '').trim().toLowerCase()}__${(id || '').trim().toLowerCase()}`; }
+        function normaliserCle(marque, id, format = '') { return `${String(format || '').trim().toLowerCase()}__${(marque || '').trim().toLowerCase()}__${(id || '').trim().toLowerCase()}`; }
+
+        // Titre d'un groupe : "<format> - <marque>" (sans doublon si la marque commence déjà par le format)
+        function libelleGroupe(format, marque) {
+            const m = (marque || '').trim() || T('noBrand');
+            let f = (format || '').trim();
+            if (!f) return m;
+            if (f === 'Autre') f = LANG === 'en' ? 'Other' : 'Autre';
+            const echappe = f.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            if (new RegExp('^' + echappe + '(?![A-Za-z0-9])', 'i').test(m)) return m;
+            return `${f} - ${m}`;
+        }
 
         function evaluerEtat(mahReleve, mahNominal, chimie, format) {
             if (mahNominal && mahNominal > 0) {
@@ -1165,7 +1171,7 @@
             if (modeTri === 'marque') {
                 const groupes = {};
                 pilesTraitees.forEach(item => {
-                    const m = (item.pile.marque || T('noBrand')).trim();
+                    const m = libelleGroupe(item.pile.format, item.pile.marque);
                     if(!groupes[m]) groupes[m] = [];
                     groupes[m].push(item);
                 });
@@ -1219,6 +1225,7 @@
 
         ['input', 'change', 'blur'].forEach(evt => {
             pileIdInput.addEventListener(evt, verifierPileExistante);
+            formatInput.addEventListener(evt, verifierPileExistante);
             marqueInput.addEventListener(evt, verifierPileExistante);
         });
 
@@ -1226,9 +1233,9 @@
             const idVal = pileIdInput.value.trim(), marqueVal = marqueInput.value.trim();
             if (!idVal || !marqueVal) return deverrouillerChampsFixes();
             const inventaire = JSON.parse(localStorage.getItem('stock_piles')) || [];
-            const pile = inventaire.find(p => normaliserCle(p.marque, p.id) === normaliserCle(marqueVal, idVal));
+            const pile = inventaire.find(p => normaliserCle(p.marque, p.id, p.format) === normaliserCle(marqueVal, idVal, formatInput.value));
             if (pile) {
-                anneeInput.value = pile.annee || ''; typeInput.value = pile.type || 'NiMH'; formatInput.value = pile.format || 'AA';
+                anneeInput.value = pile.annee || ''; typeInput.value = pile.type || 'NiMH';
                 voltNominalInput.value = pile.voltNominal || ''; mahNominalInput.value = pile.mahNominal || '';
                 appareilInput.value = pile.appareil || '';
                 verrouillerChampsFixes(true);
@@ -1236,7 +1243,7 @@
         }
 
         function verrouillerChampsFixes(v) {
-            [anneeInput, typeInput, formatInput, voltNominalInput, mahNominalInput, appareilInput].forEach(el => el.disabled = v);
+            [anneeInput, typeInput, voltNominalInput, mahNominalInput, appareilInput].forEach(el => el.disabled = v);
             reconnuBadge.style.display = v ? 'block' : 'none';
             revalideDates();
             specsBlock.style.display = v ? 'none' : 'block';
@@ -1266,7 +1273,7 @@
                 let inventaire = JSON.parse(localStorage.getItem('stock_piles')) || [];
 
                 idsACreer.forEach(id => {
-                    let pile = inventaire.find(p => normaliserCle(p.marque, p.id) === normaliserCle(marque, id));
+                    let pile = inventaire.find(p => normaliserCle(p.marque, p.id, p.format) === normaliserCle(marque, id, formatInput.value));
                     if (pile) {
                         if (nouvelleMesure) pile.mesures.push({ ...nouvelleMesure });
                     } else {
@@ -1294,7 +1301,7 @@
                 setDateNow(); 
                 verifierPileExistante(); 
                 
-                etatsMarques[marque] = true; 
+                etatsMarques[libelleGroupe(formatInput.value, marque)] = true; 
                 chargerPiles();
                 showToast(nouvelleMesure ? T('saved') : (nbCrees ? T('stockAdded', nbCrees) : T('alreadyStock')));
                 
@@ -1322,14 +1329,16 @@
             const ancienneMarque = (inv[index].marque || '').trim();
             const nouvelleMarque = document.getElementById('editMarque').value.trim();
             const nouvelId = document.getElementById('editPileId').value.trim();
+            const ancienFormat = inv[index].format;
+            const nouveauFormat = document.getElementById('editFormat').value;
 
             // Marque modifiée alors que d'autres piles du même lot existent : renommer tout le lot ?
             let autres = [], renommerLot = false;
             if (nouvelleMarque !== ancienneMarque) {
-                autres = inv.map((_, i) => i).filter(i => i !== index && (inv[i].marque || '').trim() === ancienneMarque);
+                autres = inv.map((_, i) => i).filter(i => i !== index && (inv[i].marque || '').trim() === ancienneMarque && (inv[i].format || '') === (ancienFormat || ''));
                 if (autres.length) {
                     const choix = await dialogue(
-                        T('askRenameLot', ancienneMarque || T('noBrand'), nouvelleMarque || T('noBrand'), autres.length),
+                        T('askRenameLot', libelleGroupe(ancienFormat, ancienneMarque), libelleGroupe(nouveauFormat, nouvelleMarque), autres.length),
                         { confirm: true, okLabel: T('renameAll', autres.length + 1), alt: T('renameOne') });
                     if (choix === false) return;
                     renommerLot = choix === true;
@@ -1340,12 +1349,13 @@
             const modifies = [index, ...(renommerLot ? autres : [])];
             const marqueFinale = i => modifies.includes(i) ? nouvelleMarque : inv[i].marque;
             const idFinal = i => i === index ? nouvelId : inv[i].id;
-            const conflit = modifies.find(i => inv.some((_, j) => j !== i && normaliserCle(marqueFinale(j), idFinal(j)) === normaliserCle(marqueFinale(i), idFinal(i))));
+            const formatFinal = i => i === index ? nouveauFormat : inv[i].format;
+            const conflit = modifies.find(i => inv.some((_, j) => j !== i && normaliserCle(marqueFinale(j), idFinal(j), formatFinal(j)) === normaliserCle(marqueFinale(i), idFinal(i), formatFinal(i))));
             if (conflit !== undefined) { await alerter(T('dupPile', idFinal(conflit), marqueFinale(conflit))); return; }
 
             inv[index].id = nouvelId; inv[index].marque = nouvelleMarque;
             if (renommerLot) autres.forEach(i => { inv[i].marque = nouvelleMarque; });
-            etatsMarques[nouvelleMarque] = true;
+            etatsMarques[libelleGroupe(nouveauFormat, nouvelleMarque)] = true;
             inv[index].annee = normaliserAnnee(document.getElementById('editAnnee').value);
             inv[index].type = document.getElementById('editType').value; inv[index].format = document.getElementById('editFormat').value;
             inv[index].appareil = document.getElementById('editAppareil').value.trim();
@@ -1537,8 +1547,8 @@
                 const stress = idxStress !== -1 ? cols[idxStress] : '';
                 const appareil = idxAppareil !== -1 ? cols[idxAppareil] : '';
 
-                const cle = normaliserCle(marque, id);
-                let pile = inventaire.find(p => normaliserCle(p.marque, p.id) === cle);
+                const cle = normaliserCle(marque, id, format);
+                let pile = inventaire.find(p => normaliserCle(p.marque, p.id, p.format) === cle);
                 if (!pile) {
                     pile = { id, marque, annee, format, type, appareil, voltNominal, mahNominal, mesures: [] };
                     inventaire.push(pile);
@@ -1576,8 +1586,8 @@
                         let nouvellesMesures = 0; 
                         
                         dataImport.forEach(itemImport => {
-                            const cleImport = normaliserCle(itemImport.marque, itemImport.id);
-                            let match = existant.find(p => normaliserCle(p.marque, p.id) === cleImport);
+                            const cleImport = normaliserCle(itemImport.marque, itemImport.id, itemImport.format);
+                            let match = existant.find(p => normaliserCle(p.marque, p.id, p.format) === cleImport);
                             if (match) {
                                 if (itemImport.annee) match.annee = itemImport.annee;
                                 if (itemImport.type) match.type = itemImport.type;
