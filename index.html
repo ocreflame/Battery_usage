@@ -183,6 +183,10 @@
         .badge.fmt-AA, .badge.fmt-AAA, .badge.fmt-C, .badge.fmt-D, .badge.fmt-18650, .badge.fmt-21700, .badge.fmt-Autre { font-weight: bold; }
         .chem-ico { margin-right: 2px; }
         .chem-name { font-weight: normal; font-size: 0.85em; color: var(--text-muted); }
+        .repartition { display: flex; flex-direction: column; gap: 6px; margin: -8px 0 18px; }
+        .rep-row { display: flex; flex-wrap: wrap; gap: 6px; }
+        .rep-chip { background: var(--header-bg); border: 1px solid var(--border-color); border-radius: 14px; padding: 3px 10px; font-size: 0.85rem; white-space: nowrap; }
+        .rep-chip b { font-size: 1rem; }
     </style>
 </head>
 <body>
@@ -218,6 +222,8 @@
             <div class="dash-card dash-rec" onclick="filtrerParEtat('Recycler')">Recycler <span class="dash-val" id="dash-rec">0</span></div>
             <div class="dash-card dash-tst" onclick="filtrerParEtat('ToTest')">À tester <span class="dash-val" id="dash-tst">0</span></div>
         </div>
+
+        <div class="repartition" id="repartition"></div>
 
         <div class="list-header-actions">
             <h3>Mes Piles Enregistrées</h3>
@@ -1013,6 +1019,23 @@
             chargerPiles();
         };
 
+        // Répartition du stock par format (taille) et par chimie
+        function majRepartition(items) {
+            const box = document.getElementById('repartition');
+            if (!box) return;
+            const compter = cle => {
+                const m = new Map();
+                items.forEach(it => { const k = cle(it.pile); m.set(k, (m.get(k) || 0) + 1); });
+                return [...m.entries()].sort((a, b) => b[1] - a[1] || String(a[0]).localeCompare(String(b[0])));
+            };
+            const nomFormat = f => f === 'Autre' ? (LANG === 'en' ? 'Other' : 'Autre') : f;
+            const ligneFormats = compter(p => p.format || 'Autre')
+                .map(([f, n]) => `<span class="rep-chip ${classeFormat(f)}"><b>${n}</b> - ${escapeHtml(nomFormat(f))}</span>`).join('');
+            const ligneChimies = compter(p => p.type || 'Autre')
+                .map(([t, n]) => `<span class="rep-chip"><b>${n}</b> - ${iconeChimie(t)} ${escapeHtml(nomChimie(t))}</span>`).join('');
+            box.innerHTML = items.length ? `<div class="rep-row">${ligneFormats}</div><div class="rep-row">${ligneChimies}</div>` : '';
+        }
+
         function majDashboard(inventaireTraite) {
             let stats = { total: inventaireTraite.length, Excellent: 0, Bon: 0, Fatigue: 0, Recycler: 0, ToTest: 0 };
             inventaireTraite.forEach(item => { if(stats[item.etatGlobal] !== undefined) stats[item.etatGlobal]++; });
@@ -1022,6 +1045,7 @@
             document.getElementById('dash-fat').innerText = stats.Fatigue;
             document.getElementById('dash-rec').innerText = stats.Recycler;
             document.getElementById('dash-tst').innerText = stats.ToTest;
+            majRepartition(inventaireTraite);
         }
 
         window.clonerPile = function(index) {
