@@ -182,6 +182,7 @@
         .fmt-Autre { color: var(--fmt-Autre); }
         .badge.fmt-AA, .badge.fmt-AAA, .badge.fmt-C, .badge.fmt-D, .badge.fmt-18650, .badge.fmt-21700, .badge.fmt-Autre { font-weight: bold; }
         .chem-ico { margin-right: 2px; }
+        .chem-name { font-weight: normal; font-size: 0.85em; color: var(--text-muted); }
     </style>
 </head>
 <body>
@@ -871,6 +872,15 @@
         function escapeHtml(v) { return String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
         function classeFormat(format) { const f = String(format || '').replace(/[^A-Za-z0-9]/g, ''); return f ? 'fmt-' + f : ''; }
         function iconeChimie(type) { return ICONES_CHIMIE[type] || ICONES_CHIMIE['Autre']; }
+        function nomChimie(type) {
+            if (LANG === 'en') return ({ 'Alcaline': 'Alkaline', 'Autre': 'Other' })[type] || type;
+            return type || '';
+        }
+        function nomsChimieGroupe(items) {
+            const vus = [];
+            items.forEach(it => { const t = it.pile.type || 'Autre'; if (!vus.includes(t)) vus.push(t); });
+            return vus.length ? ` <span class="chem-name">· ${vus.map(t => escapeHtml(nomChimie(t))).join(' / ')}</span>` : '';
+        }
         function iconesChimieGroupe(items) {
             const vus = [];
             items.forEach(it => { const t = it.pile.type || 'Autre'; if (!vus.includes(t)) vus.push(t); });
@@ -1185,7 +1195,7 @@
                             <div>
                                 <div class="pile-title">#${item.pile.id} ${item.pile.marque || ''} ${warningStagnation}</div>
                                 <span class="badge ${classeFormat(item.pile.format)}">${formatDisplay}</span>
-                                <span class="badge" title="${escapeHtml(item.pile.type)}">${iconeChimie(item.pile.type)} ${escapeHtml(item.pile.type)}</span>
+                                <span class="badge" title="${escapeHtml(item.pile.type)}">${iconeChimie(item.pile.type)} ${escapeHtml(nomChimie(item.pile.type))}</span>
                                 ${cyclesTxt} ${anneeTxt} ${specsTxt} ${appareilTxt}
                             </div>
                             <div class="action-btns">
@@ -1220,7 +1230,7 @@
                     section.className = 'marque-section';
                     section.innerHTML = `
                         <div class="marque-header" onclick="toggleMarque(this)" data-marque="${marque.replace(/"/g, '&quot;')}">
-                            <span>${iconesChimieGroupe(groupes[marque])} ${htmlGroupe(groupes[marque][0].pile.format, groupes[marque][0].pile.marque)} <small style="font-weight:normal;">(${groupes[marque].length})</small></span>
+                            <span>${iconesChimieGroupe(groupes[marque])} ${htmlGroupe(groupes[marque][0].pile.format, groupes[marque][0].pile.marque)}${nomsChimieGroupe(groupes[marque])} <small style="font-weight:normal;">(${groupes[marque].length})</small></span>
                             <span class="chevron">${chevron}</span>
                         </div>
                         <div class="marque-content" style="${contentStyle}">${cartesHtml}</div>
