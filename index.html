@@ -363,6 +363,7 @@
         <div class="modal-content" style="max-width: 380px; margin: 25vh auto;">
             <div id="dialogMsg" style="white-space: pre-line; line-height: 1.4; margin-bottom: 18px;"></div>
             <div class="grid-2">
+                <button type="button" id="dialogAlt" class="btn-action" style="margin: 0; grid-column: 1 / -1; display: none;"></button>
                 <button type="button" id="dialogCancel" class="btn-action secondary" style="margin: 0;"></button>
                 <button type="button" id="dialogOk" class="btn-primary" style="margin: 0;"></button>
             </div>
@@ -551,6 +552,10 @@
                 pickFile:'❌ Veuillez sélectionner un fichier.',
                 confirmReplace:'Attention : toutes les données actuelles seront remplacées. Continuer ?',
                 btnOk:'OK', btnCancel:'Annuler',
+                askRenameLot:(ancien,nouveau,n)=>`« ${ancien} » contient ${n} autre(s) pile(s).\n\nRenommer aussi tout le lot en « ${nouveau} » ?`,
+                renameAll:n=>`Renommer les ${n} piles`, renameOne:'Seulement celle-ci',
+                dupPile:(id,marque)=>`Impossible : une pile #${id} existe déjà dans « ${marque} ».`,
+                lotRenamed:n=>`✅ ${n} piles renommées !`,
                 confirmDelPile:(id,marque,n)=>`Supprimer la pile #${id}${marque ? ' (' + marque + ')' : ''} et ses ${n} relevé(s) ?\n\nCette action est irréversible.`,
                 importedReplace:'✅ Importation réussie ! Base remplacée.',
                 importedMerge:n=>`✅ Importation réussie ! (${n} ajouts)`,
@@ -582,6 +587,10 @@
                 pickFile:'❌ Please select a file.',
                 confirmReplace:'Warning: all current data will be replaced. Continue?',
                 btnOk:'OK', btnCancel:'Cancel',
+                askRenameLot:(ancien,nouveau,n)=>`"${ancien}" contains ${n} other batter${n>1?'ies':'y'}.\n\nAlso rename the whole batch to "${nouveau}"?`,
+                renameAll:n=>`Rename all ${n}`, renameOne:'Only this one',
+                dupPile:(id,marque)=>`Not possible: a battery #${id} already exists in "${marque}".`,
+                lotRenamed:n=>`✅ ${n} batteries renamed!`,
                 confirmDelPile:(id,marque,n)=>`Delete battery #${id}${marque ? ' (' + marque + ')' : ''} and its ${n} measurement(s)?\n\nThis cannot be undone.`,
                 importedReplace:'✅ Import successful! Database replaced.',
                 importedMerge:n=>`✅ Import successful! (${n} added)`,
@@ -735,26 +744,30 @@
         setDateNow();
 
         /* ===== Boîtes de dialogue maison (alert / confirm) ===== */
-        function dialogue(message, { confirm = false, danger = false } = {}) {
+        function dialogue(message, { confirm = false, danger = false, okLabel = '', alt = '' } = {}) {
             return new Promise(resolve => {
                 const m = document.getElementById('dialogModal');
                 const ok = document.getElementById('dialogOk');
                 const cancel = document.getElementById('dialogCancel');
+                const altBtn = document.getElementById('dialogAlt');
                 document.getElementById('dialogMsg').innerText = message;
-                ok.innerText = T('btnOk');
+                ok.innerText = okLabel || T('btnOk');
                 cancel.innerText = T('btnCancel');
                 cancel.style.display = confirm ? '' : 'none';
+                altBtn.style.display = alt ? '' : 'none';
+                altBtn.innerText = alt;
                 ok.style.gridColumn = confirm ? '' : '1 / -1';
                 ok.style.backgroundColor = danger ? '#c0392b' : '';
                 const onKey = e => { if (e.key === 'Escape') fin(false); };
                 const fin = v => {
                     m.style.display = 'none';
-                    ok.onclick = null; cancel.onclick = null;
+                    ok.onclick = null; cancel.onclick = null; altBtn.onclick = null;
                     document.removeEventListener('keydown', onKey);
                     resolve(v);
                 };
                 ok.onclick = () => fin(true);
                 cancel.onclick = () => fin(false);
+                altBtn.onclick = () => fin('alt');
                 document.addEventListener('keydown', onKey);
                 m.style.display = 'block';
                 ok.focus();
@@ -1302,11 +1315,37 @@
             revalideDates();
         };
 
-        document.getElementById('editPileForm').addEventListener('submit', (e) => {
+        document.getElementById('editPileForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const index = parseInt(document.getElementById('editPileIndex').value, 10);
             let inv = JSON.parse(localStorage.getItem('stock_piles')) || [];
-            inv[index].id = document.getElementById('editPileId').value.trim(); inv[index].marque = document.getElementById('editMarque').value.trim();
+            const ancienneMarque = (inv[index].marque || '').trim();
+            const nouvelleMarque = document.getElementById('editMarque').value.trim();
+            const nouvelId = document.getElementById('editPileId').value.trim();
+
+            // Marque modifiée alors que d'autres piles du même lot existent : renommer tout le lot ?
+            let autres = [], renommerLot = false;
+            if (nouvelleMarque !== ancienneMarque) {
+                autres = inv.map((_, i) => i).filter(i => i !== index && (inv[i].marque || '').trim() === ancienneMarque);
+                if (autres.length) {
+                    const choix = await dialogue(
+                        T('askRenameLot', ancienneMarque || T('noBrand'), nouvelleMarque || T('noBrand'), autres.length),
+                        { confirm: true, okLabel: T('renameAll', autres.length + 1), alt: T('renameOne') });
+                    if (choix === false) return;
+                    renommerLot = choix === true;
+                }
+            }
+
+            // Pas de doublon marque + numéro après renommage
+            const modifies = [index, ...(renommerLot ? autres : [])];
+            const marqueFinale = i => modifies.includes(i) ? nouvelleMarque : inv[i].marque;
+            const idFinal = i => i === index ? nouvelId : inv[i].id;
+            const conflit = modifies.find(i => inv.some((_, j) => j !== i && normaliserCle(marqueFinale(j), idFinal(j)) === normaliserCle(marqueFinale(i), idFinal(i))));
+            if (conflit !== undefined) { await alerter(T('dupPile', idFinal(conflit), marqueFinale(conflit))); return; }
+
+            inv[index].id = nouvelId; inv[index].marque = nouvelleMarque;
+            if (renommerLot) autres.forEach(i => { inv[i].marque = nouvelleMarque; });
+            etatsMarques[nouvelleMarque] = true;
             inv[index].annee = normaliserAnnee(document.getElementById('editAnnee').value);
             inv[index].type = document.getElementById('editType').value; inv[index].format = document.getElementById('editFormat').value;
             inv[index].appareil = document.getElementById('editAppareil').value.trim();
@@ -1314,7 +1353,7 @@
             inv[index].voltNominal = vnStr ? parseFloat(vnStr) : null;
             inv[index].mahNominal = document.getElementById('editMahNominal').value ? parseInt(document.getElementById('editMahNominal').value, 10) : null;
             localStorage.setItem('stock_piles', JSON.stringify(inv)); fermerModales(); chargerPiles();
-            showToast(T('pileEdited'));
+            showToast(renommerLot ? T('lotRenamed', autres.length + 1) : T('pileEdited'));
         });
 
         window.ouvrirModaleMesure = function(pIdx, mIdx) {
