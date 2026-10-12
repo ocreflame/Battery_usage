@@ -859,10 +859,10 @@
         window.ouvrirOnglet = function(nom) {
             tabContents.forEach(tc => tc.classList.toggle('active', tc.id === `tab-${nom}`));
             tabBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.tab === nom));
-            if (nom === 'calculateur') remplirSelectPilesAssistant();
-            localStorage.setItem('tab_actif', nom);
+            if (nom === 'calculateur') { try { remplirSelectPilesAssistant(); } catch (e) { console.error(e); } }
+            try { localStorage.setItem('tab_actif', nom); } catch (e) {}
         };
-        ouvrirOnglet(localStorage.getItem('tab_actif') || 'liste');
+        // (l'onglet actif est restauré à la fin du script, une fois toutes les fonctions définies)
 
         const SEUIL_RAPPEL_JOURS = 14;
 
@@ -2534,6 +2534,7 @@
         try { chargerPiles(); } catch (e) { console.error(e); }
         try { remplirSelectPilesAssistant(); } catch (e) { console.error(e); }
         try { calculerParametresCharge(); } catch (e) { console.error(e); }
+        try { ouvrirOnglet(localStorage.getItem('tab_actif') || 'liste'); } catch (e) { console.error(e); }
 
         // Mobile WebView: native <select> sometimes skips onchange — bind extra listeners
         (function bindCalcSelect() {
