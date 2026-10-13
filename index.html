@@ -191,6 +191,11 @@
         .rep-chip { background: var(--header-bg); border: 1px solid var(--border-color); border-radius: 14px; padding: 3px 10px; font-size: 0.85rem; white-space: nowrap; }
         .rep-chip b { font-size: 1rem; }
         .rep-chip[data-fk] { cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent; }
+        .paire-card { padding: 10px 12px; }
+        .paire-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding-bottom: 6px; }
+        .paire-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 6px 0; border-top: 1px solid var(--border-color); font-size: 0.9rem; }
+        .paire-row small { color: var(--text-muted); }
+        .paire-note { font-size: 0.8rem; color: var(--text-muted); margin: 0 0 10px; line-height: 1.35; }
         .rep-chip.active { border-color: #3498db; box-shadow: 0 0 0 2px rgba(52,152,219,0.45); }
         .conseil-banner:active { opacity: 0.85; }
 
@@ -327,6 +332,7 @@
             <select id="sortSelect" onchange="chargerPiles()" style="flex: 1; margin: 0;">
                 <option value="marque">Tri : Marque</option>
                 <option value="pire">Tri : Pire état d'abord</option>
+                <option value="paires">Tri : Paires / lots (mAh / résistance)</option>
                 <option value="cap_desc">Tri : Capacité descendante</option>
                 <option value="cap_asc">Tri : Capacité croissante</option>
                 <option value="pct_desc">Tri : % du nominal (meilleur d'abord)</option>
@@ -652,7 +658,7 @@
             "Tri : Capacité croissante":"Sort: Capacity (low to high)","Tri : % du nominal (meilleur d'abord)":"Sort: % of rated (best first)","Tri : % du nominal (pire d'abord)":"Sort: % of rated (worst first)",
             "Tri : Plus anciennes d'abord":"Sort: Oldest first","Tri : Plus récentes d'abord":"Sort: Newest first","Tri : Plus de cycles d'abord":"Sort: Most cycles first","Tri : Moins de cycles d'abord":"Sort: Fewest cycles first",
             "Tri : Résistance interne (basse d'abord)":"Sort: Internal resistance (lowest first)","Tri : Dernière mesure (récente d'abord)":"Sort: Last measurement (newest first)","Tri : Dernière mesure (ancienne d'abord)":"Sort: Last measurement (oldest first)",
-            "Tri : Chimie":"Sort: Chemistry","Tri : Numéro (ID)":"Sort: Number (ID)",
+            "Tri : Chimie":"Sort: Chemistry","Tri : Paires / lots (mAh / résistance)":"Sort: Pairs / sets (mAh / resistance)","Tri : Numéro (ID)":"Sort: Number (ID)",
             "Ajouter une mesure / lot (Grad)":"Add a measurement / batch (Grad)",
             "ID :":"ID:","Ex: 01 ou A-01":"E.g. 01 or A-01",
             "À (création lot) :":"To (batch creation):","Ex: 04 ou A-04":"E.g. 04 or A-04",
@@ -834,6 +840,11 @@
         let etatFiltreActif = '';
         let formatFiltreActif = '';
         let chimieFiltreActif = '';
+        let pairesAvecRecycler = false;
+        let pairesMemeMarque = false;
+        window.setPairesMemeMarque = function(v) { pairesMemeMarque = !!v; chargerPiles(); };
+        let pairesTaille = (() => { try { const n = parseInt(localStorage.getItem('paires_taille'), 10); return (n >= 2 && n <= 12) ? n : 2; } catch (e) { return 2; } })();
+        window.setPairesRecycler = function(v) { pairesAvecRecycler = !!v; chargerPiles(); };
         let etatsMarques = (() => { try { return JSON.parse(localStorage.getItem('etats_marques')) || {}; } catch { return {}; } })();
         function sauverEtatsMarques() { try { localStorage.setItem('etats_marques', JSON.stringify(etatsMarques)); } catch {} }
         let rechercheTimer;
@@ -1900,6 +1911,137 @@
             sauverEtatsMarques();
         };
 
+        // ---- Appariement / constitution de lots : écart de capacité (mAh) + écart de résistance interne (mΩ) ----
+        window.setPairesTaille = function(v) {
+            let n = parseInt(v, 10);
+            if (isNaN(n)) n = 2;
+            pairesTaille = Math.min(Math.max(n, 2), 12);
+            try { localStorage.setItem('paires_taille', String(pairesTaille)); } catch (e) {}
+            chargerPiles();
+        };
+
+        function genererPairesHtml(items) {
+            const en = LANG === 'en';
+            const K = pairesTaille;
+            const riDe = it => { const v = parseFloat(it.derniere.ir); return v > 0 ? v : null; };
+            const dist = (a, b) => {
+                const ma = a.derniere.mah, mb = b.derniere.mah;
+                let d = Math.abs(ma - mb) / Math.max(ma, mb) * 100;
+                const ra = riDe(a), rb = riDe(b);
+                if (ra !== null && rb !== null) d += Math.abs(ra - rb) / Math.max(ra, rb) * 50;
+                else if (ra !== null || rb !== null) d += 2;
+                return d;
+            };
+            const coutGroupe = g => { let c = 0; for (let i = 0; i < g.length; i++) for (let j = i + 1; j < g.length; j++) c += dist(g[i], g[j]); return c; };
+
+            const nonMesurees = [];
+            let nbRecycler = 0;
+            const groupes = new Map();
+            items.forEach(it => {
+                if (!it.totalCycles || !(it.derniere.mah > 0)) { nonMesurees.push(it); return; }
+                if (it.etatGlobal === 'Recycler' && etatFiltreActif !== 'Recycler' && !pairesAvecRecycler) { nbRecycler++; return; }
+                const cle = `${it.pile.format || 'Autre'}__${it.pile.type || 'Autre'}` + (pairesMemeMarque ? `__${libelleGroupe(it.pile.format, it.pile.marque)}` : '');
+                if (!groupes.has(cle)) groupes.set(cle, []);
+                groupes.get(cle).push(it);
+            });
+
+            // Constitue des lots de K piles : on prend à chaque fois le lot le plus homogène, puis on améliore par échanges.
+            const former = (liste) => {
+                let restantes = liste.slice();
+                const lots = [];
+                while (restantes.length >= K) {
+                    let meilleur = null, meilleurCout = Infinity;
+                    restantes.forEach(seed => {
+                        const proches = restantes.filter(x => x !== seed).sort((x, y) => dist(seed, x) - dist(seed, y)).slice(0, K - 1);
+                        const g = [seed, ...proches];
+                        const c = coutGroupe(g);
+                        if (c < meilleurCout - 1e-9) { meilleurCout = c; meilleur = g; }
+                    });
+                    lots.push(meilleur);
+                    restantes = restantes.filter(x => !meilleur.includes(x));
+                }
+                for (let iter = 0; iter < 100; iter++) {
+                    let change = false;
+                    for (let x = 0; x < lots.length; x++) {
+                        for (let i = 0; i < K; i++) {
+                            for (let y = x + 1; y < lots.length; y++) {
+                                for (let j = 0; j < K; j++) {
+                                    const avant = coutGroupe(lots[x]) + coutGroupe(lots[y]);
+                                    const gx = lots[x].slice(), gy = lots[y].slice();
+                                    gx[i] = lots[y][j]; gy[j] = lots[x][i];
+                                    if (coutGroupe(gx) + coutGroupe(gy) < avant - 1e-9) { lots[x] = gx; lots[y] = gy; change = true; }
+                                }
+                            }
+                            for (let r = 0; r < restantes.length; r++) {
+                                const gx = lots[x].slice();
+                                gx[i] = restantes[r];
+                                if (coutGroupe(gx) < coutGroupe(lots[x]) - 1e-9) { const sorti = lots[x][i]; lots[x] = gx; restantes[r] = sorti; change = true; }
+                            }
+                        }
+                    }
+                    if (!change) break;
+                }
+                lots.forEach(g => g.sort((a, b) => b.derniere.mah - a.derniere.mah));
+                lots.sort((p, q) => q[0].derniere.mah - p[0].derniere.mah);
+                return { lots, seuls: restantes.sort((a, b) => b.derniere.mah - a.derniere.mah) };
+            };
+
+            const ligne = it => {
+                const ri = riDe(it);
+                return `<div class="paire-row"><div><b>#${escapeHtml(it.pile.id)}</b> ${escapeHtml(it.pile.marque || '')}<br>` +
+                    `<small>${it.derniere.mah} mAh · ${ri !== null ? ri + ' mΩ' : (en ? 'IR ?' : 'RI ?')} · ${it.derniere.voltage}V</small></div>` +
+                    `<span class="etat-tag tag-${it.etatGlobal}" onclick="expliquerEtat('${it.etatGlobal}')">${etatLabel(it.etatGlobal)}</span></div>`;
+            };
+
+            const nomLot = K === 2 ? (en ? 'Pair' : 'Paire') : K === 3 ? (en ? 'Trio' : 'Trio') : K === 4 ? (en ? 'Set of 4' : 'Lot de 4') : (en ? 'Set of ' + K : 'Lot de ' + K);
+            const nomLots = n => K === 2 ? (en ? (n !== 1 ? 'pairs' : 'pair') : (n > 1 ? 'paires' : 'paire'))
+                : (en ? (n !== 1 ? 'sets' : 'set') : (n > 1 ? 'lots' : 'lot'));
+
+            const chip = n => `<span class="rep-chip${n === K ? ' active' : ''}" style="cursor:pointer;" onclick="setPairesTaille(${n})"><b>${n}</b></span>`;
+            let html = `<div class="paire-note" style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;">` +
+                `<span>${en ? 'Cells per set:' : 'Piles par lot :'}</span>${chip(2)}${chip(3)}${chip(4)}` +
+                `<input type="number" inputmode="numeric" min="2" max="12" value="${K}" onchange="setPairesTaille(this.value)" style="width:70px;margin:0;" title="${en ? 'Other size (2-12)' : 'Autre taille (2 à 12)'}"></div>` +
+                `<p class="paire-note">${en
+                    ? 'Sets are built from the last measured capacity and internal resistance (same format and chemistry). Untested cells are left out.'
+                    : 'Lots construits avec la dernière capacité mesurée et la résistance interne (même format et même chimie). Les piles non testées sont exclues.'}</p>` +
+                `<label class="paire-note" style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" ${pairesAvecRecycler ? 'checked' : ''} onchange="setPairesRecycler(this.checked)" style="width:auto;margin:0;"> ${en ? 'Include cells to recycle' : 'Inclure les piles à recycler'}</label>` +
+                `<label class="paire-note" style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" ${pairesMemeMarque ? 'checked' : ''} onchange="setPairesMemeMarque(this.checked)" style="width:auto;margin:0;"> ${en ? 'Same brand only' : 'Même marque seulement'}</label>`;
+            let totalLots = 0;
+
+            [...groupes.entries()].sort((a, b) => a[0].localeCompare(b[0])).forEach(([cle, liste]) => {
+                const [format, type, ...resteMarque] = cle.split('__');
+                const marqueGrp = resteMarque.join('__').replace(new RegExp('^' + format.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*-\\s*', 'i'), '');
+                const { lots, seuls } = former(liste);
+                totalLots += lots.length;
+                html += `<div class="marque-section"><div class="marque-header" style="cursor:default;"><span>${iconeChimie(type)} <span class="badge ${classeFormat(format)}">${escapeHtml(format)}</span> ${escapeHtml(nomChimie(type))}${marqueGrp ? ' · ' + escapeHtml(marqueGrp) : ''} <small style="font-weight:normal;">(${lots.length} ${nomLots(lots.length)})</small></span></div>`;
+                lots.forEach((g, k) => {
+                    const mahs = g.map(it => it.derniere.mah);
+                    const dm = Math.max(...mahs) - Math.min(...mahs);
+                    const pct = dm / Math.max(...mahs) * 100;
+                    const ris = g.map(riDe);
+                    const dr = ris.every(v => v !== null) ? Math.max(...ris) - Math.min(...ris) : null;
+                    const couleur = pct <= 3 ? '#27ae60' : pct <= 8 ? '#f1c40f' : '#e67e22';
+                    const q = pct <= 3 ? (en ? '🟢 well matched' : '🟢 très proches') : pct <= 8 ? (en ? '🟡 acceptable' : '🟡 correct') : (en ? '🟠 large gap' : '🟠 écart important');
+                    html += `<div class="pile-card paire-card" style="border-left-color:${couleur};"><div class="paire-head"><b>${nomLot} ${k + 1}</b>` +
+                        `<span class="badge">Δ ${dm} mAh (${pct.toFixed(1)}%)</span>` +
+                        `<span class="badge">${dr !== null ? 'Δ ' + (Math.round(dr * 10) / 10) + ' mΩ' : (en ? 'IR unknown' : 'RI inconnue')}</span>` +
+                        `<span>${q}</span></div>${g.map(ligne).join('')}</div>`;
+                });
+                if (seuls.length) {
+                    html += `<div class="pile-card paire-card"><div class="paire-head"><b>${K === 2 ? (en ? 'No partner' : 'Sans partenaire') : (en ? 'Left over (incomplete set)' : 'Restantes (lot incomplet)')}</b></div>${seuls.map(ligne).join('')}</div>`;
+                }
+                html += `</div>`;
+            });
+
+            if (nonMesurees.length) {
+                html += `<div class="marque-section"><div class="marque-header" style="cursor:default;"><span>${en ? 'To test (no measurement)' : 'À tester (sans mesure)'} <small style="font-weight:normal;">(${nonMesurees.length})</small></span></div>` +
+                    `<div class="pile-card paire-card">${nonMesurees.map(it => `<div class="paire-row"><div><b>#${escapeHtml(it.pile.id)}</b> ${escapeHtml(it.pile.marque || '')} <small>${escapeHtml(it.pile.format || '')} · ${escapeHtml(nomChimie(it.pile.type))}</small></div></div>`).join('')}</div></div>`;
+            }
+            if (nbRecycler) html += `<p class="paire-note">${en ? nbRecycler + ' cell(s) to recycle not grouped.' : nbRecycler + ' pile(s) à recycler non regroupée(s).'}</p>`;
+            if (!totalLots && !nonMesurees.length) html += `<p class="paire-note">${en ? 'Nothing to group.' : 'Rien à regrouper.'}</p>`;
+            return html;
+        }
+
         window.chargerPiles = function() {
             liste.innerHTML = '';
             const inventaire = JSON.parse(localStorage.getItem('stock_piles')) || [];
@@ -2067,6 +2209,8 @@
                     `;
                     liste.appendChild(section);
                 });
+            } else if (modeTri === 'paires') {
+                liste.innerHTML = genererPairesHtml(pilesTraitees);
             } else {
                 const nul = v => v === null || v === undefined || (typeof v === 'number' && isNaN(v));
                 const cmp = (va, vb, dir) => { if (nul(va) && nul(vb)) return 0; if (nul(va)) return 1; if (nul(vb)) return -1; return dir * (va - vb); };
