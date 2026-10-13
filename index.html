@@ -190,6 +190,8 @@
         .rep-row { display: flex; flex-wrap: wrap; gap: 6px; }
         .rep-chip { background: var(--header-bg); border: 1px solid var(--border-color); border-radius: 14px; padding: 3px 10px; font-size: 0.85rem; white-space: nowrap; }
         .rep-chip b { font-size: 1rem; }
+        .rep-chip[data-fk] { cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent; }
+        .rep-chip.active { border-color: #3498db; box-shadow: 0 0 0 2px rgba(52,152,219,0.45); }
         .conseil-banner:active { opacity: 0.85; }
 
         /* ========== DOUBLE RENDU : mobile-first + desktop ========== */
@@ -326,6 +328,18 @@
                 <option value="marque">Tri : Marque</option>
                 <option value="pire">Tri : Pire état d'abord</option>
                 <option value="cap_desc">Tri : Capacité descendante</option>
+                <option value="cap_asc">Tri : Capacité croissante</option>
+                <option value="pct_desc">Tri : % du nominal (meilleur d'abord)</option>
+                <option value="pct_asc">Tri : % du nominal (pire d'abord)</option>
+                <option value="annee_asc">Tri : Plus anciennes d'abord</option>
+                <option value="annee_desc">Tri : Plus récentes d'abord</option>
+                <option value="cycles_desc">Tri : Plus de cycles d'abord</option>
+                <option value="cycles_asc">Tri : Moins de cycles d'abord</option>
+                <option value="ir_asc">Tri : Résistance interne (basse d'abord)</option>
+                <option value="date_desc">Tri : Dernière mesure (récente d'abord)</option>
+                <option value="date_asc">Tri : Dernière mesure (ancienne d'abord)</option>
+                <option value="chimie">Tri : Chimie</option>
+                <option value="id">Tri : Numéro (ID)</option>
             </select>
         </div>
 
@@ -635,6 +649,10 @@
             "Tout ouvrir":"Expand all","Tout fermer":"Collapse all",
             "Rechercher...":"Search...",
             "Tri : Marque":"Sort: Brand","Tri : Pire état d'abord":"Sort: Worst condition first","Tri : Capacité descendante":"Sort: Capacity (high to low)",
+            "Tri : Capacité croissante":"Sort: Capacity (low to high)","Tri : % du nominal (meilleur d'abord)":"Sort: % of rated (best first)","Tri : % du nominal (pire d'abord)":"Sort: % of rated (worst first)",
+            "Tri : Plus anciennes d'abord":"Sort: Oldest first","Tri : Plus récentes d'abord":"Sort: Newest first","Tri : Plus de cycles d'abord":"Sort: Most cycles first","Tri : Moins de cycles d'abord":"Sort: Fewest cycles first",
+            "Tri : Résistance interne (basse d'abord)":"Sort: Internal resistance (lowest first)","Tri : Dernière mesure (récente d'abord)":"Sort: Last measurement (newest first)","Tri : Dernière mesure (ancienne d'abord)":"Sort: Last measurement (oldest first)",
+            "Tri : Chimie":"Sort: Chemistry","Tri : Numéro (ID)":"Sort: Number (ID)",
             "Ajouter une mesure / lot (Grad)":"Add a measurement / batch (Grad)",
             "ID :":"ID:","Ex: 01 ou A-01":"E.g. 01 or A-01",
             "À (création lot) :":"To (batch creation):","Ex: 04 ou A-04":"E.g. 04 or A-04",
@@ -814,6 +832,8 @@
         window.toggleLang = toggleLang;
 
         let etatFiltreActif = '';
+        let formatFiltreActif = '';
+        let chimieFiltreActif = '';
         let etatsMarques = (() => { try { return JSON.parse(localStorage.getItem('etats_marques')) || {}; } catch { return {}; } })();
         function sauverEtatsMarques() { try { localStorage.setItem('etats_marques', JSON.stringify(etatsMarques)); } catch {} }
         let rechercheTimer;
@@ -1799,9 +1819,9 @@
             };
             const nomFormat = f => f === 'Autre' ? (LANG === 'en' ? 'Other' : 'Autre') : f;
             const ligneFormats = compter(p => p.format || 'Autre')
-                .map(([f, n]) => `<span class="rep-chip ${classeFormat(f)}"><b>${n}</b> - ${escapeHtml(nomFormat(f))}</span>`).join('');
+                .map(([f, n]) => `<span class="rep-chip ${classeFormat(f)}${f === formatFiltreActif ? ' active' : ''}" data-fk="format" data-fv="${escapeAttr(f)}"><b>${n}</b> - ${escapeHtml(nomFormat(f))}</span>`).join('');
             const ligneChimies = compter(p => p.type || 'Autre')
-                .map(([t, n]) => `<span class="rep-chip"><b>${n}</b> - ${iconeChimie(t)} ${escapeHtml(nomChimie(t))}</span>`).join('');
+                .map(([t, n]) => `<span class="rep-chip${t === chimieFiltreActif ? ' active' : ''}" data-fk="chimie" data-fv="${escapeAttr(t)}"><b>${n}</b> - ${iconeChimie(t)} ${escapeHtml(nomChimie(t))}</span>`).join('');
             box.innerHTML = items.length ? `<div class="rep-row">${ligneFormats}</div><div class="rep-row">${ligneChimies}</div>` : '';
         }
 
@@ -1913,6 +1933,8 @@
                 return { pile, originalIndex, totalCycles, mesuresAffichees, derniere, etatGlobal, scoreEtat, stagnation, lastMah, prevMah };
             });
 
+            if (formatFiltreActif && !pilesTraitees.some(i => (i.pile.format || 'Autre') === formatFiltreActif)) formatFiltreActif = '';
+            if (chimieFiltreActif && !pilesTraitees.some(i => (i.pile.type || 'Autre') === chimieFiltreActif)) chimieFiltreActif = '';
             majDashboard(pilesTraitees);
             verifierRappelSauvegarde();
 
@@ -1927,6 +1949,12 @@
             }
             if (etatFiltreActif) {
                 pilesTraitees = pilesTraitees.filter(item => item.etatGlobal === etatFiltreActif);
+            }
+            if (formatFiltreActif) {
+                pilesTraitees = pilesTraitees.filter(item => (item.pile.format || 'Autre') === formatFiltreActif);
+            }
+            if (chimieFiltreActif) {
+                pilesTraitees = pilesTraitees.filter(item => (item.pile.type || 'Autre') === chimieFiltreActif);
             }
 
             if (pilesTraitees.length === 0) {
@@ -2040,8 +2068,34 @@
                     liste.appendChild(section);
                 });
             } else {
-                if (modeTri === 'pire') pilesTraitees.sort((a,b) => a.scoreEtat - b.scoreEtat);
-                else if (modeTri === 'cap_desc') pilesTraitees.sort((a,b) => b.derniere.mah - a.derniere.mah);
+                const nul = v => v === null || v === undefined || (typeof v === 'number' && isNaN(v));
+                const cmp = (va, vb, dir) => { if (nul(va) && nul(vb)) return 0; if (nul(va)) return 1; if (nul(vb)) return -1; return dir * (va - vb); };
+                const idCmp = (a, b) => String(a.pile.id || '').localeCompare(String(b.pile.id || ''), undefined, { numeric: true });
+                const vCap = it => it.totalCycles ? it.derniere.mah : null;
+                const vPct = it => (it.totalCycles && it.pile.mahNominal) ? it.derniere.mah / it.pile.mahNominal : null;
+                const vAnnee = it => { const d = parseDateFlex(it.pile.annee); return d ? d.y * 10000 + (d.m || 0) * 100 + (d.d || 0) : null; };
+                const vIr = it => { const v = parseFloat(it.derniere.ir); return v > 0 ? v : null; };
+                const vDate = it => { const t = it.derniere.date ? new Date(it.derniere.date).getTime() : NaN; return isNaN(t) ? null : t; };
+                const tris = {
+                    pire:        (a, b) => a.scoreEtat - b.scoreEtat,
+                    cap_desc:    (a, b) => cmp(vCap(a), vCap(b), -1),
+                    cap_asc:     (a, b) => cmp(vCap(a), vCap(b), 1),
+                    pct_desc:    (a, b) => cmp(vPct(a), vPct(b), -1),
+                    pct_asc:     (a, b) => cmp(vPct(a), vPct(b), 1),
+                    annee_asc:   (a, b) => cmp(vAnnee(a), vAnnee(b), 1),
+                    annee_desc:  (a, b) => cmp(vAnnee(a), vAnnee(b), -1),
+                    cycles_desc: (a, b) => b.totalCycles - a.totalCycles,
+                    cycles_asc:  (a, b) => a.totalCycles - b.totalCycles,
+                    ir_asc:      (a, b) => cmp(vIr(a), vIr(b), 1),
+                    date_desc:   (a, b) => cmp(vDate(a), vDate(b), -1),
+                    date_asc:    (a, b) => cmp(vDate(a), vDate(b), 1),
+                    chimie:      (a, b) => String(a.pile.type || '').localeCompare(String(b.pile.type || '')),
+                    id:          idCmp
+                };
+                const triFn = tris[modeTri];
+                if (triFn) pilesTraitees.sort((a, b) => triFn(a, b)
+                    || String(a.pile.marque || '').localeCompare(String(b.pile.marque || ''))
+                    || idCmp(a, b));
                 liste.innerHTML = pilesTraitees.map(genererCarteHtml).join('');
             }
         }
@@ -2535,6 +2589,21 @@
         try { remplirSelectPilesAssistant(); } catch (e) { console.error(e); }
         try { calculerParametresCharge(); } catch (e) { console.error(e); }
         try { ouvrirOnglet(localStorage.getItem('tab_actif') || 'liste'); } catch (e) { console.error(e); }
+
+        // Clic sur une pastille format / chimie = filtre (re-clic = retire le filtre)
+        (function bindRepartitionFiltres() {
+            const box = document.getElementById('repartition');
+            if (!box || box._filtresBound) return;
+            box._filtresBound = true;
+            box.addEventListener('click', function(ev) {
+                const chip = ev.target.closest('.rep-chip[data-fk]');
+                if (!chip) return;
+                const val = chip.dataset.fv;
+                if (chip.dataset.fk === 'format') formatFiltreActif = (formatFiltreActif === val) ? '' : val;
+                else chimieFiltreActif = (chimieFiltreActif === val) ? '' : val;
+                try { chargerPiles(); } catch (e) { console.error(e); }
+            });
+        })();
 
         // Mobile WebView: native <select> sometimes skips onchange — bind extra listeners
         (function bindCalcSelect() {
