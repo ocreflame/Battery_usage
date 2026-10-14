@@ -331,6 +331,7 @@
             <input type="text" id="searchInput" placeholder="Rechercher..." style="flex: 2; margin: 0;" oninput="rechercheDifferee()">
             <select id="sortSelect" onchange="chargerPiles()" style="flex: 1; margin: 0;">
                 <option value="marque">Tri : Marque</option>
+                <option value="date_desc">Tri : Dernière mesure (récente d'abord)</option>
                 <option value="pire">Tri : Pire état d'abord</option>
                 <option value="paires">Tri : Paires / lots (mAh / résistance)</option>
                 <option value="cap_desc">Tri : Capacité descendante</option>
@@ -342,11 +343,14 @@
                 <option value="cycles_desc">Tri : Plus de cycles d'abord</option>
                 <option value="cycles_asc">Tri : Moins de cycles d'abord</option>
                 <option value="ir_asc">Tri : Résistance interne (basse d'abord)</option>
-                <option value="date_desc">Tri : Dernière mesure (récente d'abord)</option>
                 <option value="date_asc">Tri : Dernière mesure (ancienne d'abord)</option>
                 <option value="chimie">Tri : Chimie</option>
                 <option value="id">Tri : Numéro (ID)</option>
             </select>
+        </div>
+        <div class="sort-bar" style="align-items:center; margin-top:-5px;">
+            <span class="rep-chip" id="btnDernieres" role="button" style="cursor:pointer; user-select:none;" onclick="toggleDernieres()">🕒 Dernières mesurées</span>
+            <input type="number" id="dernieresNb" inputmode="numeric" min="1" max="50" style="width:70px; margin:0;" onchange="setDernieresNb(this.value)" title="Nombre de piles">
         </div>
 
         <div id="listePiles"></div>
@@ -658,7 +662,7 @@
             "Tri : Capacité croissante":"Sort: Capacity (low to high)","Tri : % du nominal (meilleur d'abord)":"Sort: % of rated (best first)","Tri : % du nominal (pire d'abord)":"Sort: % of rated (worst first)",
             "Tri : Plus anciennes d'abord":"Sort: Oldest first","Tri : Plus récentes d'abord":"Sort: Newest first","Tri : Plus de cycles d'abord":"Sort: Most cycles first","Tri : Moins de cycles d'abord":"Sort: Fewest cycles first",
             "Tri : Résistance interne (basse d'abord)":"Sort: Internal resistance (lowest first)","Tri : Dernière mesure (récente d'abord)":"Sort: Last measurement (newest first)","Tri : Dernière mesure (ancienne d'abord)":"Sort: Last measurement (oldest first)",
-            "Tri : Chimie":"Sort: Chemistry","Tri : Paires / lots (mAh / résistance)":"Sort: Pairs / sets (mAh / resistance)","Tri : Numéro (ID)":"Sort: Number (ID)",
+            "Tri : Chimie":"Sort: Chemistry","🕒 Dernières mesurées":"🕒 Last measured","Tri : Paires / lots (mAh / résistance)":"Sort: Pairs / sets (mAh / resistance)","Tri : Numéro (ID)":"Sort: Number (ID)",
             "Ajouter une mesure / lot (Grad)":"Add a measurement / batch (Grad)",
             "ID :":"ID:","Ex: 01 ou A-01":"E.g. 01 or A-01",
             "À (création lot) :":"To (batch creation):","Ex: 04 ou A-04":"E.g. 04 or A-04",
@@ -841,6 +845,15 @@
         let formatFiltreActif = '';
         let chimieFiltreActif = '';
         let pairesAvecRecycler = false;
+        let dernieresActif = false;
+        let dernieresNb = (() => { try { const n = parseInt(localStorage.getItem('dernieres_nb'), 10); return (n >= 1 && n <= 50) ? n : 4; } catch (e) { return 4; } })();
+        window.toggleDernieres = function() { dernieresActif = !dernieresActif; chargerPiles(); };
+        window.setDernieresNb = function(v) {
+            let n = parseInt(v, 10); if (isNaN(n)) n = 4;
+            dernieresNb = Math.min(Math.max(n, 1), 50);
+            try { localStorage.setItem('dernieres_nb', String(dernieresNb)); } catch (e) {}
+            dernieresActif = true; chargerPiles();
+        };
         let pairesMemeMarque = false;
         window.setPairesMemeMarque = function(v) { pairesMemeMarque = !!v; chargerPiles(); };
         let pairesTaille = (() => { try { const n = parseInt(localStorage.getItem('paires_taille'), 10); return (n >= 2 && n <= 12) ? n : 2; } catch (e) { return 2; } })();
@@ -2097,6 +2110,16 @@
             }
             if (chimieFiltreActif) {
                 pilesTraitees = pilesTraitees.filter(item => (item.pile.type || 'Autre') === chimieFiltreActif);
+            }
+            const btnDern = document.getElementById('btnDernieres');
+            if (btnDern) btnDern.classList.toggle('active', dernieresActif);
+            const inpDern = document.getElementById('dernieresNb');
+            if (inpDern && document.activeElement !== inpDern) inpDern.value = dernieresNb;
+            if (dernieresActif) {
+                const tsDe = it => { const t = it.derniere && it.derniere.date ? new Date(it.derniere.date).getTime() : NaN; return t; };
+                const recentes = pilesTraitees.filter(it => !isNaN(tsDe(it))).sort((a, b) => tsDe(b) - tsDe(a)).slice(0, dernieresNb);
+                const garde = new Set(recentes);
+                pilesTraitees = pilesTraitees.filter(it => garde.has(it));
             }
 
             if (pilesTraitees.length === 0) {
