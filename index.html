@@ -140,8 +140,8 @@
         
         @media (max-width: 500px) {
             .pile-header { flex-direction: column; align-items: flex-start; gap: 10px; }
-            .pile-header .action-btns { width: 100%; justify-content: space-between; margin-top: 4px; }
-            .pile-header .small-btn { flex: 1; margin: 0 2px; text-align: center; padding: 8px 0; font-size: 0.8rem; }
+            .pile-header .action-btns { width: 100%; justify-content: space-between; margin-top: 4px; gap: 4px; }
+            .pile-header .small-btn { flex: 1 1 auto; margin: 0; text-align: center; padding: 8px 4px; font-size: 0.75rem; white-space: nowrap; }
         }
 
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -190,6 +190,10 @@
         .rep-row { display: flex; flex-wrap: wrap; gap: 6px; }
         .rep-chip { background: var(--header-bg); border: 1px solid var(--border-color); border-radius: 14px; padding: 3px 10px; font-size: 0.85rem; white-space: nowrap; }
         .rep-chip b { font-size: 1rem; }
+        .add-cycle-btn { background: #27ae60; }
+        .toggle-cycles-btn { background: var(--header-bg); color: var(--text-color); border: 1px dashed var(--border-color); padding: 8px 10px; border-radius: 6px; font-size: 0.78rem; font-weight: bold; cursor: pointer; width: 100%; margin-top: 6px; text-align: center; }
+        .grp-del { padding: 4px 8px; border-radius: 6px; cursor: pointer; line-height: 1; opacity: 0.75; }
+        .grp-del:hover { opacity: 1; background: rgba(231,76,60,0.18); }
         .rep-chip[data-fk] { cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent; }
         .paire-card { padding: 10px 12px; }
         .paire-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding-bottom: 6px; }
@@ -605,7 +609,7 @@
     <!-- Modale Édition Mesure -->
     <div id="editMesureModal" class="modal">
         <div class="modal-content">
-            <h3 style="margin-top: 0;">Modifier le cycle</h3>
+            <h3 id="editMesureModalTitle" style="margin-top: 0;">Modifier le cycle</h3>
             <form id="editMesureForm">
                 <input type="hidden" id="editMesurePileIndex">
                 <input type="hidden" id="editMesureIndex">
@@ -738,6 +742,13 @@
                 tip:(a,b)=>`💡 Conseil d'Expert :\n\nLa capacité de cette pile n'augmente plus (${a} mAh contre ${b} mAh au cycle précédent).\n\nLe processus de « réveil chimique » est terminé. Inutile de faire d'autres cycles Grad, vous connaissez sa véritable capacité finale maximale !`,
                 saved:'✅ Relevé enregistré avec succès !', saveErr:'Erreur lors de la sauvegarde : ',
                 pileEdited:'✅ Pile modifiée !', cycleEdited:'✅ Cycle modifié !',
+                addCycleBtn:'+ Cycle', addCycleTitle:(id,marque)=>`Ajouter un cycle — #${id}${marque ? ' (' + marque + ')' : ''}`, editCycleTitle:(id,num)=>`Modifier le cycle #${num} — #${id}`,
+                showMoreCycles:(n,min,max)=>`▼ Afficher les ${n} cycle(s) précédent(s) (min : ${min} · max : ${max} mAh)`, hideMoreCycles:(n)=>`▲ Masquer les ${n} cycle(s) précédent(s)`,
+                graphSeuil:'Seuil « Bon » (60 % du nominal)',
+                confirmDelGroupe:(label,n,m,ids)=>`Supprimer tout le groupe « ${label} » : ${n} pile(s) et ${m} relevé(s) ?\n\nPiles : ${ids}\n\nCette action est irréversible. Pense à faire une sauvegarde avant.`,
+                groupDeleted:(n)=>`🗑️ ${n} pile(s) supprimée(s)`, delGroupTitle:'Supprimer ce groupe',
+                confirmDelMesure:(n,mah,date,id,marque)=>`Supprimer le cycle n°${n} (${mah} mAh${date ? ', ' + String(date).replace('T', ' ') : ''}) de la pile #${id}${marque ? ' (' + marque + ')' : ''} ?\n\nCette action est irréversible.`,
+                voltWarn:(v,desc,min,max)=>`La tension ${v} V semble incohérente pour une pile ${desc} (attendu environ ${min} à ${max} V).\n\nEnregistrer quand même ?`,
                 savedDocs:'✅ Sauvegardé dans le dossier Documents !', androidErr:"Erreur d'écriture native Android : ",
                 downloaded:'✅ Fichier téléchargé !',
                 badFormat:"Format de fichier non reconnu. Vérifiez que c'est bien une sauvegarde de l'application.",
@@ -783,6 +794,13 @@
                 tip:(a,b)=>`💡 Expert tip:\n\nThis battery's capacity is no longer increasing (${a} mAh vs ${b} mAh on the previous cycle).\n\nThe "chemical wake-up" process is complete. There's no point in running more Grad cycles: you now know its true maximum capacity!`,
                 saved:'✅ Measurement saved successfully!', saveErr:'Error while saving: ',
                 pileEdited:'✅ Battery updated!', cycleEdited:'✅ Cycle updated!',
+                addCycleBtn:'+ Cycle', addCycleTitle:(id,marque)=>`Add a cycle — #${id}${marque ? ' (' + marque + ')' : ''}`, editCycleTitle:(id,num)=>`Edit cycle #${num} — #${id}`,
+                showMoreCycles:(n,min,max)=>`▼ Show ${n} older cycle(s) (min: ${min} · max: ${max} mAh)`, hideMoreCycles:(n)=>`▲ Hide ${n} older cycle(s)`,
+                graphSeuil:'“Good” threshold (60% of rated)',
+                confirmDelGroupe:(label,n,m,ids)=>`Delete the whole group “${label}”: ${n} battery(ies) and ${m} measurement(s)?\n\nBatteries: ${ids}\n\nThis cannot be undone. Consider making a backup first.`,
+                groupDeleted:(n)=>`🗑️ ${n} battery(ies) deleted`, delGroupTitle:'Delete this group',
+                confirmDelMesure:(n,mah,date,id,marque)=>`Delete cycle #${n} (${mah} mAh${date ? ', ' + String(date).replace('T', ' ') : ''}) of battery #${id}${marque ? ' (' + marque + ')' : ''}?\n\nThis cannot be undone.`,
+                voltWarn:(v,desc,min,max)=>`A voltage of ${v} V looks inconsistent for a ${desc} cell (expected about ${min} to ${max} V).\n\nSave anyway?`,
                 savedDocs:'✅ Saved to the Documents folder!', androidErr:'Native Android write error: ',
                 downloaded:'✅ File downloaded!',
                 badFormat:"Unrecognized file format. Make sure it is a backup made by this app.",
@@ -1005,7 +1023,7 @@
             const groupesMap = new Map();
             inventaire.forEach((p) => {
                 const format = p.format || 'AA';
-                const marque = (p.marque || (LANG === 'en' ? 'No brand' : 'Sans marque')).trim();
+                const marque = nettoyerMarque(p.marque, format) || (LANG === 'en' ? 'No brand' : 'Sans marque');
                 const type = p.type || 'NiMH';
                 const mahNom = p.mahNominal || 1900;
                 const cleGroupe = `${format}__${marque}__${type}__${mahNom}`;
@@ -1083,7 +1101,7 @@
             for (var i = 0; i < inventaire.length; i++) {
                 var p = inventaire[i];
                 var pFormat = p.format || 'AA';
-                var pMarque = (p.marque || '').trim();
+                var pMarque = nettoyerMarque(p.marque, pFormat) || (LANG === 'en' ? 'No brand' : 'Sans marque');
                 var pType = p.type || 'NiMH';
                 var pMah = Number(p.mahNominal) || 1900;
                 if (pFormat === format && pMarque === marque && pType === type && pMah === mahNom) {
@@ -1708,7 +1726,29 @@
             return escapeHtml(label);
         }
 
-        function normaliserCle(marque, id, format = '') { return `${String(format || '').trim().toLowerCase()}__${(marque || '').trim().toLowerCase()}__${(id || '').trim().toLowerCase()}`; }
+        // Retire un préfixe de format tapé par erreur dans la marque : « AAA - Duracell » (format AAA) -> « Duracell »
+        function nettoyerMarque(marque, format) {
+            const m = String(marque == null ? '' : marque).trim();
+            const f = String(format == null ? '' : format).trim();
+            if (!m || !f) return m;
+            const echappe = f.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const reste = m.replace(new RegExp('^' + echappe + '\\s*-\\s*', 'i'), '').trim();
+            return reste || m;
+        }
+
+        // Alerte douce : tension saisie incohérente avec la chimie (retourne '' si tout va bien)
+        function alerteTension(type, voltNominal, v) {
+            if (!(v > 0)) return '';
+            let min, max;
+            if (type === 'NiMH' || type === 'NiCd') { min = 0.8; max = 1.8; }
+            else if (type === 'Li-ion') { if (voltNominal && voltNominal < 2.5) { min = 1.0; max = 1.8; } else { min = 2.5; max = 4.4; } }
+            else if (type === 'LiFePO4') { min = 2.0; max = 3.8; }
+            else return '';
+            if (v >= min && v <= max) return '';
+            return T('voltWarn', v, type + (voltNominal ? ' ' + voltNominal + ' V' : ''), min, max);
+        }
+
+        function normaliserCle(marque, id, format = '') { return `${String(format || '').trim().toLowerCase()}__${nettoyerMarque(marque, format).toLowerCase()}__${(id || '').trim().toLowerCase()}`; }
 
         function libelleGroupe(format, marque) {
             const m = (marque || '').trim() || T('noBrand');
@@ -1771,31 +1811,43 @@
             alerter(T('tip', mahActuel, mahPrecedent));
         };
 
-        function genererGrapheDegradation(mesures) {
+        function genererGrapheDegradation(mesures, mahNominal) {
             if (mesures.length < 2) return '';
             const arr = mesures.slice().sort((a,b) => new Date(a.date) - new Date(b.date));
-            const max = Math.max(...arr.map(m => m.mah));
-            const min = Math.min(...arr.map(m => m.mah));
-            const diff = max - min === 0 ? 1 : max - min;
-            
-            const w = 200, h = 40; 
-            const step = w / (arr.length - 1);
-            
-            let polyline = arr.map((m, i) => {
-                const x = i * step;
-                const y = h - (((m.mah - min) / diff) * (h - 10)) - 5;
-                return `${x},${y}`;
-            }).join(' ');
-            
-            let elements = arr.map((m, i) => {
-                const x = i * step;
-                const y = h - (((m.mah - min) / diff) * (h - 10)) - 5;
+            const vals = arr.map(m => Number(m.mah) || 0);
+            const maxData = Math.max(...vals), minData = Math.min(...vals);
+
+            // Échelle Y : on évite d'exagérer les petits écarts (étendue minimale = 10 % de la capacité)
+            const centre = (maxData + minData) / 2;
+            const etendue = Math.max(maxData - minData, Math.round(centre * 0.10), 20);
+            const plotMin = Math.max(0, Math.round(centre - etendue / 2));
+            const plotMax = plotMin + etendue;
+            const diff = (plotMax - plotMin) || 1;
+
+            const w = 320, h = 60, padLeft = 6, padRight = 52, padTop = 8, padBot = 8;
+            const plotW = w - padLeft - padRight, plotH = h - padTop - padBot;
+            const step = plotW / (arr.length - 1);
+            const yOf = v => padTop + plotH - (((v - plotMin) / diff) * plotH);
+
+            let refLine = '';
+            if (mahNominal && mahNominal > 0) {
+                const seuilBon = Math.round(mahNominal * 0.60);
+                if (seuilBon >= plotMin && seuilBon <= plotMax) {
+                    const yRef = yOf(seuilBon).toFixed(1);
+                    refLine = `<line x1="${padLeft}" y1="${yRef}" x2="${padLeft + plotW}" y2="${yRef}" stroke="#2ecc71" stroke-width="1" stroke-dasharray="3,3" opacity="0.7"><title>${escapeHtml(T('graphSeuil'))}</title></line>`;
+                }
+            }
+
+            const polyline = arr.map((m, i) => `${(padLeft + i * step).toFixed(1)},${yOf(Number(m.mah) || 0).toFixed(1)}`).join(' ');
+            const rayonClic = Math.max(5, Math.min(14, Math.floor(step / 2)));
+
+            const elements = arr.map((m, i) => {
+                const x = (padLeft + i * step).toFixed(1), y = yOf(Number(m.mah) || 0).toFixed(1);
                 const irSafe = m.ir ? m.ir : 'null';
                 const stressSafe = m.stress ? m.stress : 'null';
-                
                 return `
-                    <circle cx="${x}" cy="${y}" r="3.5" fill="var(--graph-dot)" pointer-events="none" />
-                    <circle cx="${x}" cy="${y}" r="15" fill="transparent" style="cursor:pointer;" 
+                    <circle cx="${x}" cy="${y}" r="3" fill="var(--graph-dot)" pointer-events="none" />
+                    <circle cx="${x}" cy="${y}" r="${rayonClic}" fill="transparent" style="cursor:pointer;"
                         onclick="afficherTooltip(event, '${escapeAttr(m.date)}', ${Number(m.mah) || 0}, ${Number(m.voltage) || 0}, '${escapeAttr(irSafe)}', '${escapeAttr(stressSafe)}')" />
                 `;
             }).join('');
@@ -1803,9 +1855,12 @@
             return `
                 <div class="graph-container">
                     <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom:4px;">${T('evol', arr.length)}</div>
-                    <svg width="${w}" height="${h}" style="overflow: visible;">
+                    <svg viewBox="0 0 ${w} ${h}" style="width:100%; max-width:480px; height:auto; overflow:visible;">
+                        ${refLine}
                         <polyline points="${polyline}" fill="none" stroke="var(--graph-line)" stroke-width="2" />
                         ${elements}
+                        <text x="${w - 2}" y="${padTop + 6}" text-anchor="end" font-size="9" fill="var(--text-muted)">${maxData} mAh</text>
+                        <text x="${w - 2}" y="${h - 4}" text-anchor="end" font-size="9" fill="var(--text-muted)">${minData} mAh</text>
                     </svg>
                 </div>
             `;
@@ -2055,10 +2110,28 @@
             return html;
         }
 
-        window.chargerPiles = function() {
+        let cyclesDeplies = {};
+        window.toggleCyclesPile = function(btn) {
+            const cle = btn && btn.getAttribute('data-cle');
+            if (!cle) return;
+            cyclesDeplies[cle] = !cyclesDeplies[cle];
+            chargerPiles();
+        };
+
+        const chargerPilesCore = function() {
             liste.innerHTML = '';
             const inventaire = JSON.parse(localStorage.getItem('stock_piles')) || [];
             inventaire.forEach(p => { if (!Array.isArray(p.mesures)) p.mesures = []; });
+            // Les relevés sont triés par date ; on enregistre cet ordre pour que les index (modifier / supprimer un cycle) restent cohérents
+            let ordreChange = false;
+            inventaire.forEach(p => {
+                const mPropre = nettoyerMarque(p.marque, p.format);
+                if (mPropre !== p.marque) { p.marque = mPropre; ordreChange = true; }
+                const avant = p.mesures.map(m => m.date).join('|');
+                p.mesures.sort((m1, m2) => new Date(m1.date) - new Date(m2.date));
+                if (p.mesures.map(m => m.date).join('|') !== avant) ordreChange = true;
+            });
+            if (ordreChange) { try { localStorage.setItem('stock_piles', JSON.stringify(inventaire)); } catch (e) {} }
             
             const marquesUniques = new Set();
             inventaire.forEach(p => { if (p.marque && p.marque.trim() !== '') marquesUniques.add(p.marque.trim()); });
@@ -2071,10 +2144,12 @@
                 
                 let stagnation = false;
                 let lastMah = 0, prevMah = 0;
-                if (totalCycles >= 2) {
+                if (totalCycles >= 3) {
                     lastMah = pile.mesures[totalCycles - 1].mah;
                     prevMah = pile.mesures[totalCycles - 2].mah;
-                    if (lastMah <= prevMah) stagnation = true;
+                    const etatActuel = evaluerEtat(lastMah, pile.mahNominal, pile.type, pile.format);
+                    // Plateau : au moins 3 cycles, pile pas encore « Excellent », gain inférieur à 2 % (ou baisse) au dernier cycle
+                    if (etatActuel !== 'Excellent' && prevMah > 0 && ((lastMah - prevMah) / prevMah) < 0.02) stagnation = true;
                 }
 
                 const mesuresAffichees = pile.mesures.map((m, index) => ({
@@ -2157,7 +2232,20 @@
                     conseilHtml = `<div class="conseil-banner" style="background: var(--header-bg); border-left: 4px solid ${bordureCouleur}; padding: 8px 10px; margin: 8px 0; font-size: 0.8rem; border-radius: 4px; line-height: 1.3; cursor: pointer;" title="${escapeAttr(T('clickInfo'))}" onclick="expliquerEtat('${item.etatGlobal}')">${texteConseil} <span style="opacity:0.55;font-size:0.75em;">ℹ️</span></div>`;
                 }
 
-                let mesuresHtml = item.mesuresAffichees.map(m => {
+                const SEUIL_CYCLES_REPLIES = 4;
+                const clePile = normaliserCle(item.pile.marque, item.pile.id, item.pile.format);
+                const estDeplie = !!cyclesDeplies[clePile];
+                const mesuresVisibles = (item.mesuresAffichees.length > SEUIL_CYCLES_REPLIES && !estDeplie)
+                    ? item.mesuresAffichees.slice(0, SEUIL_CYCLES_REPLIES) : item.mesuresAffichees;
+                let boutonAccordeonHtml = '';
+                if (item.mesuresAffichees.length > SEUIL_CYCLES_REPLIES) {
+                    const caches = item.mesuresAffichees.slice(SEUIL_CYCLES_REPLIES);
+                    const mahCaches = caches.map(c => Number(c.mah) || 0);
+                    const labelBtn = estDeplie ? T('hideMoreCycles', caches.length) : T('showMoreCycles', caches.length, Math.min(...mahCaches), Math.max(...mahCaches));
+                    boutonAccordeonHtml = `<button type="button" class="toggle-cycles-btn" data-cle="${escapeAttr(clePile)}" onclick="toggleCyclesPile(this)">${labelBtn}</button>`;
+                }
+
+                let mesuresHtml = mesuresVisibles.map(m => {
                     const etat = evaluerEtat(m.mah, item.pile.mahNominal, item.pile.type, item.pile.format);
                     const dateAffichage = m.date ? m.date.replace('T', ' ') : '-';
                     let ratioTxt = item.pile.mahNominal ? ` <small class="text-muted">(${Math.round((m.mah / item.pile.mahNominal) * 100)}%)</small>` : '';
@@ -2181,7 +2269,7 @@
                 }).join('');
                 
                 if (!mesuresHtml) mesuresHtml = `<li class="mesure-item"><span class="mesure-date">${T('noMeasure')}</span></li>`;
-                const grapheHtml = genererGrapheDegradation(item.pile.mesures);
+                const grapheHtml = genererGrapheDegradation(item.pile.mesures, item.pile.mahNominal);
 
                 return `
                     <div class="pile-card" style="border-left-color: ${bordureCouleur};">
@@ -2193,6 +2281,7 @@
                                 ${cyclesTxt} ${anneeTxt} ${specsTxt} ${appareilTxt}
                             </div>
                             <div class="action-btns">
+                                <button class="small-btn add-cycle-btn" onclick="ouvrirModaleAjoutMesure(${item.originalIndex})">${T('addCycleBtn')}</button>
                                 <button class="small-btn clone-btn" onclick="clonerPile(${item.originalIndex})">${T('clone')}</button>
                                 <button class="small-btn edit-btn" onclick="ouvrirModalePile(${item.originalIndex})">✏️ ${T('pileWord')}</button>
                                 <button class="small-btn delete-btn" onclick="supprimerPile(${item.originalIndex})">${T('del')}</button>
@@ -2200,6 +2289,7 @@
                         </div>
                         ${conseilHtml}
                         <ul class="mesures-list">${mesuresHtml}</ul>
+                        ${boutonAccordeonHtml}
                         ${grapheHtml}
                     </div>
                 `;
@@ -2226,7 +2316,7 @@
                     section.innerHTML = `
                         <div class="marque-header" onclick="toggleMarque(this)" data-marque="${escapeAttr(marque)}">
                             <span>${iconesChimieGroupe(groupes[marque])} ${htmlGroupe(groupes[marque][0].pile.format, groupes[marque][0].pile.marque)}${nomsChimieGroupe(groupes[marque])} <small style="font-weight:normal;">(${groupes[marque].length})</small></span>
-                            <span class="chevron">${chevron}</span>
+                            <span style="display:flex;align-items:center;gap:10px;"><span class="grp-del" role="button" title="${escapeAttr(T('delGroupTitle'))}" data-indices="${groupes[marque].map(it => it.originalIndex).join(',')}" onclick="supprimerGroupe(event, this)">🗑️</span><span class="chevron">${chevron}</span></span>
                         </div>
                         <div class="marque-content" style="${contentStyle}">${cartesHtml}</div>
                     `;
@@ -2265,7 +2355,15 @@
                     || idCmp(a, b));
                 liste.innerHTML = pilesTraitees.map(genererCarteHtml).join('');
             }
-        }
+        };
+
+        // Conserve la position de défilement quand la liste est reconstruite (édition, suppression, dépliage d'un historique…)
+        window.chargerPiles = function() {
+            const y = window.scrollY;
+            chargerPilesCore();
+            window.scrollTo(0, y);
+            if (window.requestAnimationFrame) requestAnimationFrame(() => window.scrollTo(0, y));
+        };
 
         function genererIdsLot(startStr, endStr) {
             if (!endStr) return [startStr];
@@ -2315,12 +2413,12 @@
         }
         function deverrouillerChampsFixes() { verrouillerChampsFixes(false); }
 
-        form.addEventListener('submit', (e) => {
+        form.addEventListener('submit', async (e) => {
             e.preventDefault();
             try {
                 const idStart = pileIdInput.value.trim();
                 const idEnd = pileIdEndInput.value.trim();
-                const marque = marqueInput.value.trim();
+                const marque = nettoyerMarque(marqueInput.value.trim(), formatInput.value);
                 const date = dateInput.value;
                 const appareil = appareilInput.value.trim();
                 
@@ -2334,6 +2432,11 @@
                 const ir = document.getElementById('ir').value ? parseInt(document.getElementById('ir').value, 10) : null;
                 const stress = document.getElementById('stressTest').value;
                 
+                if (aMesure) {
+                    const vnSaisi = parseFloat(String(voltNominalInput.value || '').replace(',', '.'));
+                    const alerteV = alerteTension(typeInput.value, isNaN(vnSaisi) ? null : vnSaisi, voltage);
+                    if (alerteV && !(await dialogue(alerteV, { confirm: true }))) return;
+                }
                 const nouvelleMesure = aMesure ? { date, voltage, mah, ir, stress } : null;
                 const idsACreer = idEnd ? genererIdsLot(idStart, idEnd) : [idStart];
                 let inventaire = JSON.parse(localStorage.getItem('stock_piles')) || [];
@@ -2395,10 +2498,10 @@
             const index = parseInt(document.getElementById('editPileIndex').value, 10);
             let inv = JSON.parse(localStorage.getItem('stock_piles')) || [];
             const ancienneMarque = (inv[index].marque || '').trim();
-            const nouvelleMarque = document.getElementById('editMarque').value.trim();
-            const nouvelId = document.getElementById('editPileId').value.trim();
             const ancienFormat = inv[index].format;
             const nouveauFormat = document.getElementById('editFormat').value;
+            const nouvelleMarque = nettoyerMarque(document.getElementById('editMarque').value.trim(), nouveauFormat);
+            const nouvelId = document.getElementById('editPileId').value.trim();
 
             let autres = [], renommerLot = false;
             if (nouvelleMarque !== ancienneMarque) {
@@ -2433,9 +2536,27 @@
             showToast(renommerLot ? T('lotRenamed', autres.length + 1) : T('pileEdited'));
         });
 
+        window.ouvrirModaleAjoutMesure = function(pIdx) {
+            const p = (JSON.parse(localStorage.getItem('stock_piles')) || [])[pIdx];
+            if (!p) return;
+            const titre = document.getElementById('editMesureModalTitle');
+            if (titre) titre.textContent = T('addCycleTitle', p.id, p.marque);
+            document.getElementById('editMesurePileIndex').value = pIdx;
+            document.getElementById('editMesureIndex').value = -1; // -1 = nouveau cycle
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            document.getElementById('editMesureDate').value = now.toISOString().slice(0, 16);
+            ['editMesureVolt', 'editMesureMah', 'editMesureIr', 'editMesureStress'].forEach(id => { document.getElementById(id).value = ''; });
+            document.getElementById('editMesureModal').style.display = 'block';
+            setTimeout(() => { try { document.getElementById('editMesureVolt').focus(); } catch (e) {} }, 100);
+        };
+
         window.ouvrirModaleMesure = function(pIdx, mIdx) {
-            const m = (JSON.parse(localStorage.getItem('stock_piles')) || [])[pIdx]?.mesures[mIdx];
+            const pl = (JSON.parse(localStorage.getItem('stock_piles')) || [])[pIdx];
+            const m = pl?.mesures[mIdx];
             if (!m) return;
+            const titre = document.getElementById('editMesureModalTitle');
+            if (titre) titre.textContent = T('editCycleTitle', pl.id, mIdx + 1);
             document.getElementById('editMesurePileIndex').value = pIdx; document.getElementById('editMesureIndex').value = mIdx;
             document.getElementById('editMesureDate').value = m.date; 
             document.getElementById('editMesureVolt').value = m.voltage; 
@@ -2445,22 +2566,29 @@
             document.getElementById('editMesureModal').style.display = 'block';
         };
 
-        document.getElementById('editMesureForm').addEventListener('submit', (e) => {
+        document.getElementById('editMesureForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const pIdx = parseInt(document.getElementById('editMesurePileIndex').value, 10), mIdx = parseInt(document.getElementById('editMesureIndex').value, 10);
             let inv = JSON.parse(localStorage.getItem('stock_piles')) || [];
             
             let vStr = document.getElementById('editMesureVolt').value.replace(',', '.');
+            if (inv[pIdx]) {
+                const alerteV = alerteTension(inv[pIdx].type, Number(inv[pIdx].voltNominal) || null, parseFloat(vStr));
+                if (alerteV && !(await dialogue(alerteV, { confirm: true }))) return;
+            }
             
-            inv[pIdx].mesures[mIdx] = { 
+            if (!inv[pIdx]) return;
+            const mesureObj = { 
                 date: document.getElementById('editMesureDate').value, 
                 voltage: parseFloat(vStr), 
                 mah: parseInt(document.getElementById('editMesureMah').value, 10),
                 ir: document.getElementById('editMesureIr').value ? parseInt(document.getElementById('editMesureIr').value, 10) : null,
                 stress: document.getElementById('editMesureStress').value
             };
-            localStorage.setItem('stock_piles', JSON.stringify(inv)); fermerModales(); chargerPiles();
-            showToast(T('cycleEdited'));
+            const nouveau = mIdx === -1;
+            if (nouveau) inv[pIdx].mesures.push(mesureObj); else inv[pIdx].mesures[mIdx] = mesureObj;
+            localStorage.setItem('stock_piles', JSON.stringify(inv)); fermerModales(); chargerPiles(); remplirSelectPilesAssistant();
+            showToast(nouveau ? T('saved') : T('cycleEdited'));
         });
 
         window.fermerModales = function() { document.getElementById('editPileModal').style.display = 'none'; document.getElementById('editMesureModal').style.display = 'none'; };
@@ -2473,7 +2601,25 @@
             }
         };
         
-        window.supprimerMesure = function(pIdx, mIdx) { let inv = JSON.parse(localStorage.getItem('stock_piles')) || []; inv[pIdx].mesures.splice(mIdx, 1);  localStorage.setItem('stock_piles', JSON.stringify(inv)); chargerPiles(); remplirSelectPilesAssistant(); };
+        window.supprimerMesure = async function(pIdx, mIdx) { let inv = JSON.parse(localStorage.getItem('stock_piles')) || []; const pl = inv[pIdx]; const ms = pl && pl.mesures ? pl.mesures[mIdx] : null; if (!pl || !ms) return; if (!(await dialogue(T('confirmDelMesure', mIdx + 1, ms.mah, ms.date, pl.id, pl.marque), { confirm: true, danger: true }))) return; inv[pIdx].mesures.splice(mIdx, 1);  localStorage.setItem('stock_piles', JSON.stringify(inv)); chargerPiles(); remplirSelectPilesAssistant(); };
+        window.supprimerGroupe = async function(ev, el) {
+            if (ev) { ev.stopPropagation(); ev.preventDefault(); }
+            const header = el.closest('.marque-header');
+            const label = header ? header.getAttribute('data-marque') : '';
+            const indices = (el.getAttribute('data-indices') || '').split(',').map(n => parseInt(n, 10)).filter(n => !isNaN(n));
+            let inv = JSON.parse(localStorage.getItem('stock_piles')) || [];
+            const cibles = indices.filter(i => inv[i] && libelleGroupe(inv[i].format, inv[i].marque) === label);
+            if (!cibles.length) return;
+            const nbMesures = cibles.reduce((t, i) => t + (inv[i].mesures || []).length, 0);
+            const ids = cibles.map(i => '#' + inv[i].id).join(', ');
+            if (!(await dialogue(T('confirmDelGroupe', label, cibles.length, nbMesures, ids), { confirm: true, danger: true }))) return;
+            const aSupprimer = new Set(cibles);
+            inv = inv.filter((_, i) => !aSupprimer.has(i));
+            localStorage.setItem('stock_piles', JSON.stringify(inv));
+            delete etatsMarques[label]; sauverEtatsMarques();
+            deverrouillerChampsFixes(); chargerPiles(); remplirSelectPilesAssistant();
+            showToast(T('groupDeleted', cibles.length));
+        };
         window.supprimerPile = async function(idx) { let inv = JSON.parse(localStorage.getItem('stock_piles')) || []; const p = inv[idx]; if (!p) return; if (!(await dialogue(T('confirmDelPile', p.id, p.marque, (p.mesures || []).length), { confirm: true, danger: true }))) return; inv.splice(idx, 1); localStorage.setItem('stock_piles', JSON.stringify(inv)); deverrouillerChampsFixes(); chargerPiles(); remplirSelectPilesAssistant(); };
 
         function obtenirDateNomFichier() {
@@ -2596,7 +2742,8 @@
                 const id = cols[idxId]; 
                 if (!id) continue;
 
-                const marque = idxMarque !== -1 ? cols[idxMarque] : '';
+                const formatBrut = idxFormat !== -1 ? cols[idxFormat] : 'AA';
+                const marque = nettoyerMarque(idxMarque !== -1 ? cols[idxMarque] : '', formatBrut);
                 const annee = idxAnnee !== -1 && cols[idxAnnee] ? normaliserAnnee(cols[idxAnnee]) : null;
                 const format = idxFormat !== -1 ? cols[idxFormat] : 'AA';
                 const type = idxType !== -1 ? cols[idxType] : 'NiMH';
@@ -2666,7 +2813,7 @@
                                         voltNominal: it.voltNominal != null ? it.voltNominal : null,
                                         mahNominal: it.mahNominal != null ? it.mahNominal : null,
                                         id: String(it.id != null ? it.id : '').trim(),
-                                        marque: String(it.marque != null ? it.marque : '').trim(),
+                                        marque: nettoyerMarque(it.marque, it.format || 'AA'),
                                         mesures: Array.isArray(it.mesures) ? it.mesures : []
                                     };
                                 }).filter(function(it) { return !!it.id; });
