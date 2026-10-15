@@ -194,6 +194,16 @@
         .toggle-cycles-btn { background: var(--header-bg); color: var(--text-color); border: 1px dashed var(--border-color); padding: 8px 10px; border-radius: 6px; font-size: 0.78rem; font-weight: bold; cursor: pointer; width: 100%; margin-top: 6px; text-align: center; }
         .grp-del { padding: 4px 8px; border-radius: 6px; cursor: pointer; line-height: 1; opacity: 0.75; }
         .grp-del:hover { opacity: 1; background: rgba(231,76,60,0.18); }
+        .xxx-toggle { display: inline-flex; align-items: center; gap: 6px; margin-top: 6px; padding: 4px 10px; border-radius: 14px; font-size: 0.78rem; font-weight: bold; background: var(--header-bg); border: 1px solid var(--border-color); cursor: pointer; user-select: none; }
+        .xxx-toggle input { width: auto; margin: 0; padding: 0; }
+        .xxx-toggle.active { border-color: #8e44ad; background: rgba(142,68,173,0.15); color: #8e44ad; }
+        :root[data-theme="dark"] .xxx-toggle.active { color: #c39bd3; border-color: #c39bd3; }
+        .ir-tag { font-size: 0.72rem; font-weight: bold; padding: 1px 5px; border-radius: 3px; margin-left: 3px; cursor: pointer; display: inline-block; }
+        .ir-ok { background: #e8f8f5; color: #27ae60; }
+        .ir-mid { background: #fef9e7; color: #d68910; }
+        .ir-warn { background: #fef5e7; color: #e67e22; }
+        .ir-bad { background: #fdedec; color: #c0392b; }
+        :root[data-theme="dark"] .ir-tag { filter: brightness(0.9); }
         .rep-chip[data-fk] { cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent; }
         .paire-card { padding: 10px 12px; }
         .paire-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding-bottom: 6px; }
@@ -379,6 +389,7 @@
                 <label>Marque :</label>
                 <input type="text" id="marque" list="marquesList" placeholder="Ex: Eneloop (2015)" required autocomplete="off">
                 <datalist id="marquesList"></datalist>
+                <label class="xxx-toggle" id="xxxAddLabel"><input type="checkbox" id="xxxAddCheck" onchange="toggleXxxPrefix('marque', 'xxxAddCheck', 'xxxAddLabel')"> <span id="xxxAddTxt">Lot unitaire / paire (catégorie XXX -)</span></label>
 
                 <label>Format :</label>
                 <select id="format">
@@ -463,8 +474,8 @@
     <!-- Onglet 3 : Assistant Charge & Décharge -->
     <div class="tab-content" id="tab-calculateur">
         <div class="card">
-            <h3 style="margin-top: 0;">🧮 Assistant SkyRC NC3000 Pro</h3>
-            <p style="font-size:0.85rem; color:var(--text-muted);">Réglages calibrés pour le SkyRC NC3000 Pro (AA/AAA, NiMH/NiCd) d’après les recommandations Panasonic / SkyRC et le manuel NC3000. Plages appareil : charge 0.20–3.00 A (pas de 100 mA), décharge 0.20–2.50 A, capacité 100–5000 mAh. Panasonic recommande 0.5C–1.0C (0.5C préféré).</p>
+            <h3 style="margin-top: 0;">🧮 Assistant SkyRC NC3000 Pro &amp; XTAR VX4 V2</h3>
+            <p style="font-size:0.85rem; color:var(--text-muted);">Bascule automatique selon la chimie et le format : <b>SkyRC NC3000 Pro</b> pour AA/AAA NiMH &amp; NiCd (0.20–3.00 A, pas de 100 mA, -ΔV dynamique, Cycle/Break-in) et <b>XTAR VX4 V2</b> pour les accus Li-ion (3.6/3.7V et 1.5V régulés), LiFePO4 ou formats C/D/18650/21700.</p>
             
             <label>Choisir un lot / modèle de pile :</label>
             <select id="calcPileSelect" onchange="selectionnerPileAssistant()" oninput="selectionnerPileAssistant()" onblur="selectionnerPileAssistant()">
@@ -553,6 +564,7 @@
                     <div>
                         <label>Marque :</label>
                         <input type="text" id="editMarque" required>
+                        <label class="xxx-toggle" id="xxxEditLabel"><input type="checkbox" id="xxxEditCheck" onchange="toggleXxxPrefix('editMarque', 'xxxEditCheck', 'xxxEditLabel')"> <span id="xxxEditTxt">Catégorie XXX -</span></label>
                     </div>
                 </div>
                 <div class="grid-2">
@@ -709,6 +721,10 @@
             "1.0C (Standard rapide)":"1.0C (Fast standard)",
             "Capacité nominale (mAh) :":"Rated capacity (mAh):",
             "🧮 Assistant SkyRC NC3000 Pro":"🧮 SkyRC NC3000 Pro Assistant",
+            "🧮 Assistant SkyRC NC3000 Pro & XTAR VX4 V2":"🧮 SkyRC NC3000 Pro & XTAR VX4 V2 Assistant",
+            "Bascule automatique selon la chimie et le format : SkyRC NC3000 Pro pour AA/AAA NiMH & NiCd (0.20–3.00 A, pas de 100 mA, -ΔV dynamique, Cycle/Break-in) et XTAR VX4 V2 pour les accus Li-ion (3.6/3.7V et 1.5V régulés), LiFePO4 ou formats C/D/18650/21700.":"Auto-switches by chemistry and size: SkyRC NC3000 Pro for AA/AAA NiMH & NiCd (0.20–3.00 A, 100 mA steps, dynamic -ΔV, Cycle/Break-in) and XTAR VX4 V2 for Li-ion (3.6/3.7V and regulated 1.5V), LiFePO4 or C/D/18650/21700 sizes.",
+            "Lot unitaire / paire (catégorie XXX -)":"Single / pair batch (XXX - category)",
+            "Catégorie XXX -":"XXX - category",
             "Réglages calibrés pour le SkyRC NC3000 Pro (AA/AAA, NiMH/NiCd), calculés depuis vos lots de piles. Plages appareil : charge 0.20–3.00 A, décharge 0.20–2.50 A, capacité 100–5000 mAh.":"Settings calibrated for the SkyRC NC3000 Pro (AA/AAA, NiMH/NiCd), computed from your battery batches. Device ranges: charge 0.20–3.00 A, discharge 0.20–2.50 A, capacity 100–5000 mAh.",
             "Réglages calibrés pour le SkyRC NC3000 Pro (AA/AAA, NiMH/NiCd) d’après les recommandations Panasonic / SkyRC et le manuel NC3000. Plages appareil : charge 0.20–3.00 A (pas de 100 mA), décharge 0.20–2.50 A, capacité 100–5000 mAh. Panasonic recommande 0.5C–1.0C (0.5C préféré).":"Settings calibrated for the SkyRC NC3000 Pro (AA/AAA, NiMH/NiCd) from Panasonic / SkyRC recommendations and the NC3000 manual. Device ranges: charge 0.20–3.00 A (100 mA steps), discharge 0.20–2.50 A, capacity 100–5000 mAh. Panasonic recommends 0.5C–1.0C (0.5C preferred)."
         };
@@ -1395,12 +1411,24 @@
             `;
         }
 
+        function formaterDureeHeures(heures) {
+            if (!(heures > 0) || !isFinite(heures)) return '—';
+            const totalMin = Math.round(heures * 60);
+            const h = Math.floor(totalMin / 60);
+            const m = totalMin % 60;
+            return h > 0 ? `${h}h${String(m).padStart(2, '0')}` : `${m} min`;
+        }
+
         function calculerParametresCharge() {
             const chimie = document.getElementById('calcChimie').value;
             let mah = parseInt(document.getElementById('calcMah').value, 10) || 1900;
             const cRate = parseFloat(document.getElementById('calcCible').value);
             let format = window._calcFormat || 'AA';
             const indivVal = (function(){var el=document.getElementById('calcPileIndiv');return el?el.value:'';})();
+
+            let voltNominalLot = null;
+            let irMaxLot = null;
+            let anneeMinLot = null;
 
             // Fallback: if a batch is selected, always take format/capacity from its key
             try {
@@ -1426,26 +1454,117 @@
                         }
                     }
                 }
+                if (window._calcBatchPiles && window._calcBatchPiles.length) {
+                    const cibles = (indivVal !== '' && indivVal !== '__ALL__')
+                        ? window._calcBatchPiles.filter(x => String(x.idx) === String(indivVal))
+                        : window._calcBatchPiles;
+                    cibles.forEach(({ p }) => {
+                        if (p.voltNominal) voltNominalLot = Number(p.voltNominal);
+                        const dAn = parseDateFlex(p.annee);
+                        if (dAn && (!anneeMinLot || dAn.y < anneeMinLot)) anneeMinLot = dAn.y;
+                        (p.mesures || []).forEach(m => {
+                            if (m.ir && (!irMaxLot || Number(m.ir) > irMaxLot)) irMaxLot = Number(m.ir);
+                        });
+                    });
+                }
             } catch (eBatch) {}
 
-            // Plages officielles NC3000 Pro
+            const box = document.getElementById('calcResultats');
+            if (!box) return;
+
+            // Bascule automatique sur le XTAR VX4 V2 si Li-ion / LiFePO4 ou format non supporté par le NC3000 Pro (C, D, 18650, 21700, Autre)
+            const estXtar = (chimie === 'Li-ion' || chimie === 'LiFePO4' || (format !== 'AA' && format !== 'AAA'));
+            if (estXtar) {
+                const isLiIon15V = chimie === 'Li-ion' && ((voltNominalLot && voltNominalLot <= 1.8) || ((format === 'AA' || format === 'AAA') && (!voltNominalLot || voltNominalLot <= 1.8)));
+                const paliersXtar = [0.25, 0.5, 1.0, 2.0, 3.0];
+                const cibleA = (mah * cRate) / 1000;
+                const courantXtar = paliersXtar.reduce((prev, curr) => Math.abs(curr - cibleA) < Math.abs(prev - cibleA) ? curr : prev, 0.5);
+                const dureeChargeH = (mah / (courantXtar * 1000)) * 1.18;
+                const dureeGradH = dureeChargeH + (mah / 300) + dureeChargeH; // Charge + Décharge (~300mA sur VX4 V2) + Recharge
+                const voltCoupure = isLiIon15V ? '1.50 V régulé (coupure interne ~4.2V)' : (chimie === 'LiFePO4' ? '3.65 V (activer mode LiFePO4)' : (chimie === 'Li-ion' ? '4.20 V' : '1.45 V (-ΔV)'));
+
+                try {
+                    var hintX = document.getElementById('calcMahHint');
+                    if (hintX) {
+                        hintX.innerHTML = LANG === 'en'
+                            ? `XTAR VX4 V2 selected automatically (${escapeHtml(chimie)} · ${escapeHtml(format)}) — est. charge: <b>~${formaterDureeHeures(dureeChargeH)}</b> at ${courantXtar} A`
+                            : `XTAR VX4 V2 sélectionné automatiquement (${escapeHtml(chimie)} · ${escapeHtml(format)}) — charge estimée : <b>~${formaterDureeHeures(dureeChargeH)}</b> à ${courantXtar} A`;
+                    }
+                } catch (eHx) {}
+
+                if (LANG === 'en') {
+                    box.innerHTML = `
+                        <strong>🔋 XTAR VX4 V2 settings — ${escapeHtml(format)} ${mah} mAh (${escapeHtml(chimie)}${isLiIon15V ? ' 1.5V' : ''}):</strong><br>
+                        <div style="background:rgba(39,174,96,0.12);border:1px solid #27ae60;padding:8px 10px;border-radius:6px;margin:8px 0;font-size:0.82rem;">
+                            ℹ️ The SkyRC NC3000 Pro only supports AA/AAA NiMH &amp; NiCd. Use your <b>XTAR VX4 V2</b> for this battery.
+                        </div>
+                        <strong>⚡ CHARGE MODE:</strong><br>
+                        • <strong>Recommended slot current:</strong> <b>${courantXtar} A</b> <small>(VX4 V2 steps: 0.25 / 0.5 / 1.0 / 2.0 / 3.0 A · requested ${cRate}C ≈ ${cibleA.toFixed(2)} A)</small><br>
+                        • <strong>End voltage / mode:</strong> <b>${voltCoupure}</b><br>
+                        • <strong>Estimated charge time:</strong> <b>~${formaterDureeHeures(dureeChargeH)}</b><br><br>
+                        <strong>📏 GRADING (CAPACITY TEST) MODE:</strong><br>
+                        • <strong>Sequence:</strong> Full charge → Discharge (~300 mA) → Full recharge<br>
+                        • <strong>Estimated total duration:</strong> <b>~${formaterDureeHeures(dureeGradH)}</b><br>
+                        ${isLiIon15V ? '• <strong>1.5V Li-ion note:</strong> The VX4 V2 natively detects and grades 1.5V regulated AA/AAA Li-ion cells (e.g. Dracutum). Log nominal voltage as <b>1.50 V</b>.<br>' : ''}
+                        • <strong>Internal resistance (IR):</strong> <small> ≤ 30 mΩ excellent · 30–60 mΩ good · 60–90 mΩ aging · &gt; 90 mΩ worn</small>
+                    `;
+                } else {
+                    box.innerHTML = `
+                        <strong>🔋 Réglages XTAR VX4 V2 — ${escapeHtml(format)} ${mah} mAh (${escapeHtml(chimie)}${isLiIon15V ? ' 1.5V' : ''}) :</strong><br>
+                        <div style="background:rgba(39,174,96,0.12);border:1px solid #27ae60;padding:8px 10px;border-radius:6px;margin:8px 0;font-size:0.82rem;">
+                            ℹ️ Le SkyRC NC3000 Pro ne gère que les AA/AAA NiMH &amp; NiCd. Utilisez votre <b>XTAR VX4 V2</b> pour cet accu.
+                        </div>
+                        <strong>⚡ MODE CHARGE :</strong><br>
+                        • <strong>Courant conseillé sur le VX4 V2 :</strong> <b>${courantXtar} A</b> <small>(paliers VX4 V2 : 0.25 / 0.5 / 1.0 / 2.0 / 3.0 A · cible ${cRate}C ≈ ${cibleA.toFixed(2)} A)</small><br>
+                        • <strong>Tension de fin / mode :</strong> <b>${voltCoupure}</b><br>
+                        • <strong>Durée de charge estimée :</strong> <b>~${formaterDureeHeures(dureeChargeH)}</b><br><br>
+                        <strong>📏 MODE GRADING (TEST DE CAPACITÉ) :</strong><br>
+                        • <strong>Séquence VX4 V2 :</strong> Charge complète → Décharge (~300 mA) → Recharge complète<br>
+                        • <strong>Durée totale estimée (Grad) :</strong> <b>~${formaterDureeHeures(dureeGradH)}</b><br>
+                        ${isLiIon15V ? '• <strong>Spécificité Li-ion 1.5V (ex. Dracutum) :</strong> Le XTAR VX4 V2 détecte et mesure nativement la capacité des accus AA/AAA Li-ion 1.5V régulés. Renseignez <b>1.50 V</b> en tension nominale.<br>' : ''}
+                        • <strong>Repères Résistance Interne (RI) :</strong> <small> ≤ 30 mΩ excellente · 30–60 mΩ correcte · 60–90 mΩ élevée · &gt; 90 mΩ usée</small>
+                    `;
+                }
+                return;
+            }
+
+            // Plages officielles SkyRC NC3000 Pro (AA/AAA NiMH & NiCd)
             const arrondi01 = v => Math.round(v * 10) / 10;
             const courantTheorique = (mah * cRate) / 1000;
             let courantCharge = arrondi01(Math.min(3.0, Math.max(0.2, courantTheorique)));
             let courantDecharge = arrondi01(Math.min(2.5, Math.max(0.2, (mah * 0.2) / 1000)));
             const cEffectif = (courantCharge * 1000) / mah;
-            const deltaV = 3;
+
+            // Calibrage dynamique du Delta Peak (-ΔV) selon la chimie, l'âge et la RI
+            const ageAns = anneeMinLot ? (new Date().getFullYear() - anneeMinLot) : 0;
+            let deltaV = 3;
+            let deltaVNoteFr = '3 mV standard Eneloop / NiMH saine';
+            let deltaVNoteEn = '3 mV standard for healthy Eneloop / NiMH';
+            if (chimie === 'NiCd') {
+                deltaV = 6;
+                deltaVNoteFr = '5–8 mV recommandé en NiCd (évite les fausses coupures, surtout sur accus anciens)';
+                deltaVNoteEn = '5–8 mV recommended for NiCd (prevents premature cut-off on older cells)';
+            } else if ((irMaxLot && irMaxLot > 50) || ageAns >= 10) {
+                deltaV = 5;
+                deltaVNoteFr = `5 mV conseillé (pile ancienne${ageAns ? ' ~' + ageAns + ' ans' : ''}${irMaxLot ? ', RI ' + irMaxLot + ' mΩ' : ''} : 3 mV risque de couper trop tôt)`;
+                deltaVNoteEn = `5 mV advised (older cell${ageAns ? ' ~' + ageAns + ' yrs' : ''}${irMaxLot ? ', IR ' + irMaxLot + ' mΩ' : ''}: 3 mV may cut off early)`;
+            }
+
             const trickleMax = Math.min(300, Math.max(10, Math.round((mah * 0.05) / 10) * 10));
             const mahAvecTampon = Math.round(mah * 1.20);
             const mahProtection = Math.round(mah * 1.2 / 100) * 100;
+            const dureeChargeEstH = (mah * 1.32) / (courantCharge * 1000);
+            const dureeDechargeEstH = mah / (courantDecharge * 1000);
+            const dureeCycleEstH = dureeChargeEstH + dureeDechargeEstH + 0.5; // + repos
+
             // Live hint under rated capacity field
             try {
                 var hint = document.getElementById('calcMahHint');
                 if (hint) {
                     if (LANG === 'en') {
-                        hint.innerHTML = 'Pro Charge/Cycle: <b>' + mah + ' mAh</b> <span style="color:#e67e22;">(+20% → ' + mahProtection + ' mAh)</span> · Break-in: ' + mah + ' mAh exact';
+                        hint.innerHTML = 'Pro Charge/Cycle: <b>' + mah + ' mAh</b> <span style="color:#e67e22;">(+20% → ' + mahProtection + ' mAh)</span> · Est. charge: <b>~' + formaterDureeHeures(dureeChargeEstH) + '</b> · 1 Cycle: <b>~' + formaterDureeHeures(dureeCycleEstH) + '</b>';
                     } else {
-                        hint.innerHTML = 'Pro Charge/Cycle : <b>' + mah + ' mAh</b> <span style="color:#e67e22;">(+20 % → ' + mahProtection + ' mAh)</span> · Break-in : ' + mah + ' mAh exacte';
+                        hint.innerHTML = 'Pro Charge/Cycle : <b>' + mah + ' mAh</b> <span style="color:#e67e22;">(+20 % → ' + mahProtection + ' mAh)</span> · Charge : <b>~' + formaterDureeHeures(dureeChargeEstH) + '</b> · 1 Cycle : <b>~' + formaterDureeHeures(dureeCycleEstH) + '</b>';
                     }
                 }
             } catch (eHint) {}
@@ -1458,12 +1577,6 @@
             const dechargeTxt = `<b>${courantDecharge} A</b>`;
 
             let warns = [];
-            if (chimie !== 'NiMH' && chimie !== 'NiCd') warns.push(LANG === 'en'
-                ? `⚠️ ${chimie} NOT supported by the NC3000 Pro (NiMH/NiCd only).`
-                : `⚠️ ${chimie} NON pris en charge par le NC3000 Pro (NiMH/NiCd uniquement).`);
-            if (format !== 'AA' && format !== 'AAA') warns.push(LANG === 'en'
-                ? `⚠️ ${format} size NOT supported by the NC3000 Pro (AA/AAA only).`
-                : `⚠️ Format ${format} NON pris en charge par le NC3000 Pro (AA/AAA uniquement).`);
             if (mah < 100 || mah > 5000) warns.push(LANG === 'en'
                 ? '⚠️ Capacity outside the supported range (100–5000 mAh).'
                 : '⚠️ Capacité hors plage supportée (100–5000 mAh).');
@@ -1538,25 +1651,22 @@
                 breakInHtml = htmlBreakInBloc(mah, chimie, format, null, null);
             }
 
-            const box = document.getElementById('calcResultats');
-            if (!box) return;
-
             if (LANG === 'en') {
                 box.innerHTML = `
-                    <strong>⚙️ NC3000 Pro settings — ${escapeHtml(format)} ${mah} mAh (${escapeHtml(chimie)}):</strong>${warnHtml}<br>
+                    <strong>⚙️ SkyRC NC3000 Pro settings — ${escapeHtml(format)} ${mah} mAh (${escapeHtml(chimie)}):</strong>${warnHtml}<br>
                     <strong>⚡ CHARGE PROGRAM:</strong><br>
-                    • <strong>Charge Current:</strong> ${chargeTxt} <small>(${cRate}C requested → ${cEffectif.toFixed(2)}C actual · 100 mA steps)</small><br>
+                    • <strong>Charge Current:</strong> ${chargeTxt} <small>(${cRate}C requested → ${cEffectif.toFixed(2)}C actual · 100 mA steps · est. <b>~${formaterDureeHeures(dureeChargeEstH)}</b>)</small><br>
                     • <strong>Target Voltage:</strong> 1.65 V <small>(device range 1.47–1.80)</small><br>
-                    • <strong>Delta Peak (-ΔV):</strong> ${deltaV} mV <small>(range 1–20 mV; 3 mV = value reported for Eneloop on a NC3000 Octa — adjust if you change the current)</small><br>
+                    • <strong>Delta Peak (-ΔV):</strong> <b>${deltaV} mV</b> <small>(${deltaVNoteEn})</small><br>
                     • <strong>Cut-off Timer:</strong> ${minuteur} min <small>(≥1.5 × capacity ÷ current — increase if you lower current)</small><br>
                     • <strong>Capacity to enter:</strong><br>
                     &nbsp;&nbsp;– <strong>NC3000 Pro (Charge / Cycle / Discharge):</strong> <b>${mah} mAh</b> <span style="color:#e67e22;font-weight:bold;">(+20% → ${mahProtection} mAh)</span><br>
                     &nbsp;&nbsp;– <strong>NC3000 Pro (Break-in):</strong> <b>${mah} mAh</b> <small>(exact rated — no +20%)</small><br>
                     &nbsp;&nbsp;– <strong>NC3000 Octa (Charge / Cycle / Discharge):</strong> <b>${mah} mAh</b> <small>(charger auto-adds +20% → ~${mahAvecTampon} mAh)</small><br>
                     &nbsp;&nbsp;– <strong>NC3000 Octa (Break-in):</strong> <small>fixed at 0.1C (not set manually)</small><br>
-                    • <strong>Trickle:</strong> <b>Off</b> <small>(max ${trickleMax} mA = 0.05C if forced)</small> | <strong>Restart Voltage:</strong> <b>Off</b> | <strong>Current Mode:</strong> Fixed<br><br>
+                    • <strong>Trickle:</strong> <b>Off</b> <small>(max ${trickleMax} mA = 0.05C if forced)</small> | <strong>Restart Voltage:</strong> <b>Off</b> | <strong>Current Mode:</strong> ${ageAns >= 8 || (irMaxLot && irMaxLot > 35) ? '<b>IR Auto</b> <small>(recommended for older cells)</small>' : 'Fixed (or IR Auto)'}<br><br>
                     <strong>🔋 DISCHARGE PROGRAM:</strong><br>
-                    • <strong>Discharge Current:</strong> ${dechargeTxt} <small>(0.2C industry standard)</small><br>
+                    • <strong>Discharge Current:</strong> ${dechargeTxt} <small>(0.2C industry standard · est. <b>~${formaterDureeHeures(dureeDechargeEstH)}</b>)</small><br>
                     • <strong>D. Cut-off Voltage:</strong> 1.00 V <small>(device range 0.50–1.10)</small><br>
                     • <strong>Capacity & Timer:</strong> Off
                     ${cycleHtml}${breakInHtml}<br><br>
@@ -1564,28 +1674,26 @@
                     • Recommended charge rate: <b>0.5C–1.0C</b> — Panasonic prefers <b>0.5C</b> when time allows<br>
                     • Do <b>not</b> go below ≈0.3C: -ΔV detection becomes unreliable<br>
                     • No trickle charge and no Restart Voltage top-ups on Eneloop (overcharge risk)<br>
-                    • The capacity is only a safety limit: <b>Pro</b> = rated +20 % (to verify on the device) · <b>Octa</b> = rated (the charger adds the margin itself)<br>
                     • Power: USB-C <b>PD/QC adapter of 30 W or more</b> (NC3000 Pro)<br>
-                    • <b>IR Auto</b> (Current Mode) lowers the current as internal resistance rises (Octa manual tiers — to verify on the Pro: 1.5 A above 20 mΩ, 800 mA above 40 mΩ, 400 mA above 60 mΩ) — handy for old cells<br>
-                    • Safety: insert the negative (−) end first, room temperature 0–40 °C, never leave charging unattended, never charge a leaking or swollen cell<br>
-                    • <strong>Pro capacity:</strong> rated+20% in Charge/Cycle (protective) · exact rated in Break-in · <strong>Octa:</strong> rated (auto +20%) · Break-in 0.1C fixed · <strong>Turbo:</strong> up to 3 A · <strong>MaxBoost:</strong> full charge then partial discharge
+                    • <b>IR Auto</b> (Current Mode) lowers the current as internal resistance rises (1.5 A &gt; 20 mΩ, 800 mA &gt; 40 mΩ, 400 mA &gt; 60 mΩ) — ideal for old cells<br>
+                    • For Li-ion (1.5V AA/AAA or 3.7V 18650/21700), switch chemistry to Li-ion above to get <b>XTAR VX4 V2</b> settings
                 `;
             } else {
                 box.innerHTML = `
-                    <strong>⚙️ Réglages NC3000 Pro — ${escapeHtml(format)} ${mah} mAh (${escapeHtml(chimie)}) :</strong>${warnHtml}<br>
+                    <strong>⚙️ Réglages SkyRC NC3000 Pro — ${escapeHtml(format)} ${mah} mAh (${escapeHtml(chimie)}) :</strong>${warnHtml}<br>
                     <strong>⚡ PROGRAMME CHARGE :</strong><br>
-                    • <strong>Courant de charge :</strong> ${chargeTxt} <small>(demande ${cRate}C → ${cEffectif.toFixed(2)}C effectif · pas de 100 mA)</small><br>
+                    • <strong>Courant de charge :</strong> ${chargeTxt} <small>(demande ${cRate}C → ${cEffectif.toFixed(2)}C effectif · pas de 100 mA · durée est. <b>~${formaterDureeHeures(dureeChargeEstH)}</b>)</small><br>
                     • <strong>Tension cible :</strong> 1.65 V <small>(plage appareil 1.47–1.80)</small><br>
-                    • <strong>Delta Peak (-ΔV) :</strong> ${deltaV} mV <small>(plage 1–20 mV ; 3 mV = valeur rapportée pour des Eneloop sur un NC3000 Octa — à ajuster si vous changez le courant)</small><br>
+                    • <strong>Delta Peak (-ΔV) :</strong> <b>${deltaV} mV</b> <small>(${deltaVNoteFr})</small><br>
                     • <strong>Minuteur de coupure :</strong> ${minuteur} min <small>(≥1.5 × capacité ÷ courant — augmenter si vous baissez le courant)</small><br>
                     • <strong>Capacité à régler :</strong><br>
                     &nbsp;&nbsp;– <strong>NC3000 Pro (Charge / Cycle / Décharge) :</strong> <b>${mah} mAh</b> <span style="color:#e67e22;font-weight:bold;">(+20 % → ${mahProtection} mAh)</span><br>
                     &nbsp;&nbsp;– <strong>NC3000 Pro (Break-in) :</strong> <b>${mah} mAh</b> <small>(nominale exacte — pas de +20 %)</small><br>
                     &nbsp;&nbsp;– <strong>NC3000 Octa (Charge / Cycle / Décharge) :</strong> <b>${mah} mAh</b> <small>(le chargeur ajoute +20 % → ~${mahAvecTampon} mAh)</small><br>
                     &nbsp;&nbsp;– <strong>NC3000 Octa (Break-in) :</strong> <small>fixe à 0.1C (non réglable)</small><br>
-                    • <strong>Trickle :</strong> <b>Off</b> <small>(max ${trickleMax} mA = 0.05C si forcé)</small> | <strong>Restart Voltage :</strong> <b>Off</b> | <strong>Current Mode :</strong> Fixed<br><br>
+                    • <strong>Trickle :</strong> <b>Off</b> <small>(max ${trickleMax} mA = 0.05C si forcé)</small> | <strong>Restart Voltage :</strong> <b>Off</b> | <strong>Current Mode :</strong> ${ageAns >= 8 || (irMaxLot && irMaxLot > 35) ? '<b>IR Auto</b> <small>(recommandé pour ces piles anciennes)</small>' : 'Fixed (ou IR Auto)'}<br><br>
                     <strong>🔋 PROGRAMME DÉCHARGE :</strong><br>
-                    • <strong>Courant de décharge :</strong> ${dechargeTxt} <small>(standard industrie 0.2C)</small><br>
+                    • <strong>Courant de décharge :</strong> ${dechargeTxt} <small>(standard industrie 0.2C · durée est. <b>~${formaterDureeHeures(dureeDechargeEstH)}</b>)</small><br>
                     • <strong>Tension de coupure :</strong> 1.00 V <small>(plage appareil 0.50–1.10)</small><br>
                     • <strong>Capacité & Minuteur :</strong> Off
                     ${cycleHtml}${breakInHtml}<br><br>
@@ -1593,11 +1701,9 @@
                     • Vitesse de charge recommandée : <b>0.5C–1.0C</b> — Panasonic préfère <b>0.5C</b> quand le temps le permet<br>
                     • Ne pas descendre sous ≈0.3C : la détection -ΔV devient peu fiable<br>
                     • Pas de charge d’entretien (trickle) ni de Restart Voltage sur les Eneloop (risque de surcharge)<br>
-                    • La capacité n’est qu’une limite de sécurité : <b>Pro</b> = nominale +20 % (à vérifier sur l’appareil) · <b>Octa</b> = nominale (le chargeur ajoute la marge tout seul)<br>
                     • Alimentation : adaptateur USB-C <b>PD/QC de 30 W minimum</b> (NC3000 Pro)<br>
-                    • <b>IR Auto</b> (Mode courant) réduit le courant quand la résistance interne monte (paliers du manuel Octa — à vérifier sur le Pro : 1,5 A au-delà de 20 mΩ, 800 mA au-delà de 40 mΩ, 400 mA au-delà de 60 mΩ) — utile pour les vieilles piles<br>
-                    • Sécurité : insérer d’abord le pôle négatif (−), température ambiante de 0 à 40 °C, ne jamais laisser la charge sans surveillance, ne jamais charger une pile qui fuit ou gonfle<br>
-                    • <strong>Pro :</strong> nominale+20 % en Charge/Cycle (protection) · nominale exacte en Break-in · <strong>Octa :</strong> nominale (auto +20 %) · Break-in 0.1C fixe · <strong>Turbo :</strong> jusqu’à 3 A · <strong>MaxBoost :</strong> pleine charge puis décharge partielle
+                    • <b>IR Auto</b> réduit automatiquement le courant quand la résistance interne monte (1,5 A &gt; 20 mΩ, 800 mA &gt; 40 mΩ, 400 mA &gt; 60 mΩ) — très utile pour les vieilles piles<br>
+                    • Pour vos accus Li-ion (AA 1.5V Dracutum ou 18650/21700), sélectionnez leur lot ou la chimie Li-ion ci-dessus pour afficher les réglages <b>XTAR VX4 V2</b>
                 `;
             }
         }
@@ -1726,15 +1832,76 @@
             return escapeHtml(label);
         }
 
-        // Retire un préfixe de format tapé par erreur dans la marque : « AAA - Duracell » (format AAA) -> « Duracell »
+        // Retire un préfixe de format tapé par erreur (« AAA - Duracell » -> « Duracell »),
+        // mais préserve et normalise la catégorie « XXX - Marque » (lots unitaires ou paires isolées)
         function nettoyerMarque(marque, format) {
-            const m = String(marque == null ? '' : marque).trim();
+            let m = String(marque == null ? '' : marque).trim();
             const f = String(format == null ? '' : format).trim();
-            if (!m || !f) return m;
-            const echappe = f.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            const reste = m.replace(new RegExp('^' + echappe + '\\s*-\\s*', 'i'), '').trim();
-            return reste || m;
+            if (!m) return '';
+            const matchXxx = m.match(/^XXX(?:\s*[-–—:]\s*(.*))?$/i);
+            if (matchXxx) {
+                let sousMarque = (matchXxx[1] || '').trim();
+                if (f && sousMarque) {
+                    const echappe = f.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    sousMarque = sousMarque.replace(new RegExp('^' + echappe + '\\s*[-–—:]\\s*', 'i'), '').trim();
+                }
+                return sousMarque ? `XXX - ${sousMarque}` : 'XXX';
+            }
+            if (f) {
+                const echappe = f.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                m = m.replace(new RegExp('^' + echappe + '\\s*[-–—:]\\s*', 'i'), '').trim();
+            }
+            m = m.replace(/^(AA|AAA|18650|21700)\s*[-–—:]\s*/i, '').trim();
+            return m;
         }
+
+        function syncXxxCheckbox(inputId, checkId, labelId) {
+            const inp = document.getElementById(inputId);
+            const chk = document.getElementById(checkId);
+            const lbl = document.getElementById(labelId);
+            if (!inp || !chk) return;
+            const isXxx = /^XXX(\s*[-–—:]|\s*$)/i.test(inp.value.trim());
+            chk.checked = isXxx;
+            if (lbl) lbl.classList.toggle('active', isXxx);
+        }
+
+        window.toggleXxxPrefix = function(inputId, checkId, labelId) {
+            const inp = document.getElementById(inputId);
+            const chk = document.getElementById(checkId);
+            const lbl = document.getElementById(labelId);
+            if (!inp || !chk) return;
+            let val = inp.value.trim();
+            const sansXxx = val.replace(/^XXX\s*[-–—:]?\s*/i, '').trim();
+            if (chk.checked) {
+                inp.value = sansXxx ? `XXX - ${sansXxx}` : 'XXX - ';
+            } else {
+                inp.value = sansXxx;
+            }
+            if (lbl) lbl.classList.toggle('active', chk.checked);
+            if (inputId === 'marque') verifierPileExistante();
+            inp.focus();
+        };
+
+        // Évaluation de la résistance interne (mΩ) selon la chimie et le format (seuils SkyRC NC3000 Pro / XTAR VX4 V2)
+        function evaluerIr(ir, chimie, format) {
+            const v = Number(ir);
+            if (!(v > 0)) return null;
+            let sOk = 25, sMid = 45, sWarn = 70;
+            if (chimie === 'NiMH' || chimie === 'NiCd') {
+                if (format === 'AAA') { sOk = 35; sMid = 60; sWarn = 90; }
+                else { sOk = 20; sMid = 40; sWarn = 60; } // paliers IR Auto NC3000 : 20 / 40 / 60 mΩ
+            } else if (chimie === 'Li-ion' || chimie === 'LiFePO4') {
+                sOk = 30; sMid = 60; sWarn = 90;
+            }
+            if (v <= sOk) return { cls: 'ir-ok', lbl: LANG === 'en' ? 'IR exc.' : 'RI exc.', detail: LANG === 'en' ? `Excellent internal resistance (${v} mΩ ≤ ${sOk} mΩ). Full current supported.` : `Excellente résistance interne (${v} mΩ ≤ ${sOk} mΩ). Supporte les courants élevés.` };
+            if (v <= sMid) return { cls: 'ir-mid', lbl: LANG === 'en' ? 'IR ok' : 'RI ok', detail: LANG === 'en' ? `Good internal resistance (${v} mΩ). NC3000 IR Auto tier: ≤ 1.5 A.` : `Résistance interne correcte (${v} mΩ). Palier IR Auto NC3000 : ≤ 1,5 A.` };
+            if (v <= sWarn) return { cls: 'ir-warn', lbl: LANG === 'en' ? 'IR high' : 'RI haute', detail: LANG === 'en' ? `Elevated internal resistance (${v} mΩ). NC3000 IR Auto lowers current to 800 mA. Prefer 0.5C charge and medium/low-drain devices.` : `Résistance interne élevée (${v} mΩ). Le mode IR Auto du NC3000 réduit le courant à 800 mA. Privilégier une charge douce 0.5C et des appareils à conso moyenne/faible.` };
+            return { cls: 'ir-bad', lbl: LANG === 'en' ? 'IR worn' : 'RI usée', detail: LANG === 'en' ? `Very high internal resistance (${v} mΩ > ${sWarn} mΩ). NC3000 IR Auto limits current to 400 mA; increase -ΔV to 5–8 mV to avoid false peak cut-off.` : `Résistance interne très élevée (${v} mΩ > ${sWarn} mΩ). Le NC3000 (IR Auto) bride à 400 mA ; passer le -ΔV à 5–8 mV pour éviter une coupure prématurée.` };
+        }
+        window.expliquerIr = function(ir, chimie, format) {
+            const info = evaluerIr(ir, chimie, format);
+            if (info) alerter(info.detail);
+        };
 
         // Alerte douce : tension saisie incohérente avec la chimie (retourne '' si tout va bien)
         function alerteTension(type, voltNominal, v) {
@@ -2249,7 +2416,8 @@
                     const etat = evaluerEtat(m.mah, item.pile.mahNominal, item.pile.type, item.pile.format);
                     const dateAffichage = m.date ? m.date.replace('T', ' ') : '-';
                     let ratioTxt = item.pile.mahNominal ? ` <small class="text-muted">(${Math.round((m.mah / item.pile.mahNominal) * 100)}%)</small>` : '';
-                    let irTxt = m.ir ? ` | ${m.ir}mΩ` : '';
+                    const infoIr = m.ir ? evaluerIr(m.ir, item.pile.type, item.pile.format) : null;
+                    let irTxt = m.ir ? ` | ${m.ir}mΩ` + (infoIr ? ` <span class="ir-tag ${infoIr.cls}" onclick="expliquerIr(${Number(m.ir)}, '${escapeAttr(item.pile.type)}', '${escapeAttr(item.pile.format)}')">${infoIr.lbl}</span>` : '') : '';
                     let stressTxt = m.stress ? ` | Max: ${escapeHtml(m.stress)}` : '';
 
                     return `
@@ -2393,6 +2561,7 @@
         });
 
         function verifierPileExistante() {
+            syncXxxCheckbox('marque', 'xxxAddCheck', 'xxxAddLabel');
             const idVal = pileIdInput.value.trim(), marqueVal = marqueInput.value.trim();
             if (!idVal || !marqueVal) return deverrouillerChampsFixes();
             const inventaire = JSON.parse(localStorage.getItem('stock_piles')) || [];
@@ -2489,9 +2658,11 @@
             document.getElementById('editType').value = pile.type || 'NiMH'; document.getElementById('editFormat').value = pile.format || 'AA';
             document.getElementById('editVoltNominal').value = pile.voltNominal || ''; document.getElementById('editMahNominal').value = pile.mahNominal || '';
             document.getElementById('editAppareil').value = pile.appareil || '';
+            syncXxxCheckbox('editMarque', 'xxxEditCheck', 'xxxEditLabel');
             document.getElementById('editPileModal').style.display = 'block';
             revalideDates();
         };
+        document.getElementById('editMarque').addEventListener('input', () => syncXxxCheckbox('editMarque', 'xxxEditCheck', 'xxxEditLabel'));
 
         document.getElementById('editPileForm').addEventListener('submit', async (e) => {
             e.preventDefault();
