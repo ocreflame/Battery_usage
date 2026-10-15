@@ -487,7 +487,7 @@
             <div class="grid-2">
                 <div>
                     <label>Chargeur utilisé :</label>
-                    <select id="calcChargeur" onchange="changerChargeurAssistant()">
+                    <select id="calcChargeur" onchange="changerChargeurAssistant()" oninput="changerChargeurAssistant()" onblur="changerChargeurAssistant()">
                         <option value="auto" selected>🔄 Auto (selon chimie / format)</option>
                         <option value="nc3000">⚙️ SkyRC NC3000 Pro (AA/AAA NiMH/NiCd)</option>
                         <option value="xtar">🔋 XTAR VX4 V2 (Li-ion / LiFePO4 / NiMH)</option>
@@ -1130,8 +1130,8 @@
             const chSel = document.getElementById('calcChargeur');
             const mode = chSel ? chSel.value : 'auto';
             try { localStorage.setItem('calc_chargeur', mode); } catch (e) {}
+            remplirSelectPilesAssistant(true);
             adapterOptionsAssistantSelonChargeur();
-            remplirSelectPilesAssistant();
             calculerParametresCharge();
         };
 
@@ -1178,28 +1178,29 @@
             if (!chSel || !chemEl || !fmtEl || !cibleEl) return;
 
             const mode = chSel.value;
-            // Activer/désactiver les chimies et formats selon le chargeur forcé
+            const hasBatch = !!(document.getElementById('calcPileSelect') && document.getElementById('calcPileSelect').value);
+            // En saisie manuelle libre, griser les chimies/formats non supportés par le chargeur choisi
             Array.from(chemEl.options).forEach(opt => {
-                if (mode === 'nc3000') {
+                if (!hasBatch && mode === 'nc3000') {
                     opt.disabled = (opt.value !== 'NiMH' && opt.value !== 'NiCd');
-                } else if (mode === 'xtar') {
+                } else if (!hasBatch && mode === 'xtar') {
                     opt.disabled = (opt.value === 'NiCd');
                 } else {
                     opt.disabled = false;
                 }
             });
-            if (chemEl.selectedOptions[0] && chemEl.selectedOptions[0].disabled) {
+            if (!hasBatch && chemEl.selectedOptions[0] && chemEl.selectedOptions[0].disabled) {
                 chemEl.value = 'NiMH';
             }
 
             Array.from(fmtEl.options).forEach(opt => {
-                if (mode === 'nc3000') {
+                if (!hasBatch && mode === 'nc3000') {
                     opt.disabled = (opt.value !== 'AA' && opt.value !== 'AAA');
                 } else {
                     opt.disabled = false;
                 }
             });
-            if (fmtEl.selectedOptions[0] && fmtEl.selectedOptions[0].disabled) {
+            if (!hasBatch && fmtEl.selectedOptions[0] && fmtEl.selectedOptions[0].disabled) {
                 fmtEl.value = 'AA';
             }
             window._calcFormat = fmtEl.value || 'AA';
@@ -1218,7 +1219,7 @@
             // Adapter le sélecteur de vitesse / courant selon le chargeur et la chimie
             const prevCible = cibleEl.value;
             if (estXtarEffectif) {
-                if (chimieBase === 'NiMH') {
+                if (chimieBase === 'NiMH' || chimieBase === 'NiCd') {
                     if (cibleLbl) cibleLbl.textContent = LANG === 'en' ? 'VX4 V2 NiMH current:' : 'Courant NiMH VX4 V2 :';
                     cibleEl.innerHTML = `<option value="0.5A_fixed" selected>${LANG === 'en' ? '0.5 A fixed (automatic on VX4 V2)' : '0,5 A fixe (automatique sur VX4 V2)'}</option>`;
                     cibleEl.disabled = true;
@@ -1248,7 +1249,7 @@
             }
         }
 
-        function remplirSelectPilesAssistant() {
+        function remplirSelectPilesAssistant(garderSelection = false) {
             const select = document.getElementById('calcPileSelect');
             if (!select) return;
             const chSel = document.getElementById('calcChargeur');
@@ -1277,7 +1278,7 @@
                 const opt = document.createElement('option');
                 opt.value = cle;
                 const suffixePile = g.count > 1 ? (LANG === 'en' ? 'batteries' : 'piles') : (LANG === 'en' ? 'battery' : 'pile');
-                const tagIncompat = !compat ? (LANG === 'en' ? ' ⚠️ [Other charger]' : ' ⚠️ [Autre chargeur]') : '';
+                const tagIncompat = !compat ? (LANG === 'en' ? ' ⚠️ [Not supported]' : ' ⚠️ [Non supporté]') : '';
                 opt.textContent = `${g.format} - ${g.marque} (${g.mahNom} mAh, ${g.type}) [${g.count} ${suffixePile}]${tagIncompat}`;
                 select.appendChild(opt);
             });
@@ -1286,7 +1287,7 @@
             } else {
                 select.value = '';
             }
-            selectionnerPileAssistant();
+            if (!garderSelection) selectionnerPileAssistant();
         }
 
         window.selectionnerPileAssistant = function() {
@@ -1353,11 +1354,7 @@
                 var chemEl = document.getElementById('calcChimie');
                 if (chemEl) {
                     var targetChem = (type === 'Li-ion' && is15V) ? 'Li-ion-1.5V' : type;
-                    // Si le chargeur forcé désactive cette chimie, basculer le sélecteur de chargeur sur Auto pour ne pas bloquer l'utilisateur
-                    var chSel = document.getElementById('calcChargeur');
-                    if (chSel && chSel.value !== 'auto' && !estCompatibleChargeur(chSel.value, format, type)) {
-                        chSel.value = 'auto';
-                    }
+                    // On conserve toujours le choix de chargeur de l'utilisateur (même si incompatible, un bandeau d'alerte s'affichera)
                     adapterOptionsAssistantSelonChargeur();
                     for (var ci = 0; ci < chemEl.options.length; ci++) {
                         if (chemEl.options[ci].value === targetChem) { chemEl.value = targetChem; break; }
@@ -1702,10 +1699,16 @@
                 let noteCourantFr = '';
                 let noteCourantEn = '';
 
-                if (chimie === 'NiMH') {
+                let warnXtarHtml = '';
+                if (chimie === 'NiCd') {
+                    warnXtarHtml = LANG === 'en'
+                        ? `<div style="background:#fdebd0;border:1px solid #f39c12;color:#7d5a00;padding:8px 10px;border-radius:6px;margin:8px 0;font-size:0.82rem;line-height:1.4;">⚠️ <b>NiCd is not officially supported by the XTAR VX4 V2</b> (designed for 1.2V Ni-MH, 1.5V Li-ion, 3.6/3.7V Li-ion and 3.2V LiFePO4). Prefer your <b>SkyRC NC3000 Pro</b> for NiCd cells (especially for -ΔV calibration and Break-in/Cycle).</div>`
+                        : `<div style="background:#fdebd0;border:1px solid #f39c12;color:#7d5a00;padding:8px 10px;border-radius:6px;margin:8px 0;font-size:0.82rem;line-height:1.4;">⚠️ <b>La chimie NiCd n’est pas officiellement prise en charge par le XTAR VX4 V2</b> (conçu pour Ni-MH 1.2V, Li-ion 1.5V, Li-ion 3.6/3.7V et LiFePO4 3.2V). Privilégiez votre <b>SkyRC NC3000 Pro</b> pour les accus NiCd (gestion dédiée du -ΔV et des cycles).</div>`;
+                }
+                if (chimie === 'NiMH' || chimie === 'NiCd') {
                     courantXtar = 0.5;
-                    noteCourantFr = 'Courant fixe de 0,5 A imposé par le XTAR VX4 V2 en mode Ni-MH (technologie CVSA, coupure à 1,45 V ± 0,1 V).';
-                    noteCourantEn = 'Fixed 0.5 A current on the XTAR VX4 V2 in Ni-MH mode (CVSA tech, 1.45 V ± 0.1 V cut-off).';
+                    noteCourantFr = 'Courant fixe de 0,5 A imposé par le XTAR VX4 V2 en mode 1,2 V (technologie CVSA, coupure à 1,45 V ± 0,1 V).';
+                    noteCourantEn = 'Fixed 0.5 A current on the XTAR VX4 V2 in 1.2 V mode (CVSA tech, 1.45 V ± 0.1 V cut-off).';
                 } else {
                     const paliersDispo = [0.25, 0.5, 1.0, 2.0, 3.0].filter(p => p <= maxSlotA);
                     let cibleA;
@@ -1771,7 +1774,7 @@
 
                 if (LANG === 'en') {
                     box.innerHTML = `
-                        <strong>🔋 XTAR VX4 V2 (Visible Mixer) — ${escapeHtml(format)} ${mah} mAh (${escapeHtml(chimie)}${isLiIon15V ? ' 1.5V' : ''}):</strong><br>
+                        <strong>🔋 XTAR VX4 V2 (Visible Mixer) — ${escapeHtml(format)} ${mah} mAh (${escapeHtml(chimie)}${isLiIon15V ? ' 1.5V' : ''}):</strong>${warnXtarHtml}<br>
                         <strong>⚡ CHARGE PROGRAM:</strong><br>
                         • <strong>Slot Current:</strong> <b>${courantXtar} A</b> <small>(${noteCourantEn})</small><br>
                         • <strong>Target / Cut-off Voltage:</strong> ${voltCoupureEn}<br>
@@ -1791,7 +1794,7 @@
                     `;
                 } else {
                     box.innerHTML = `
-                        <strong>🔋 XTAR VX4 V2 (Visible Mixer) — ${escapeHtml(format)} ${mah} mAh (${escapeHtml(chimie)}${isLiIon15V ? ' 1.5V' : ''}) :</strong><br>
+                        <strong>🔋 XTAR VX4 V2 (Visible Mixer) — ${escapeHtml(format)} ${mah} mAh (${escapeHtml(chimie)}${isLiIon15V ? ' 1.5V' : ''}) :</strong>${warnXtarHtml}<br>
                         <strong>⚡ PROGRAMME CHARGE :</strong><br>
                         • <strong>Courant par baie :</strong> <b>${courantXtar} A</b> <small>(${noteCourantFr})</small><br>
                         • <strong>Tension de coupure / mode :</strong> ${voltCoupureFr}<br>
@@ -1967,7 +1970,7 @@
                     • No trickle charge and no Restart Voltage top-ups on Eneloop (overcharge risk)<br>
                     • Power: USB-C <b>PD/QC adapter of 30 W or more</b> (NC3000 Pro)<br>
                     • <b>IR Auto</b> (Current Mode) lowers the current as internal resistance rises (1.5 A &gt; 20 mΩ, 800 mA &gt; 40 mΩ, 400 mA &gt; 60 mΩ) — ideal for old cells<br>
-                    • If you want to charge this NiMH cell on your <b>XTAR VX4 V2</b> instead, select <b>XTAR VX4 V2</b> in "Charger used" above (0.5 A fixed CVSA)
+                    ${chimie === 'NiMH' ? '• If you want to charge this NiMH cell on your <b>XTAR VX4 V2</b> instead, select <b>XTAR VX4 V2</b> in "Charger used" above (0.5 A fixed CVSA)' : '• Note: <b>NiCd</b> is only supported by the <b>SkyRC NC3000 Pro</b> (not officially supported by the XTAR VX4 V2)'}
                 `;
             } else {
                 box.innerHTML = `
@@ -1994,7 +1997,7 @@
                     • Pas de charge d’entretien (trickle) ni de Restart Voltage sur les Eneloop (risque de surcharge)<br>
                     • Alimentation : adaptateur USB-C <b>PD/QC de 30 W minimum</b> (NC3000 Pro)<br>
                     • <b>IR Auto</b> réduit automatiquement le courant quand la résistance interne monte (1,5 A &gt; 20 mΩ, 800 mA &gt; 40 mΩ, 400 mA &gt; 60 mΩ) — très utile pour les vieilles piles<br>
-                    • Si vous souhaitez charger cette pile NiMH sur votre <b>XTAR VX4 V2</b>, choisissez <b>XTAR VX4 V2</b> dans « Chargeur utilisé » en haut (charge CVSA à 0,5 A fixe)
+                    ${chimie === 'NiMH' ? '• Si vous souhaitez charger cette pile NiMH sur votre <b>XTAR VX4 V2</b>, choisissez <b>XTAR VX4 V2</b> dans « Chargeur utilisé » en haut (charge CVSA à 0,5 A fixe)' : '• Note : la chimie <b>NiCd</b> est gérée uniquement par le <b>SkyRC NC3000 Pro</b> (non supportée officiellement par le XTAR VX4 V2)'}
                 `;
             }
         }
@@ -3468,16 +3471,26 @@
         (function bindCalcSelect() {
             try {
                 var s = document.getElementById('calcPileSelect');
-                if (!s || s._calcBound) return;
-                s._calcBound = true;
-                ['change', 'input', 'blur'].forEach(function(ev) {
-                    s.addEventListener(ev, function() {
-                        setTimeout(function() { try { selectionnerPileAssistant(); } catch (e) {} }, 0);
+                if (s && !s._calcBound) {
+                    s._calcBound = true;
+                    ['change', 'input', 'blur'].forEach(function(ev) {
+                        s.addEventListener(ev, function() {
+                            setTimeout(function() { try { selectionnerPileAssistant(); } catch (e) {} }, 0);
+                        });
                     });
-                });
-                s.addEventListener('touchend', function() {
-                    setTimeout(function() { try { selectionnerPileAssistant(); } catch (e) {} }, 300);
-                });
+                    s.addEventListener('touchend', function() {
+                        setTimeout(function() { try { selectionnerPileAssistant(); } catch (e) {} }, 300);
+                    });
+                }
+                var ch = document.getElementById('calcChargeur');
+                if (ch && !ch._calcBound) {
+                    ch._calcBound = true;
+                    ['change', 'input', 'blur'].forEach(function(ev) {
+                        ch.addEventListener(ev, function() {
+                            setTimeout(function() { try { changerChargeurAssistant(); } catch (e) {} }, 0);
+                        });
+                    });
+                }
             } catch (e) { console.error(e); }
         })();
 
