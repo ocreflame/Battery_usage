@@ -391,26 +391,31 @@
                 <datalist id="marquesList"></datalist>
                 <label class="xxx-toggle" id="xxxAddLabel"><input type="checkbox" id="xxxAddCheck" onchange="toggleXxxPrefix('marque', 'xxxAddCheck', 'xxxAddLabel')"> <span id="xxxAddTxt">Lot unitaire / paire (catégorie XXX -)</span></label>
 
-                <label>Format :</label>
-                <select id="format">
-                    <option value="AA">AA (LR6, HR6, Mignon)</option>
-                    <option value="AAA">AAA (LR03, HR03, Micro)</option>
-                    <option value="C">C (LR14, HR14, Baby)</option>
-                    <option value="D">D (LR20, HR20, Mono)</option>
-                    <option value="18650">18650</option>
-                    <option value="21700">21700</option>
-                    <option value="Autre">Autre</option>
-                </select>
+                <div class="grid-2">
+                    <div>
+                        <label>Format :</label>
+                        <select id="format">
+                            <option value="AA">AA (LR6, HR6, Mignon)</option>
+                            <option value="AAA">AAA (LR03, HR03, Micro)</option>
+                            <option value="C">C (LR14, HR14, Baby)</option>
+                            <option value="D">D (LR20, HR20, Mono)</option>
+                            <option value="18650">18650</option>
+                            <option value="21700">21700</option>
+                            <option value="Autre">Autre</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Année / date (opt.) :</label>
+                        <input type="text" inputmode="numeric" id="annee" class="date-flex" placeholder="Ex: 2022 ou 05/2022" autocomplete="off">
+                    </div>
+                </div>
 
+                <div id="xxxNextHint" style="display:none; font-size:0.78rem; color:#8e44ad; margin-top:6px; font-weight:bold;"></div>
                 <div id="reconnuBadge" class="status-reconnu">✅ Pile reconnue : infos masquées pour gain de place</div>
 
                 <div class="section-info" id="specsBlock">
                     <div style="font-weight: bold; font-size: 0.85rem; margin-bottom: 5px;">Caractéristiques nominales / indiquées</div>
                     <div class="grid-2">
-                        <div>
-                            <label>Année / date (opt.) :</label>
-                            <input type="text" inputmode="numeric" id="annee" class="date-flex" placeholder="Ex: 2022 ou 05/2022" autocomplete="off">
-                        </div>
                         <div>
                             <label>Chimie :</label>
                             <select id="type">
@@ -420,9 +425,11 @@
                                 <option value="LiFePO4">LiFePO4</option>
                             </select>
                         </div>
+                        <div>
+                            <label>Appareil / Affectation :</label>
+                            <input type="text" id="appareil" placeholder="Ex: Horloge salon">
+                        </div>
                     </div>
-                    <label>Appareil / Affectation :</label>
-                    <input type="text" id="appareil" placeholder="Ex: Horloge salon">
                     <div class="grid-2">
                         <div>
                             <label>Volt indiqué :</label>
@@ -475,7 +482,26 @@
     <div class="tab-content" id="tab-calculateur">
         <div class="card">
             <h3 style="margin-top: 0;">🧮 Assistant SkyRC NC3000 Pro &amp; XTAR VX4 V2</h3>
-            <p style="font-size:0.85rem; color:var(--text-muted);">Bascule automatique selon la chimie et le format : <b>SkyRC NC3000 Pro</b> pour AA/AAA NiMH &amp; NiCd (0.20–3.00 A, pas de 100 mA, -ΔV dynamique, Cycle/Break-in) et <b>XTAR VX4 V2</b> pour les accus Li-ion (3.6/3.7V et 1.5V régulés), LiFePO4 ou formats C/D/18650/21700.</p>
+            <p style="font-size:0.85rem; color:var(--text-muted);">Choisissez le chargeur utilisé pour adapter les lots proposés, les chimies/formats supportés et les réglages.</p>
+
+            <div class="grid-2">
+                <div>
+                    <label>Chargeur utilisé :</label>
+                    <select id="calcChargeur" onchange="changerChargeurAssistant()">
+                        <option value="auto" selected>🔄 Auto (selon chimie / format)</option>
+                        <option value="nc3000">⚙️ SkyRC NC3000 Pro (AA/AAA NiMH/NiCd)</option>
+                        <option value="xtar">🔋 XTAR VX4 V2 (Li-ion / LiFePO4 / NiMH)</option>
+                    </select>
+                </div>
+                <div id="calcSlotsWrap" style="display:none;">
+                    <label>Accus simultanés (VX4 V2) :</label>
+                    <select id="calcSlots" onchange="calculerParametresCharge()">
+                        <option value="1">1 baie (max 3.0 A)</option>
+                        <option value="2">2 baies (max 2.0 A / baie)</option>
+                        <option value="4" selected>3–4 baies (max 1.0 A / baie)</option>
+                    </select>
+                </div>
+            </div>
             
             <label>Choisir un lot / modèle de pile :</label>
             <select id="calcPileSelect" onchange="selectionnerPileAssistant()" oninput="selectionnerPileAssistant()" onblur="selectionnerPileAssistant()">
@@ -490,25 +516,51 @@
             <div class="grid-2">
                 <div>
                     <label>Chimie :</label>
-                    <select id="calcChimie" onchange="calculerParametresCharge()">
+                    <select id="calcChimie" onchange="onChangeChimieFormatAssistant()">
                         <option value="NiMH">NiMH</option>
                         <option value="NiCd">NiCd</option>
-                        <option value="Li-ion">Li-ion</option>
-                        <option value="LiFePO4">LiFePO4</option>
+                        <option value="Li-ion">Li-ion (3.6/3.7V)</option>
+                        <option value="Li-ion-1.5V">Li-ion 1.5V (AA/AAA régulé)</option>
+                        <option value="LiFePO4">LiFePO4 (3.2V)</option>
                     </select>
                 </div>
                 <div>
-                    <label>Vitesse de charge :</label>
+                    <label>Format :</label>
+                    <select id="calcFormatSelect" onchange="onChangeChimieFormatAssistant()">
+                        <option value="AA">AA</option>
+                        <option value="AAA">AAA</option>
+                        <option value="C">C (LR14)</option>
+                        <option value="D">D (LR20)</option>
+                        <option value="18650">18650</option>
+                        <option value="21700">21700</option>
+                        <option value="Autre">Autre</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div id="calcCibleWrap">
+                    <label id="calcCibleLabel">Vitesse de charge :</label>
                     <select id="calcCible" onchange="calculerParametresCharge()">
                         <option value="0.5" selected>0.5C (Douce — préférée Panasonic)</option>
                         <option value="1.0">1.0C (Standard rapide)</option>
                     </select>
                 </div>
+                <div>
+                    <label>Capacité nominale (mAh) :</label>
+                    <input type="number" id="calcMah" value="1900" oninput="calculerParametresCharge()">
+                </div>
             </div>
 
-            <label>Capacité nominale (mAh) :</label>
-            <input type="number" id="calcMah" value="1900" oninput="calculerParametresCharge()">
-            <div id="calcMahHint" style="margin-top:4px;font-size:0.85rem;color:#e67e22;font-weight:bold;"></div>
+            <div id="calcMwhWrap" style="display:none; margin-top:8px; padding:8px 10px; background:var(--header-bg); border:1px dashed var(--border-color); border-radius:6px;">
+                <label style="margin-top:0; font-size:0.8rem;">⚡ Convertisseur Li-ion 1.5V (étiquette en mWh → mAh) :</label>
+                <div class="grid-2" style="align-items:center;">
+                    <input type="number" id="calcMwhInput" placeholder="Ex: 3600 ou 4150 mWh" oninput="convertirMwhAssistant()" style="margin-top:4px;">
+                    <div id="calcMwhResult" style="font-size:0.78rem; color:var(--text-muted); line-height:1.35;">Saisissez les mWh indiqués sur la pile 1.5V pour calculer les mAh nominaux et la capacité réelle attendue au VX4 V2 (-10 % abaisseur).</div>
+                </div>
+            </div>
+
+            <div id="calcMahHint" style="margin-top:6px;font-size:0.85rem;color:#e67e22;font-weight:bold;"></div>
 
             <div class="calc-result-card" id="calcResultats">
                 <!-- Rempli dynamiquement -->
@@ -724,7 +776,33 @@
             "🧮 Assistant SkyRC NC3000 Pro & XTAR VX4 V2":"🧮 SkyRC NC3000 Pro & XTAR VX4 V2 Assistant",
             "Bascule automatique selon la chimie et le format : SkyRC NC3000 Pro pour AA/AAA NiMH & NiCd (0.20–3.00 A, pas de 100 mA, -ΔV dynamique, Cycle/Break-in) et XTAR VX4 V2 pour les accus Li-ion (3.6/3.7V et 1.5V régulés), LiFePO4 ou formats C/D/18650/21700.":"Auto-switches by chemistry and size: SkyRC NC3000 Pro for AA/AAA NiMH & NiCd (0.20–3.00 A, 100 mA steps, dynamic -ΔV, Cycle/Break-in) and XTAR VX4 V2 for Li-ion (3.6/3.7V and regulated 1.5V), LiFePO4 or C/D/18650/21700 sizes.",
             "Lot unitaire / paire (catégorie XXX -)":"Single / pair batch (XXX - category)",
+            "Bascule automatique selon la chimie et le format :":"Auto-switches by chemistry and size:",
+            "pour AA/AAA NiMH & NiCd (0.20–3.00 A, pas de 100 mA, -ΔV dynamique, Cycle/Break-in) et":"for AA/AAA NiMH & NiCd (0.20–3.00 A, 100 mA steps, dynamic -ΔV, Cycle/Break-in) and",
+            "pour les accus Li-ion (3.6/3.7V et 1.5V régulés), LiFePO4 ou formats C/D/18650/21700.":"for Li-ion cells (3.6/3.7V and regulated 1.5V), LiFePO4 or C/D/18650/21700 sizes.",
+            "— Aucune / réglages généraux —":"— None / general settings —",
+            "Nombre de piles":"Number of batteries",
+            "Autre":"Other",
+            "Ex: 1900":"E.g. 1900",
+            "Ex: 1850":"E.g. 1850",
+            "Ex: 25":"E.g. 25",
             "Catégorie XXX -":"XXX - category",
+            "Choisissez le chargeur utilisé pour adapter les lots proposés, les chimies/formats supportés et les réglages.":"Choose the charger in use to adapt the suggested battery batches, supported chemistries/sizes and settings.",
+            "Chargeur utilisé :":"Charger used:",
+            "🔄 Auto (selon chimie / format)":"🔄 Auto (by chemistry / size)",
+            "⚙️ SkyRC NC3000 Pro (AA/AAA NiMH/NiCd)":"⚙️ SkyRC NC3000 Pro (AA/AAA NiMH/NiCd)",
+            "🔋 XTAR VX4 V2 (Li-ion / LiFePO4 / NiMH)":"🔋 XTAR VX4 V2 (Li-ion / LiFePO4 / NiMH)",
+            "Accus simultanés (VX4 V2) :":"Simultaneous cells (VX4 V2):",
+            "1 baie (max 3.0 A)":"1 slot (max 3.0 A)",
+            "2 baies (max 2.0 A / baie)":"2 slots (max 2.0 A / slot)",
+            "3–4 baies (max 1.0 A / baie)":"3–4 slots (max 1.0 A / slot)",
+            "Li-ion (3.6/3.7V)":"Li-ion (3.6/3.7V)",
+            "Li-ion 1.5V (AA/AAA régulé)":"Li-ion 1.5V (regulated AA/AAA)",
+            "LiFePO4 (3.2V)":"LiFePO4 (3.2V)",
+            "C (LR14)":"C (LR14)",
+            "D (LR20)":"D (LR20)",
+            "⚡ Convertisseur Li-ion 1.5V (étiquette en mWh → mAh) :":"⚡ 1.5V Li-ion Converter (labeled mWh → mAh):",
+            "Ex: 3600 ou 4150 mWh":"E.g. 3600 or 4150 mWh",
+            "Saisissez les mWh indiqués sur la pile 1.5V pour calculer les mAh nominaux et la capacité réelle attendue au VX4 V2 (-10 % abaisseur).":"Enter the mWh printed on the 1.5V cell to compute nominal mAh and expected VX4 V2 reading (-10% step-down loss).",
             "Réglages calibrés pour le SkyRC NC3000 Pro (AA/AAA, NiMH/NiCd), calculés depuis vos lots de piles. Plages appareil : charge 0.20–3.00 A, décharge 0.20–2.50 A, capacité 100–5000 mAh.":"Settings calibrated for the SkyRC NC3000 Pro (AA/AAA, NiMH/NiCd), computed from your battery batches. Device ranges: charge 0.20–3.00 A, discharge 0.20–2.50 A, capacity 100–5000 mAh.",
             "Réglages calibrés pour le SkyRC NC3000 Pro (AA/AAA, NiMH/NiCd) d’après les recommandations Panasonic / SkyRC et le manuel NC3000. Plages appareil : charge 0.20–3.00 A (pas de 100 mA), décharge 0.20–2.50 A, capacité 100–5000 mAh. Panasonic recommande 0.5C–1.0C (0.5C préféré).":"Settings calibrated for the SkyRC NC3000 Pro (AA/AAA, NiMH/NiCd) from Panasonic / SkyRC recommendations and the NC3000 manual. Device ranges: charge 0.20–3.00 A (100 mA steps), discharge 0.20–2.50 A, capacity 100–5000 mAh. Panasonic recommends 0.5C–1.0C (0.5C preferred)."
         };
@@ -773,7 +851,10 @@
                 btnOk:'OK', btnCancel:'Annuler',
                 askRenameLot:(ancien,nouveau,n)=>`« ${ancien} » contient ${n} autre(s) pile(s).\n\nRenommer aussi tout le lot en « ${nouveau} » ?`,
                 renameAll:n=>`Renommer les ${n} piles`, renameOne:'Seulement celle-ci',
-                dupPile:(id,marque)=>`Impossible : une pile #${id} existe déjà dans « ${marque} ».`,
+                dupPile:(id,marque,annee)=>`Impossible : une pile #${id}${annee ? ' (' + annee + ')' : ''} existe déjà dans « ${marque} ».`,
+                xxxGroupTitle:'🧩 XXX — Unitaires & Paires',
+                xxxNextFree:(nextId,total)=>`💡 Groupe XXX (${total} pile${total>1?'s':''}) — prochain n° libre : #${nextId}`,
+                xxxUseBtn:id=>`Utiliser #${id}`,
                 lotRenamed:n=>`✅ ${n} piles renommées !`,
                 confirmDelPile:(id,marque,n)=>`Supprimer la pile #${id}${marque ? ' (' + marque + ')' : ''} et ses ${n} relevé(s) ?\n\nCette action est irréversible.`,
                 importedReplace:'✅ Importation réussie ! Base remplacée.',
@@ -825,7 +906,10 @@
                 btnOk:'OK', btnCancel:'Cancel',
                 askRenameLot:(ancien,nouveau,n)=>`"${ancien}" contains ${n} other batter${n>1?'ies':'y'}.\n\nAlso rename the whole batch to "${nouveau}"?`,
                 renameAll:n=>`Rename all ${n}`, renameOne:'Only this one',
-                dupPile:(id,marque)=>`Not possible: a battery #${id} already exists in "${marque}".`,
+                dupPile:(id,marque,annee)=>`Not possible: a battery #${id}${annee ? ' (' + annee + ')' : ''} already exists in "${marque}".`,
+                xxxGroupTitle:'🧩 XXX — Singles & Pairs',
+                xxxNextFree:(nextId,total)=>`💡 XXX group (${total} cell${total>1?'s':''}) — next free ID: #${nextId}`,
+                xxxUseBtn:id=>`Use #${id}`,
                 lotRenamed:n=>`✅ ${n} batteries renamed!`,
                 confirmDelPile:(id,marque,n)=>`Delete battery #${id}${marque ? ' (' + marque + ')' : ''} and its ${n} measurement(s)?\n\nThis cannot be undone.`,
                 importedReplace:'✅ Import successful! Database replaced.',
@@ -866,6 +950,9 @@
             document.title = LANG === 'en' ? EN["Gestionnaire Piles & Accus"] : "Gestionnaire Piles & Accus";
             document.getElementById('langBtn').innerText = LANG === 'en' ? 'FR' : 'EN';
             localStorage.setItem('lang_piles', LANG);
+            if (typeof majHintXxx === 'function') majHintXxx();
+            if (typeof adapterOptionsAssistantSelonChargeur === 'function') adapterOptionsAssistantSelonChargeur();
+            if (typeof convertirMwhAssistant === 'function') convertirMwhAssistant();
             remplirSelectPilesAssistant();
             calculerParametresCharge();
         }
@@ -1028,9 +1115,144 @@
         }
         const alerter = msg => dialogue(msg);
 
+        function estCompatibleChargeur(modeChargeur, format, type) {
+            if (modeChargeur === 'nc3000') {
+                return (type === 'NiMH' || type === 'NiCd') && (format === 'AA' || format === 'AAA');
+            }
+            if (modeChargeur === 'xtar') {
+                // XTAR VX4 V2 gère Li-ion (3.6/3.7V et 1.5V AA/AAA), LiFePO4 (3.2V) et NiMH (AA/AAA/A/SC/C/D), mais pas NiCd officiel
+                return type !== 'NiCd';
+            }
+            return true;
+        }
+
+        window.changerChargeurAssistant = function() {
+            const chSel = document.getElementById('calcChargeur');
+            const mode = chSel ? chSel.value : 'auto';
+            try { localStorage.setItem('calc_chargeur', mode); } catch (e) {}
+            adapterOptionsAssistantSelonChargeur();
+            remplirSelectPilesAssistant();
+            calculerParametresCharge();
+        };
+
+        window.onChangeChimieFormatAssistant = function() {
+            const chemEl = document.getElementById('calcChimie');
+            const fmtEl = document.getElementById('calcFormatSelect');
+            if (chemEl && fmtEl) {
+                if (chemEl.value === 'Li-ion-1.5V' && fmtEl.value !== 'AA' && fmtEl.value !== 'AAA') {
+                    fmtEl.value = 'AA';
+                }
+                window._calcFormat = fmtEl.value;
+            }
+            adapterOptionsAssistantSelonChargeur();
+            calculerParametresCharge();
+        };
+
+        window.convertirMwhAssistant = function() {
+            const inp = document.getElementById('calcMwhInput');
+            const res = document.getElementById('calcMwhResult');
+            const mahEl = document.getElementById('calcMah');
+            if (!inp || !res) return;
+            const mwh = parseFloat(inp.value);
+            if (!(mwh > 0)) {
+                res.innerHTML = LANG === 'en'
+                    ? 'Enter the mWh printed on the 1.5V cell to compute nominal mAh and expected VX4 V2 reading (-10% step-down loss).'
+                    : 'Saisissez les mWh indiqués sur la pile 1.5V pour calculer les mAh nominaux et la capacité réelle attendue au VX4 V2 (-10 % abaisseur).';
+                return;
+            }
+            const mahNom = Math.round(mwh / 1.5);
+            const mahReelXtar = Math.round(mahNom * 0.90);
+            if (mahEl) mahEl.value = String(mahNom);
+            res.innerHTML = LANG === 'en'
+                ? `Nominal (÷1.5V): <b>${mahNom} mAh</b> · Expected on VX4 V2 after ~10% converter loss: <b>~${mahReelXtar} mAh</b> (${Math.round(mwh * 0.90)} mWh)`
+                : `Nominal (÷1,5V) : <b>${mahNom} mAh</b> · Attendu sur le VX4 V2 après ~10 % de perte abaisseur : <b>~${mahReelXtar} mAh</b> (${Math.round(mwh * 0.90)} mWh)`;
+            calculerParametresCharge();
+        };
+
+        function adapterOptionsAssistantSelonChargeur() {
+            const chSel = document.getElementById('calcChargeur');
+            const chemEl = document.getElementById('calcChimie');
+            const fmtEl = document.getElementById('calcFormatSelect');
+            const cibleEl = document.getElementById('calcCible');
+            const cibleLbl = document.getElementById('calcCibleLabel');
+            if (!chSel || !chemEl || !fmtEl || !cibleEl) return;
+
+            const mode = chSel.value;
+            // Activer/désactiver les chimies et formats selon le chargeur forcé
+            Array.from(chemEl.options).forEach(opt => {
+                if (mode === 'nc3000') {
+                    opt.disabled = (opt.value !== 'NiMH' && opt.value !== 'NiCd');
+                } else if (mode === 'xtar') {
+                    opt.disabled = (opt.value === 'NiCd');
+                } else {
+                    opt.disabled = false;
+                }
+            });
+            if (chemEl.selectedOptions[0] && chemEl.selectedOptions[0].disabled) {
+                chemEl.value = 'NiMH';
+            }
+
+            Array.from(fmtEl.options).forEach(opt => {
+                if (mode === 'nc3000') {
+                    opt.disabled = (opt.value !== 'AA' && opt.value !== 'AAA');
+                } else {
+                    opt.disabled = false;
+                }
+            });
+            if (fmtEl.selectedOptions[0] && fmtEl.selectedOptions[0].disabled) {
+                fmtEl.value = 'AA';
+            }
+            window._calcFormat = fmtEl.value || 'AA';
+
+            // Déterminer si on est en mode XTAR effectif
+            const chimieBase = chemEl.value === 'Li-ion-1.5V' ? 'Li-ion' : chemEl.value;
+            const estXtarEffectif = mode === 'xtar' || (mode === 'auto' && (chimieBase === 'Li-ion' || chimieBase === 'LiFePO4' || (fmtEl.value !== 'AA' && fmtEl.value !== 'AAA')));
+
+            const slotsWrap = document.getElementById('calcSlotsWrap');
+            if (slotsWrap) slotsWrap.style.display = estXtarEffectif ? 'block' : 'none';
+
+            const mwhWrap = document.getElementById('calcMwhWrap');
+            const isLi15 = chemEl.value === 'Li-ion-1.5V' || (chimieBase === 'Li-ion' && (fmtEl.value === 'AA' || fmtEl.value === 'AAA'));
+            if (mwhWrap) mwhWrap.style.display = (estXtarEffectif && isLi15) ? 'block' : 'none';
+
+            // Adapter le sélecteur de vitesse / courant selon le chargeur et la chimie
+            const prevCible = cibleEl.value;
+            if (estXtarEffectif) {
+                if (chimieBase === 'NiMH') {
+                    if (cibleLbl) cibleLbl.textContent = LANG === 'en' ? 'VX4 V2 NiMH current:' : 'Courant NiMH VX4 V2 :';
+                    cibleEl.innerHTML = `<option value="0.5A_fixed" selected>${LANG === 'en' ? '0.5 A fixed (automatic on VX4 V2)' : '0,5 A fixe (automatique sur VX4 V2)'}</option>`;
+                    cibleEl.disabled = true;
+                } else {
+                    cibleEl.disabled = false;
+                    if (cibleLbl) cibleLbl.textContent = LANG === 'en' ? 'Target current / rate (VX4 V2):' : 'Vitesse / courant cible (VX4 V2) :';
+                    cibleEl.innerHTML = `
+                        <option value="0.5">${LANG === 'en' ? '0.5C (Gentle — recommended)' : '0.5C (Douce — recommandée)'}</option>
+                        <option value="1.0">${LANG === 'en' ? '1.0C (Fast standard)' : '1.0C (Standard rapide)'}</option>
+                        <option value="A_0.25">${LANG === 'en' ? 'Manual 0.25 A (small cells)' : 'Manuel 0,25 A (petits accus)'}</option>
+                        <option value="A_0.5">${LANG === 'en' ? 'Manual 0.50 A' : 'Manuel 0,50 A'}</option>
+                        <option value="A_1.0">${LANG === 'en' ? 'Manual 1.00 A' : 'Manuel 1,00 A'}</option>
+                        <option value="A_2.0">${LANG === 'en' ? 'Manual 2.00 A (max 2 slots)' : 'Manuel 2,00 A (max 2 baies)'}</option>
+                        <option value="A_3.0">${LANG === 'en' ? 'Manual 3.00 A (1 slot only)' : 'Manuel 3,00 A (1 seule baie)'}</option>
+                    `;
+                    if (Array.from(cibleEl.options).some(o => o.value === prevCible)) cibleEl.value = prevCible;
+                    else cibleEl.value = '0.5';
+                }
+            } else {
+                cibleEl.disabled = false;
+                if (cibleLbl) cibleLbl.textContent = LANG === 'en' ? 'Charge rate (NC3000 Pro):' : 'Vitesse de charge (NC3000 Pro) :';
+                cibleEl.innerHTML = `
+                    <option value="0.5">${LANG === 'en' ? '0.5C (Gentle — Panasonic preferred)' : '0.5C (Douce — préférée Panasonic)'}</option>
+                    <option value="1.0">${LANG === 'en' ? '1.0C (Fast standard)' : '1.0C (Standard rapide)'}</option>
+                `;
+                cibleEl.value = (prevCible === '1.0') ? '1.0' : '0.5';
+            }
+        }
+
         function remplirSelectPilesAssistant() {
             const select = document.getElementById('calcPileSelect');
             if (!select) return;
+            const chSel = document.getElementById('calcChargeur');
+            const modeChargeur = chSel ? chSel.value : 'auto';
             const valeurActuelle = select.value;
             const texteLibre = LANG === 'en' ? '-- Manual / Free input --' : '-- Saisie manuelle / Libre --';
             select.innerHTML = `<option value="">${texteLibre}</option>`;
@@ -1051,14 +1273,19 @@
             });
 
             groupesMap.forEach((g, cle) => {
+                const compat = estCompatibleChargeur(modeChargeur, g.format, g.type);
                 const opt = document.createElement('option');
                 opt.value = cle;
                 const suffixePile = g.count > 1 ? (LANG === 'en' ? 'batteries' : 'piles') : (LANG === 'en' ? 'battery' : 'pile');
-                opt.textContent = `${g.format} - ${g.marque} (${g.mahNom} mAh, ${g.type}) [${g.count} ${suffixePile}]`;
+                const tagIncompat = !compat ? (LANG === 'en' ? ' ⚠️ [Other charger]' : ' ⚠️ [Autre chargeur]') : '';
+                opt.textContent = `${g.format} - ${g.marque} (${g.mahNom} mAh, ${g.type}) [${g.count} ${suffixePile}]${tagIncompat}`;
                 select.appendChild(opt);
             });
-            select.value = valeurActuelle;
-            // refresh individual picker if a batch is still selected
+            if (Array.from(select.options).some(o => o.value === valeurActuelle)) {
+                select.value = valeurActuelle;
+            } else {
+                select.value = '';
+            }
             selectionnerPileAssistant();
         }
 
@@ -1071,15 +1298,17 @@
 
             var indivSel = document.getElementById('calcPileIndiv');
             var indivLbl = document.getElementById('calcPileIndivLabel');
-            window._calcFormat = 'AA';
+            var fmtSel = document.getElementById('calcFormatSelect');
             window._calcBatchPiles = [];
 
             if (!cle) {
+                window._calcFormat = fmtSel ? fmtSel.value : 'AA';
                 if (indivSel) {
                     indivSel.style.display = 'none';
                     indivSel.innerHTML = '<option value="">— ' + (LANG === 'en' ? 'None / general settings' : 'Aucune / réglages généraux') + ' —</option>';
                 }
                 if (indivLbl) indivLbl.style.display = 'none';
+                adapterOptionsAssistantSelonChargeur();
                 try { calculerParametresCharge(); } catch (e) {}
                 return;
             }
@@ -1092,28 +1321,14 @@
             if (isNaN(mahNom) || mahNom <= 0) mahNom = 1900;
 
             window._calcFormat = format;
+            if (fmtSel) fmtSel.value = format;
 
-            // Force capacity + chemistry into the form fields
-            try {
-                var mahEl = document.getElementById('calcMah');
-                if (mahEl) {
-                    mahEl.value = String(mahNom);
-                    // dispatch input so any listeners see it
-                    try { mahEl.dispatchEvent(new Event('input', { bubbles: true })); } catch (e3) {}
-                }
-                var chemEl = document.getElementById('calcChimie');
-                if (chemEl) {
-                    for (var ci = 0; ci < chemEl.options.length; ci++) {
-                        if (chemEl.options[ci].value === type) { chemEl.value = type; break; }
-                    }
-                }
-            } catch (e1) {}
-
-            // Build individual battery list
+            // Build individual battery list first so we know if it's 1.5V Li-ion
             var inventaire = [];
             try { inventaire = JSON.parse(localStorage.getItem('stock_piles') || '[]'); } catch (e2) { inventaire = []; }
 
             var piles = [];
+            var is15V = false;
             for (var i = 0; i < inventaire.length; i++) {
                 var p = inventaire[i];
                 var pFormat = p.format || 'AA';
@@ -1122,12 +1337,34 @@
                 var pMah = Number(p.mahNominal) || 1900;
                 if (pFormat === format && pMarque === marque && pType === type && pMah === mahNom) {
                     piles.push({ p: p, idx: i });
+                    if (pType === 'Li-ion' && ((p.voltNominal && p.voltNominal <= 1.8) || pFormat === 'AA' || pFormat === 'AAA')) {
+                        is15V = true;
+                    }
                 }
             }
             piles.sort(function(a, b) {
                 return String(a.p.id).localeCompare(String(b.p.id), undefined, { numeric: true });
             });
             window._calcBatchPiles = piles;
+
+            try {
+                var mahEl = document.getElementById('calcMah');
+                if (mahEl) mahEl.value = String(mahNom);
+                var chemEl = document.getElementById('calcChimie');
+                if (chemEl) {
+                    var targetChem = (type === 'Li-ion' && is15V) ? 'Li-ion-1.5V' : type;
+                    // Si le chargeur forcé désactive cette chimie, basculer le sélecteur de chargeur sur Auto pour ne pas bloquer l'utilisateur
+                    var chSel = document.getElementById('calcChargeur');
+                    if (chSel && chSel.value !== 'auto' && !estCompatibleChargeur(chSel.value, format, type)) {
+                        chSel.value = 'auto';
+                    }
+                    adapterOptionsAssistantSelonChargeur();
+                    for (var ci = 0; ci < chemEl.options.length; ci++) {
+                        if (chemEl.options[ci].value === targetChem) { chemEl.value = targetChem; break; }
+                    }
+                    adapterOptionsAssistantSelonChargeur();
+                }
+            } catch (e1) {}
 
             if (indivSel && indivLbl) {
                 var prev = indivSel.value;
@@ -1420,40 +1657,21 @@
         }
 
         function calculerParametresCharge() {
-            const chimie = document.getElementById('calcChimie').value;
+            const chSel = document.getElementById('calcChargeur');
+            const modeChargeur = chSel ? chSel.value : 'auto';
+            const chimieSel = document.getElementById('calcChimie').value;
+            const chimie = chimieSel === 'Li-ion-1.5V' ? 'Li-ion' : chimieSel;
             let mah = parseInt(document.getElementById('calcMah').value, 10) || 1900;
-            const cRate = parseFloat(document.getElementById('calcCible').value);
-            let format = window._calcFormat || 'AA';
+            const cibleRaw = document.getElementById('calcCible').value || '0.5';
+            const fmtSel = document.getElementById('calcFormatSelect');
+            let format = (fmtSel && fmtSel.value) ? fmtSel.value : (window._calcFormat || 'AA');
             const indivVal = (function(){var el=document.getElementById('calcPileIndiv');return el?el.value:'';})();
 
-            let voltNominalLot = null;
+            let voltNominalLot = chimieSel === 'Li-ion-1.5V' ? 1.5 : null;
             let irMaxLot = null;
             let anneeMinLot = null;
 
-            // Fallback: if a batch is selected, always take format/capacity from its key
             try {
-                var batchSel = document.getElementById('calcPileSelect');
-                var batchVal = batchSel ? batchSel.value : '';
-                if (batchVal) {
-                    var bp = batchVal.split('__');
-                    if (bp.length >= 4) {
-                        format = bp[0] || format;
-                        window._calcFormat = format;
-                        var mFromBatch = parseInt(bp[3], 10);
-                        if (!isNaN(mFromBatch) && mFromBatch > 0) {
-                            mah = mFromBatch;
-                            var mahEl = document.getElementById('calcMah');
-                            if (mahEl && String(mahEl.value) !== String(mah)) mahEl.value = String(mah);
-                        }
-                        var typeFromBatch = bp[2];
-                        var chemEl = document.getElementById('calcChimie');
-                        if (chemEl && typeFromBatch) {
-                            for (var ci = 0; ci < chemEl.options.length; ci++) {
-                                if (chemEl.options[ci].value === typeFromBatch) { chemEl.value = typeFromBatch; break; }
-                            }
-                        }
-                    }
-                }
                 if (window._calcBatchPiles && window._calcBatchPiles.length) {
                     const cibles = (indivVal !== '' && indivVal !== '__ALL__')
                         ? window._calcBatchPiles.filter(x => String(x.idx) === String(indivVal))
@@ -1472,63 +1690,131 @@
             const box = document.getElementById('calcResultats');
             if (!box) return;
 
-            // Bascule automatique sur le XTAR VX4 V2 si Li-ion / LiFePO4 ou format non supporté par le NC3000 Pro (C, D, 18650, 21700, Autre)
-            const estXtar = (chimie === 'Li-ion' || chimie === 'LiFePO4' || (format !== 'AA' && format !== 'AAA'));
+            // Déterminer quel chargeur afficher
+            const estXtar = modeChargeur === 'xtar' || (modeChargeur === 'auto' && (chimie === 'Li-ion' || chimie === 'LiFePO4' || (format !== 'AA' && format !== 'AAA')));
+
             if (estXtar) {
-                const isLiIon15V = chimie === 'Li-ion' && ((voltNominalLot && voltNominalLot <= 1.8) || ((format === 'AA' || format === 'AAA') && (!voltNominalLot || voltNominalLot <= 1.8)));
-                const paliersXtar = [0.25, 0.5, 1.0, 2.0, 3.0];
-                const cibleA = (mah * cRate) / 1000;
-                const courantXtar = paliersXtar.reduce((prev, curr) => Math.abs(curr - cibleA) < Math.abs(prev - cibleA) ? curr : prev, 0.5);
-                const dureeChargeH = (mah / (courantXtar * 1000)) * 1.18;
-                const dureeGradH = dureeChargeH + (mah / 300) + dureeChargeH; // Charge + Décharge (~300mA sur VX4 V2) + Recharge
-                const voltCoupure = isLiIon15V ? '1.50 V régulé (coupure interne ~4.2V)' : (chimie === 'LiFePO4' ? '3.65 V (activer mode LiFePO4)' : (chimie === 'Li-ion' ? '4.20 V' : '1.45 V (-ΔV)'));
+                const isLiIon15V = chimieSel === 'Li-ion-1.5V' || (chimie === 'Li-ion' && ((voltNominalLot && voltNominalLot <= 1.8) || ((format === 'AA' || format === 'AAA') && (!voltNominalLot || voltNominalLot <= 1.8))));
+                const nbSlots = parseInt((document.getElementById('calcSlots') || {}).value || '4', 10);
+                const maxSlotA = nbSlots === 1 ? 3.0 : nbSlots === 2 ? 2.0 : 1.0;
+
+                let courantXtar = 0.5;
+                let noteCourantFr = '';
+                let noteCourantEn = '';
+
+                if (chimie === 'NiMH') {
+                    courantXtar = 0.5;
+                    noteCourantFr = 'Courant fixe de 0,5 A imposé par le XTAR VX4 V2 en mode Ni-MH (technologie CVSA, coupure à 1,45 V ± 0,1 V).';
+                    noteCourantEn = 'Fixed 0.5 A current on the XTAR VX4 V2 in Ni-MH mode (CVSA tech, 1.45 V ± 0.1 V cut-off).';
+                } else {
+                    const paliersDispo = [0.25, 0.5, 1.0, 2.0, 3.0].filter(p => p <= maxSlotA);
+                    let cibleA;
+                    if (cibleRaw.startsWith('A_')) {
+                        cibleA = parseFloat(cibleRaw.slice(2));
+                    } else {
+                        const cRateVal = parseFloat(cibleRaw) || 0.5;
+                        cibleA = (mah * cRateVal) / 1000;
+                    }
+                    courantXtar = paliersDispo.reduce((prev, curr) => Math.abs(curr - cibleA) < Math.abs(prev - cibleA) ? curr : prev, paliersDispo[0]);
+                    const brideParBaies = cibleA > maxSlotA;
+                    noteCourantFr = `Plafond sélectionné sur le chargeur (paliers dispo pour ${nbSlots === 4 ? '3–4 baies' : nbSlots + ' baie(s)'} : ${paliersDispo.join(' / ')} A${brideParBaies ? ' — bridé à ' + maxSlotA + ' A par le nombre de baies' : ''}). Le VX4 V2 ajuste automatiquement le courant réel selon la RI.`;
+                    noteCourantEn = `Upper limit set on charger (available steps for ${nbSlots === 4 ? '3–4 slots' : nbSlots + ' slot(s)'}: ${paliersDispo.join(' / ')} A${brideParBaies ? ' — capped at ' + maxSlotA + ' A by slot count' : ''}). VX4 V2 auto-adjusts actual current based on IR.`;
+                }
+
+                const facteurCharge = chimie === 'NiMH' ? 1.30 : 1.18;
+                const dureeChargeH = (mah / (courantXtar * 1000)) * facteurCharge;
+                const dureeDischarge300H = mah / 300;
+                const dureeGradH = dureeChargeH + dureeDischarge300H + dureeChargeH;
+
+                let voltCoupureFr = '4,20 V ± 0,05 V (Mode Standard · 3 étapes TC/CC/CV · coupure ≤ 150 mA)';
+                let voltCoupureEn = '4.20 V ± 0.05 V (Standard Mode · 3-stage TC/CC/CV · cut-off ≤ 150 mA)';
+                let voltDechargeFr = '2,50 V (norme IEC 61960-3 sous 300 mA)';
+                let voltDechargeEn = '2.50 V (IEC 61960-3 standard at 300 mA)';
+
+                if (isLiIon15V) {
+                    voltCoupureFr = '1,50 V régulé (Mode Standard · coupure interne gérée par l’accu)';
+                    voltCoupureEn = '1.50 V regulated (Standard Mode · internal BMS cut-off)';
+                    voltDechargeFr = '0,50 V sous 300 mA fixes';
+                    voltDechargeEn = '0.50 V at fixed 300 mA';
+                } else if (chimie === 'LiFePO4') {
+                    voltCoupureFr = '3,65 V ± 0,05 V (⚠️ Activer le mode LiFePO4 — mémorisé même après coupure secteur)';
+                    voltCoupureEn = '3.65 V ± 0.05 V (⚠️ Enable LiFePO4 mode — retained in memory after power loss)';
+                    voltDechargeFr = '2,00 V sous 300 mA fixes';
+                    voltDechargeEn = '2.00 V at fixed 300 mA';
+                } else if (chimie === 'NiMH') {
+                    voltCoupureFr = '1,45 V ± 0,10 V (détection CVSA à 0,5 A fixe)';
+                    voltCoupureEn = '1.45 V ± 0.10 V (CVSA detection at fixed 0.5 A)';
+                    voltDechargeFr = '~0,90–1,00 V sous 300 mA fixes';
+                    voltDechargeEn = '~0.90–1.00 V at fixed 300 mA';
+                }
+
+                // Biais de mesure 300mA vs 0.2C IEC
+                const iIec02C = Math.round(mah * 0.2);
+                let noteBiaisFr = '';
+                let noteBiaisEn = '';
+                if (!isLiIon15V && chimie === 'Li-ion' && mah >= 2500) {
+                    noteBiaisFr = `<li><strong>Biais de mesure (300 mA vs 0.2C) :</strong> Le VX4 V2 décharge à <b>300 mA fixes</b> alors que la norme IEC 61960-3 teste cet accu à 0,2C (<b>${iIec02C} mA</b>). Le courant plus doux sur le VX4 V2 réduit la chute de tension et donne souvent un résultat en mAh légèrement <b>supérieur</b> au nominal.</li>`;
+                    noteBiaisEn = `<li><strong>Grading bias (300 mA vs 0.2C):</strong> The VX4 V2 discharges at a <b>fixed 300 mA</b> whereas IEC 61960-3 tests this cell at 0.2C (<b>${iIec02C} mA</b>). The gentler 300 mA load yields a slightly <b>higher</b> mAh reading than rated.</li>`;
+                }
+
+                const mahAttendu15V = Math.round(mah * 0.90);
+                const mwhEquiv15V = Math.round(mah * 1.5);
 
                 try {
                     var hintX = document.getElementById('calcMahHint');
                     if (hintX) {
                         hintX.innerHTML = LANG === 'en'
-                            ? `XTAR VX4 V2 selected automatically (${escapeHtml(chimie)} · ${escapeHtml(format)}) — est. charge: <b>~${formaterDureeHeures(dureeChargeH)}</b> at ${courantXtar} A`
-                            : `XTAR VX4 V2 sélectionné automatiquement (${escapeHtml(chimie)} · ${escapeHtml(format)}) — charge estimée : <b>~${formaterDureeHeures(dureeChargeH)}</b> à ${courantXtar} A`;
+                            ? `XTAR VX4 V2 (${escapeHtml(chimie)}${isLiIon15V ? ' 1.5V' : ''} · ${escapeHtml(format)}) — Charge: <b>${courantXtar} A (~${formaterDureeHeures(dureeChargeH)})</b> · Grading (300 mA): <b>~${formaterDureeHeures(dureeGradH)}</b>`
+                            : `XTAR VX4 V2 (${escapeHtml(chimie)}${isLiIon15V ? ' 1.5V' : ''} · ${escapeHtml(format)}) — Charge : <b>${courantXtar} A (~${formaterDureeHeures(dureeChargeH)})</b> · Grading (300 mA) : <b>~${formaterDureeHeures(dureeGradH)}</b>`;
                     }
                 } catch (eHx) {}
 
                 if (LANG === 'en') {
                     box.innerHTML = `
-                        <strong>🔋 XTAR VX4 V2 settings — ${escapeHtml(format)} ${mah} mAh (${escapeHtml(chimie)}${isLiIon15V ? ' 1.5V' : ''}):</strong><br>
-                        <div style="background:rgba(39,174,96,0.12);border:1px solid #27ae60;padding:8px 10px;border-radius:6px;margin:8px 0;font-size:0.82rem;">
-                            ℹ️ The SkyRC NC3000 Pro only supports AA/AAA NiMH &amp; NiCd. Use your <b>XTAR VX4 V2</b> for this battery.
-                        </div>
-                        <strong>⚡ CHARGE MODE:</strong><br>
-                        • <strong>Recommended slot current:</strong> <b>${courantXtar} A</b> <small>(VX4 V2 steps: 0.25 / 0.5 / 1.0 / 2.0 / 3.0 A · requested ${cRate}C ≈ ${cibleA.toFixed(2)} A)</small><br>
-                        • <strong>End voltage / mode:</strong> <b>${voltCoupure}</b><br>
-                        • <strong>Estimated charge time:</strong> <b>~${formaterDureeHeures(dureeChargeH)}</b><br><br>
-                        <strong>📏 GRADING (CAPACITY TEST) MODE:</strong><br>
-                        • <strong>Sequence:</strong> Full charge → Discharge (~300 mA) → Full recharge<br>
-                        • <strong>Estimated total duration:</strong> <b>~${formaterDureeHeures(dureeGradH)}</b><br>
-                        ${isLiIon15V ? '• <strong>1.5V Li-ion note:</strong> The VX4 V2 natively detects and grades 1.5V regulated AA/AAA Li-ion cells (e.g. Dracutum). Log nominal voltage as <b>1.50 V</b>.<br>' : ''}
-                        • <strong>Internal resistance (IR):</strong> <small> ≤ 30 mΩ excellent · 30–60 mΩ good · 60–90 mΩ aging · &gt; 90 mΩ worn</small>
+                        <strong>🔋 XTAR VX4 V2 (Visible Mixer) — ${escapeHtml(format)} ${mah} mAh (${escapeHtml(chimie)}${isLiIon15V ? ' 1.5V' : ''}):</strong><br>
+                        <strong>⚡ CHARGE PROGRAM:</strong><br>
+                        • <strong>Slot Current:</strong> <b>${courantXtar} A</b> <small>(${noteCourantEn})</small><br>
+                        • <strong>Target / Cut-off Voltage:</strong> ${voltCoupureEn}<br>
+                        • <strong>Estimated Charge Time:</strong> <b>~${formaterDureeHeures(dureeChargeH)}</b><br><br>
+                        <strong>📏 CAPACITY TEST (GRADING MODE):</strong><br>
+                        • <strong>Sequence:</strong> Full charge → <b>300 mA fixed discharge</b> (to ${voltDechargeEn}) → Full recharge (&gt;95% lab accuracy)<br>
+                        • <strong>Estimated Grading Duration:</strong> <b>~${formaterDureeHeures(dureeGradH)}</b> <small>(discharge alone: ~${formaterDureeHeures(dureeDischarge300H)})</small><br>
+                        ${isLiIon15V ? `• <strong>1.5V Li-ion mWh / mAh reading:</strong> Press the <b>mWh/mAh</b> button once to toggle units (default is mAh). Because the built-in 3.6V→1.5V step-down converter has ~10% energy loss, a cell rated from its raw 3.6V core (${mwhEquiv15V} mWh / ${mah} mAh) will genuinely measure around <b>~${mahAttendu15V} mAh</b> at 1.5V output.<br>` : ''}
+                        <br><strong>💡 XTAR VX4 V2 TECHNICAL NOTES:</strong>
+                        <ul style="margin:4px 0 0 18px;padding:0;font-size:0.84rem;">
+                            <li><strong>Power adapter:</strong> Use a <b>USB-C PD 20W (12V 1.67A)</b> or QC3.0 (9V 2A) adapter (max slot currents: <b>3A×1 / 2A×2 / 1A×4 / 0.5A×4 / 0.25A×4</b>).</li>
+                            <li><strong>Mixing rules:</strong> You can mix 1.5V Li-ion + 1.2V NiMH + 3.6/3.7V Li-ion (Standard mode), OR 1.5V Li-ion + 1.2V NiMH + 3.2V LiFePO4 (LiFePO4 mode). <b>Never mix 3.6/3.7V Li-ion and 3.2V LiFePO4 together</b> (note: VX4 V2 remembers LiFePO4 mode after power loss!).</li>
+                            ${chimie === 'Li-ion' && !isLiIon15V ? '<li><strong>Over-discharged 3.6V Li-ion (&lt;1.65V):</strong> The VX4 V2 may temporarily display <b>Ni-MH</b> while gently reviving the cell with micro-current, then auto-switches to <b>Li-ion</b> once voltage exceeds 2.0V.</li>' : ''}
+                            ${noteBiaisEn}
+                            <li><strong>Internal Resistance (IR):</strong> ≤ 30 mΩ excellent · 30–60 mΩ good · 60–90 mΩ elevated · &gt; 90 mΩ worn.</li>
+                        </ul>
                     `;
                 } else {
                     box.innerHTML = `
-                        <strong>🔋 Réglages XTAR VX4 V2 — ${escapeHtml(format)} ${mah} mAh (${escapeHtml(chimie)}${isLiIon15V ? ' 1.5V' : ''}) :</strong><br>
-                        <div style="background:rgba(39,174,96,0.12);border:1px solid #27ae60;padding:8px 10px;border-radius:6px;margin:8px 0;font-size:0.82rem;">
-                            ℹ️ Le SkyRC NC3000 Pro ne gère que les AA/AAA NiMH &amp; NiCd. Utilisez votre <b>XTAR VX4 V2</b> pour cet accu.
-                        </div>
-                        <strong>⚡ MODE CHARGE :</strong><br>
-                        • <strong>Courant conseillé sur le VX4 V2 :</strong> <b>${courantXtar} A</b> <small>(paliers VX4 V2 : 0.25 / 0.5 / 1.0 / 2.0 / 3.0 A · cible ${cRate}C ≈ ${cibleA.toFixed(2)} A)</small><br>
-                        • <strong>Tension de fin / mode :</strong> <b>${voltCoupure}</b><br>
+                        <strong>🔋 XTAR VX4 V2 (Visible Mixer) — ${escapeHtml(format)} ${mah} mAh (${escapeHtml(chimie)}${isLiIon15V ? ' 1.5V' : ''}) :</strong><br>
+                        <strong>⚡ PROGRAMME CHARGE :</strong><br>
+                        • <strong>Courant par baie :</strong> <b>${courantXtar} A</b> <small>(${noteCourantFr})</small><br>
+                        • <strong>Tension de coupure / mode :</strong> ${voltCoupureFr}<br>
                         • <strong>Durée de charge estimée :</strong> <b>~${formaterDureeHeures(dureeChargeH)}</b><br><br>
-                        <strong>📏 MODE GRADING (TEST DE CAPACITÉ) :</strong><br>
-                        • <strong>Séquence VX4 V2 :</strong> Charge complète → Décharge (~300 mA) → Recharge complète<br>
-                        • <strong>Durée totale estimée (Grad) :</strong> <b>~${formaterDureeHeures(dureeGradH)}</b><br>
-                        ${isLiIon15V ? '• <strong>Spécificité Li-ion 1.5V (ex. Dracutum) :</strong> Le XTAR VX4 V2 détecte et mesure nativement la capacité des accus AA/AAA Li-ion 1.5V régulés. Renseignez <b>1.50 V</b> en tension nominale.<br>' : ''}
-                        • <strong>Repères Résistance Interne (RI) :</strong> <small> ≤ 30 mΩ excellente · 30–60 mΩ correcte · 60–90 mΩ élevée · &gt; 90 mΩ usée</small>
+                        <strong>📏 TEST DE CAPACITÉ (MODE GRADING) :</strong><br>
+                        • <strong>Séquence :</strong> Charge pleine → <b>Décharge fixe à 300 mA</b> (coupure ${voltDechargeFr}) → Recharge complète (précision &gt; 95 %)<br>
+                        • <strong>Durée totale estimée (Grad) :</strong> <b>~${formaterDureeHeures(dureeGradH)}</b> <small>(dont décharge seule : ~${formaterDureeHeures(dureeDischarge300H)})</small><br>
+                        ${isLiIon15V ? `• <strong>Lecture mWh / mAh (Li-ion 1.5V) :</strong> Un clic court sur le bouton <b>mWh/mAh</b> bascule l’affichage (mAh par défaut). Le convertisseur abaisseur 3,6V→1,5V intégré à la pile ayant ~10 % de perte, une pile annoncée sur sa cellule brute (${mwhEquiv15V} mWh / ${mah} mAh) mesurera normalement autour de <b>~${mahAttendu15V} mAh</b> réels en sortie 1,5V.<br>` : ''}
+                        <br><strong>💡 NOTES TECHNIQUES XTAR VX4 V2 :</strong>
+                        <ul style="margin:4px 0 0 18px;padding:0;font-size:0.84rem;">
+                            <li><strong>Alimentation :</strong> Utiliser un adaptateur <b>USB-C PD 20W (12V 1,67A)</b> ou QC3.0 (9V 2A) pour disposer de toute la puissance (répartition max : <b>3A×1 / 2A×2 / 1A×4 / 0,5A×4 / 0,25A×4</b>).</li>
+                            <li><strong>Règles de mixage :</strong> Vous pouvez panacher Li-ion 1.5V + NiMH 1.2V + Li-ion 3.6/3.7V (Mode Standard), OU Li-ion 1.5V + NiMH 1.2V + LiFePO4 3.2V (Mode LiFePO4). <b>Ne jamais charger simultanément du Li-ion 3.6/3.7V et du LiFePO4 3.2V</b> (attention : la V2 mémorise le mode LiFePO4 même après débranchement).</li>
+                            ${chimie === 'Li-ion' && !isLiIon15V ? '<li><strong>Li-ion 3.6/3.7V trop déchargée (&lt; 1,65 V) :</strong> Si le VX4 V2 la reconnaît d’abord comme une <b>Ni-MH 1.2V</b>, c’est normal : il applique un réveil micro-courant et basculera automatiquement en <b>Li-ion</b> dès que la tension dépassera 2,0 V.</li>' : ''}
+                            ${noteBiaisFr}
+                            <li><strong>Repères Résistance Interne (RI) :</strong> ≤ 30 mΩ excellente · 30–60 mΩ correcte · 60–90 mΩ élevée · &gt; 90 mΩ usée.</li>
+                        </ul>
                     `;
                 }
                 return;
             }
 
             // Plages officielles SkyRC NC3000 Pro (AA/AAA NiMH & NiCd)
+            const cRate = parseFloat(cibleRaw) || 0.5;
             const arrondi01 = v => Math.round(v * 10) / 10;
             const courantTheorique = (mah * cRate) / 1000;
             let courantCharge = arrondi01(Math.min(3.0, Math.max(0.2, courantTheorique)));
@@ -1557,7 +1843,6 @@
             const dureeDechargeEstH = mah / (courantDecharge * 1000);
             const dureeCycleEstH = dureeChargeEstH + dureeDechargeEstH + 0.5; // + repos
 
-            // Live hint under rated capacity field
             try {
                 var hint = document.getElementById('calcMahHint');
                 if (hint) {
@@ -1577,6 +1862,12 @@
             const dechargeTxt = `<b>${courantDecharge} A</b>`;
 
             let warns = [];
+            if (chimie !== 'NiMH' && chimie !== 'NiCd') warns.push(LANG === 'en'
+                ? `⚠️ ${chimie} NOT supported by the NC3000 Pro (switch charger to XTAR VX4 V2).`
+                : `⚠️ ${chimie} NON pris en charge par le NC3000 Pro (passez le sélecteur sur XTAR VX4 V2).`);
+            if (format !== 'AA' && format !== 'AAA') warns.push(LANG === 'en'
+                ? `⚠️ ${format} size NOT supported by the NC3000 Pro (use XTAR VX4 V2).`
+                : `⚠️ Format ${format} NON pris en charge par le NC3000 Pro (utilisez le XTAR VX4 V2).`);
             if (mah < 100 || mah > 5000) warns.push(LANG === 'en'
                 ? '⚠️ Capacity outside the supported range (100–5000 mAh).'
                 : '⚠️ Capacité hors plage supportée (100–5000 mAh).');
@@ -1676,7 +1967,7 @@
                     • No trickle charge and no Restart Voltage top-ups on Eneloop (overcharge risk)<br>
                     • Power: USB-C <b>PD/QC adapter of 30 W or more</b> (NC3000 Pro)<br>
                     • <b>IR Auto</b> (Current Mode) lowers the current as internal resistance rises (1.5 A &gt; 20 mΩ, 800 mA &gt; 40 mΩ, 400 mA &gt; 60 mΩ) — ideal for old cells<br>
-                    • For Li-ion (1.5V AA/AAA or 3.7V 18650/21700), switch chemistry to Li-ion above to get <b>XTAR VX4 V2</b> settings
+                    • If you want to charge this NiMH cell on your <b>XTAR VX4 V2</b> instead, select <b>XTAR VX4 V2</b> in "Charger used" above (0.5 A fixed CVSA)
                 `;
             } else {
                 box.innerHTML = `
@@ -1703,7 +1994,7 @@
                     • Pas de charge d’entretien (trickle) ni de Restart Voltage sur les Eneloop (risque de surcharge)<br>
                     • Alimentation : adaptateur USB-C <b>PD/QC de 30 W minimum</b> (NC3000 Pro)<br>
                     • <b>IR Auto</b> réduit automatiquement le courant quand la résistance interne monte (1,5 A &gt; 20 mΩ, 800 mA &gt; 40 mΩ, 400 mA &gt; 60 mΩ) — très utile pour les vieilles piles<br>
-                    • Pour vos accus Li-ion (AA 1.5V Dracutum ou 18650/21700), sélectionnez leur lot ou la chimie Li-ion ci-dessus pour afficher les réglages <b>XTAR VX4 V2</b>
+                    • Si vous souhaitez charger cette pile NiMH sur votre <b>XTAR VX4 V2</b>, choisissez <b>XTAR VX4 V2</b> dans « Chargeur utilisé » en haut (charge CVSA à 0,5 A fixe)
                 `;
             }
         }
@@ -1821,7 +2112,14 @@
             items.forEach(it => { const t = it.pile.type || 'Autre'; if (!vus.includes(t)) vus.push(t); });
             return vus.map(t => `<span class="chem-ico" title="${escapeHtml(t)}">${iconeChimie(t)}</span>`).join('');
         }
+        function estMarqueXxx(marque) {
+            return /^XXX(\s*[-–—:]|\s*$)/i.test(String(marque || '').trim());
+        }
+
         function htmlGroupe(format, marque) {
+            if (estMarqueXxx(marque)) {
+                return `<span style="color:#8e44ad;">${escapeHtml(T('xxxGroupTitle'))}</span>`;
+            }
             const label = libelleGroupe(format, marque);
             let f = (format || '').trim();
             if (!f) return escapeHtml(label);
@@ -1855,14 +2153,49 @@
             return m;
         }
 
+        function prochainIdLibreXxx() {
+            const inv = JSON.parse(localStorage.getItem('stock_piles')) || [];
+            const nums = new Set();
+            let count = 0;
+            inv.forEach(p => {
+                if (estMarqueXxx(p.marque)) {
+                    count++;
+                    const m = String(p.id || '').trim().match(/^(\d+)$/);
+                    if (m) nums.add(parseInt(m[1], 10));
+                }
+            });
+            let next = 1;
+            while (nums.has(next)) next++;
+            return { next: String(next), count };
+        }
+
+        window.appliquerIdXxx = function(idStr) {
+            pileIdInput.value = idStr;
+            verifierPileExistante();
+        };
+
+        function majHintXxx() {
+            const hint = document.getElementById('xxxNextHint');
+            const inp = document.getElementById('marque');
+            if (!hint || !inp) return;
+            if (estMarqueXxx(inp.value)) {
+                const { next, count } = prochainIdLibreXxx();
+                hint.innerHTML = `${escapeHtml(T('xxxNextFree', next, count))} <button type="button" class="small-btn clone-btn" style="margin-left:6px;padding:2px 7px;font-size:0.72rem;" onclick="appliquerIdXxx('${escapeAttr(next)}')">${escapeHtml(T('xxxUseBtn', next))}</button>`;
+                hint.style.display = 'block';
+            } else {
+                hint.style.display = 'none';
+            }
+        }
+
         function syncXxxCheckbox(inputId, checkId, labelId) {
             const inp = document.getElementById(inputId);
             const chk = document.getElementById(checkId);
             const lbl = document.getElementById(labelId);
             if (!inp || !chk) return;
-            const isXxx = /^XXX(\s*[-–—:]|\s*$)/i.test(inp.value.trim());
+            const isXxx = estMarqueXxx(inp.value);
             chk.checked = isXxx;
             if (lbl) lbl.classList.toggle('active', isXxx);
+            if (inputId === 'marque') majHintXxx();
         }
 
         window.toggleXxxPrefix = function(inputId, checkId, labelId) {
@@ -1874,11 +2207,17 @@
             const sansXxx = val.replace(/^XXX\s*[-–—:]?\s*/i, '').trim();
             if (chk.checked) {
                 inp.value = sansXxx ? `XXX - ${sansXxx}` : 'XXX - ';
+                if (inputId === 'marque' && !pileIdInput.value.trim()) {
+                    pileIdInput.value = prochainIdLibreXxx().next;
+                }
             } else {
                 inp.value = sansXxx;
             }
             if (lbl) lbl.classList.toggle('active', chk.checked);
-            if (inputId === 'marque') verifierPileExistante();
+            if (inputId === 'marque') {
+                majHintXxx();
+                verifierPileExistante();
+            }
             inp.focus();
         };
 
@@ -1915,10 +2254,28 @@
             return T('voltWarn', v, type + (voltNominal ? ' ' + voltNominal + ' V' : ''), min, max);
         }
 
-        function normaliserCle(marque, id, format = '') { return `${String(format || '').trim().toLowerCase()}__${nettoyerMarque(marque, format).toLowerCase()}__${(id || '').trim().toLowerCase()}`; }
+        function normaliserCle(marque, id, format = '', annee = '') {
+            const anIso = normaliserAnnee(annee) || '';
+            return `${String(format || '').trim().toLowerCase()}__${nettoyerMarque(marque, format).toLowerCase()}__${(id || '').trim().toLowerCase()}__${anIso.toLowerCase()}`;
+        }
+
+        function trouverPileExistante(inventaire, marque, id, format, anneeSaisie) {
+            const anIso = normaliserAnnee(anneeSaisie) || '';
+            if (anIso) {
+                return inventaire.find(p => normaliserCle(p.marque, p.id, p.format, p.annee) === normaliserCle(marque, id, format, anIso));
+            }
+            // Si l'année n'est pas précisée, correspond uniquement s'il y a une seule pile avec ce format + marque + id
+            const candidats = inventaire.filter(p =>
+                String(p.format || '').trim().toLowerCase() === String(format || '').trim().toLowerCase() &&
+                nettoyerMarque(p.marque, p.format).toLowerCase() === nettoyerMarque(marque, format).toLowerCase() &&
+                String(p.id || '').trim().toLowerCase() === String(id || '').trim().toLowerCase()
+            );
+            return candidats.length === 1 ? candidats[0] : null;
+        }
 
         function libelleGroupe(format, marque) {
-            const m = (marque || '').trim() || T('noBrand');
+            const m = nettoyerMarque(marque, format) || T('noBrand');
+            if (estMarqueXxx(m)) return 'XXX';
             let f = (format || '').trim();
             if (!f) return m;
             if (f === 'Autre') f = LANG === 'en' ? 'Other' : 'Autre';
@@ -2400,7 +2757,7 @@
                 }
 
                 const SEUIL_CYCLES_REPLIES = 4;
-                const clePile = normaliserCle(item.pile.marque, item.pile.id, item.pile.format);
+                const clePile = normaliserCle(item.pile.marque, item.pile.id, item.pile.format, item.pile.annee);
                 const estDeplie = !!cyclesDeplies[clePile];
                 const mesuresVisibles = (item.mesuresAffichees.length > SEUIL_CYCLES_REPLIES && !estDeplie)
                     ? item.mesuresAffichees.slice(0, SEUIL_CYCLES_REPLIES) : item.mesuresAffichees;
@@ -2471,8 +2828,12 @@
                     groupes[m].push(item);
                 });
 
-                Object.keys(groupes).sort((a,b) => a.localeCompare(b)).forEach(marque => {
-                    groupes[marque].sort((a,b) => (a.pile.id || '').localeCompare(b.pile.id || '', undefined, {numeric: true}));
+                Object.keys(groupes).sort((a,b) => (a === 'XXX') - (b === 'XXX') || a.localeCompare(b)).forEach(marque => {
+                    groupes[marque].sort((a,b) =>
+                        String(a.pile.id || '').localeCompare(String(b.pile.id || ''), undefined, {numeric: true}) ||
+                        String(a.pile.annee || '').localeCompare(String(b.pile.annee || '')) ||
+                        String(a.pile.marque || '').localeCompare(String(b.pile.marque || ''))
+                    );
                     const cartesHtml = groupes[marque].map(genererCarteHtml).join('');
                     
                     const isOuvert = etatsMarques[marque] !== false; 
@@ -2558,6 +2919,7 @@
             pileIdInput.addEventListener(evt, verifierPileExistante);
             formatInput.addEventListener(evt, verifierPileExistante);
             marqueInput.addEventListener(evt, verifierPileExistante);
+            anneeInput.addEventListener(evt, verifierPileExistante);
         });
 
         function verifierPileExistante() {
@@ -2565,9 +2927,12 @@
             const idVal = pileIdInput.value.trim(), marqueVal = marqueInput.value.trim();
             if (!idVal || !marqueVal) return deverrouillerChampsFixes();
             const inventaire = JSON.parse(localStorage.getItem('stock_piles')) || [];
-            const pile = inventaire.find(p => normaliserCle(p.marque, p.id, p.format) === normaliserCle(marqueVal, idVal, formatInput.value));
+            const pile = trouverPileExistante(inventaire, marqueVal, idVal, formatInput.value, anneeInput.value);
             if (pile) {
-                anneeInput.value = pile.annee || ''; typeInput.value = pile.type || 'NiMH';
+                if (!anneeInput.value.trim() && pile.annee && document.activeElement !== anneeInput) {
+                    anneeInput.value = pile.annee;
+                }
+                typeInput.value = pile.type || 'NiMH';
                 voltNominalInput.value = pile.voltNominal || ''; mahNominalInput.value = pile.mahNominal || '';
                 appareilInput.value = pile.appareil || '';
                 verrouillerChampsFixes(true);
@@ -2575,7 +2940,7 @@
         }
 
         function verrouillerChampsFixes(v) {
-            [anneeInput, typeInput, voltNominalInput, mahNominalInput, appareilInput].forEach(el => el.disabled = v);
+            [typeInput, voltNominalInput, mahNominalInput, appareilInput].forEach(el => el.disabled = v);
             reconnuBadge.style.display = v ? 'block' : 'none';
             revalideDates();
             specsBlock.style.display = v ? 'none' : 'block';
@@ -2610,8 +2975,9 @@
                 const idsACreer = idEnd ? genererIdsLot(idStart, idEnd) : [idStart];
                 let inventaire = JSON.parse(localStorage.getItem('stock_piles')) || [];
 
+                const anneeNorm = normaliserAnnee(anneeInput.value);
                 idsACreer.forEach(id => {
-                    let pile = inventaire.find(p => normaliserCle(p.marque, p.id, p.format) === normaliserCle(marque, id, formatInput.value));
+                    let pile = trouverPileExistante(inventaire, marque, id, formatInput.value, anneeNorm);
                     if (pile) {
                         if (nouvelleMesure) pile.mesures.push({ ...nouvelleMesure });
                     } else {
@@ -2686,12 +3052,14 @@
                 }
             }
 
+            const nouvelleAnnee = normaliserAnnee(document.getElementById('editAnnee').value);
             const modifies = [index, ...(renommerLot ? autres : [])];
             const marqueFinale = i => modifies.includes(i) ? nouvelleMarque : inv[i].marque;
             const idFinal = i => i === index ? nouvelId : inv[i].id;
             const formatFinal = i => i === index ? nouveauFormat : inv[i].format;
-            const conflit = modifies.find(i => inv.some((_, j) => j !== i && normaliserCle(marqueFinale(j), idFinal(j), formatFinal(j)) === normaliserCle(marqueFinale(i), idFinal(i), formatFinal(i))));
-            if (conflit !== undefined) { await alerter(T('dupPile', idFinal(conflit), marqueFinale(conflit))); return; }
+            const anneeFinale = i => i === index ? nouvelleAnnee : inv[i].annee;
+            const conflit = modifies.find(i => inv.some((_, j) => j !== i && normaliserCle(marqueFinale(j), idFinal(j), formatFinal(j), anneeFinale(j)) === normaliserCle(marqueFinale(i), idFinal(i), formatFinal(i), anneeFinale(i))));
+            if (conflit !== undefined) { await alerter(T('dupPile', idFinal(conflit), marqueFinale(conflit), anneeFinale(conflit))); return; }
 
             inv[index].id = nouvelId; inv[index].marque = nouvelleMarque;
             if (renommerLot) autres.forEach(i => { inv[i].marque = nouvelleMarque; });
@@ -2933,8 +3301,8 @@
                 const stress = idxStress !== -1 ? cols[idxStress] : '';
                 const appareil = idxAppareil !== -1 ? cols[idxAppareil] : '';
 
-                const cle = normaliserCle(marque, id, format);
-                let pile = inventaire.find(p => normaliserCle(p.marque, p.id, p.format) === cle);
+                const cle = normaliserCle(marque, id, format, annee);
+                let pile = inventaire.find(p => normaliserCle(p.marque, p.id, p.format, p.annee) === cle);
                 if (!pile) {
                     pile = { id, marque, annee, format, type, appareil, voltNominal, mahNominal, mesures: [] };
                     inventaire.push(pile);
@@ -3008,10 +3376,10 @@
                                 var nouvellesMesures = 0;
 
                                 dataImport.forEach(function(itemImport) {
-                                    var cleImport = normaliserCle(itemImport.marque, itemImport.id, itemImport.format);
+                                    var cleImport = normaliserCle(itemImport.marque, itemImport.id, itemImport.format, itemImport.annee);
                                     var match = null;
                                     for (var mi = 0; mi < existant.length; mi++) {
-                                        if (normaliserCle(existant[mi].marque, existant[mi].id, existant[mi].format) === cleImport) {
+                                        if (normaliserCle(existant[mi].marque, existant[mi].id, existant[mi].format, existant[mi].annee) === cleImport) {
                                             match = existant[mi];
                                             break;
                                         }
@@ -3071,7 +3439,13 @@
         try { applyTheme(); } catch (e) { console.error(e); }
         try { verifierRappelSauvegarde(); } catch (e) { console.error(e); }
         try { chargerPiles(); } catch (e) { console.error(e); }
-        try { remplirSelectPilesAssistant(); } catch (e) { console.error(e); }
+        try {
+            const savedCh = localStorage.getItem('calc_chargeur');
+            const chEl = document.getElementById('calcChargeur');
+            if (chEl && savedCh && ['auto', 'nc3000', 'xtar'].includes(savedCh)) chEl.value = savedCh;
+            adapterOptionsAssistantSelonChargeur();
+            remplirSelectPilesAssistant();
+        } catch (e) { console.error(e); }
         try { calculerParametresCharge(); } catch (e) { console.error(e); }
         try { ouvrirOnglet(localStorage.getItem('tab_actif') || 'liste'); } catch (e) { console.error(e); }
 
