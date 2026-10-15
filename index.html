@@ -102,7 +102,8 @@
         .btn-action.secondary { background: #7f8c8d; }
         
         .marque-section { margin-bottom: 20px; }
-        .marque-header { display: flex; justify-content: space-between; align-items: center; background: var(--header-bg); padding: 10px 12px; border-radius: 6px; font-weight: bold; margin-bottom: 10px; cursor: pointer; user-select: none; border: 1px solid var(--border-color); }
+        .marque-header { display: flex; justify-content: space-between; align-items: center; background: var(--header-bg); padding: 10px 12px; border-radius: 6px; font-weight: bold; margin-bottom: 10px; cursor: pointer; user-select: none; border: 1px solid var(--border-color); min-width: 0; gap: 8px; }
+        .marque-header > span:first-child { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         
         .pile-card { background: var(--card-bg); border-radius: 6px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-left: 6px solid var(--border-color); padding: 12px; border: 1px solid var(--border-color); }
         .pile-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 8px; }
