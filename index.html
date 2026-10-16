@@ -5,6 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Gestionnaire Piles & Accus</title>
     <meta name="theme-color" content="#27ae60">
+    <script>
+        // Applique le thème et l'onglet mémorisés AVANT le premier affichage (évite le flash blanc / le saut d'onglet au rafraîchissement)
+        (function () {
+            try {
+                var th = localStorage.getItem('theme_piles');
+                if (th === 'dark' || th === 'light' || th === 'auto') document.documentElement.setAttribute('data-theme', th);
+                var tab = localStorage.getItem('tab_actif');
+                if (tab === 'ajouter' || tab === 'calculateur' || tab === 'sauvegarde') {
+                    var st = document.createElement('style');
+                    st.id = 'bootTab';
+                    st.textContent = '.tab-content{display:none!important}#tab-' + tab + '{display:block!important}'
+                        + '.tab-btn.active{color:var(--text-muted)!important;border-bottom-color:transparent!important}'
+                        + '.tab-btn[data-tab="' + tab + '"]{color:var(--text-color)!important;border-bottom-color:#27ae60!important}';
+                    document.head.appendChild(st);
+                }
+            } catch (e) {}
+        })();
+    </script>
     <link rel="manifest" href="manifest.json">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -51,6 +69,7 @@
             }
         }
 
+        html { background-color: var(--bg-color); }
         body { 
             font-family: Arial, sans-serif; 
             background-color: var(--bg-color); 
@@ -120,6 +139,8 @@
         :root[data-theme="dark"] .badge-appareil { background: #01579b; color: #e1f5fe; border-color: #0277bd; }
         
         .mesures-list { list-style: none; padding: 0; margin: 0; }
+        .mesure-item.mesure-encours { border-left: 3px dashed #f39c12; padding-left: 10px; background: rgba(243,156,18,0.08); }
+        .tag-encours { display: inline-block; font-size: 0.72rem; font-weight: bold; padding: 1px 8px; border-radius: 10px; background: #f39c12; color: #fff; margin-left: 4px; }
         .mesure-item { display: flex; justify-content: space-between; align-items: center; font-size: 0.88rem; padding: 6px 0; border-bottom: 1px dashed var(--border-color); }
         .mesure-item:last-child { border-bottom: none; }
         .mesure-date { color: var(--text-muted); font-size: 0.8rem; }
@@ -145,7 +166,12 @@
             .pile-header .small-btn { flex: 1 1 auto; margin: 0; text-align: center; padding: 8px 4px; font-size: 0.75rem; white-space: nowrap; }
         }
 
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .grid-2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+        .grid-2 > div { min-width: 0; }
+        input[type="datetime-local"] { min-width: 0; max-width: 100%; }
+        @media (max-width: 520px) {
+            .grid-dates { grid-template-columns: 1fr; gap: 6px; }
+        }
         .section-info { background: var(--header-bg); border-radius: 6px; padding: 10px; margin-top: 10px; border: 1px solid var(--border-color); }
         .status-reconnu { font-size: 0.85rem; font-weight: bold; color: #27ae60; margin-top: 10px; margin-bottom: 5px; display: none; background: #eafaf1; padding: 8px 12px; border-radius: 6px; border: 1px solid #2ecc71; text-align: center; }
         :root[data-theme="dark"] .status-reconnu { background: #0b4a22; color: #69f0ae; border-color: #00e676; }
@@ -213,8 +239,17 @@
         .speed-ok { background: #e8f8f5; color: #27ae60; border: 1px solid rgba(39,174,96,0.35); }
         .speed-slow { background: #fef5e7; color: #d35400; border: 1px solid rgba(211,84,0,0.35); }
         .speed-wakeup { background: #ebf5fb; color: #2980b9; border: 1px solid rgba(41,128,185,0.35); }
+        .speed-fast { background: #fdedec; color: #c0392b; border: 1px solid rgba(192,57,43,0.35); }
         .speed-unwatched { background: var(--header-bg); color: var(--text-muted); border: 1px dashed var(--border-color); font-weight: normal; }
         :root[data-theme="dark"] .speed-tag { filter: brightness(0.92); }
+        .v24-tag { font-size: 0.72rem; font-weight: bold; padding: 2px 6px; border-radius: 4px; margin-left: 4px; cursor: pointer; display: inline-block; vertical-align: middle; }
+        .v24-ok { background: #e8f8f5; color: #27ae60; border: 1px solid rgba(39,174,96,0.35); }
+        .v24-mid { background: #fef9e7; color: #d68910; border: 1px solid rgba(214,137,16,0.35); }
+        .v24-warn { background: #fef5e7; color: #e67e22; border: 1px solid rgba(230,126,34,0.35); }
+        .v24-bad { background: #fdedec; color: #c0392b; border: 1px solid rgba(192,57,43,0.35); }
+        .v24-suggest { background: #f4ecf7; color: #8e44ad; border: 1px dashed rgba(142,68,173,0.5); font-size: 0.75rem; font-weight: bold; padding: 5px 8px; border-radius: 5px; margin-top: 4px; cursor: pointer; display: inline-block; }
+        :root[data-theme="dark"] .v24-tag, :root[data-theme="dark"] .v24-suggest { filter: brightness(0.95); }
+        :root[data-theme="dark"] .v24-suggest { background: rgba(142,68,173,0.18); color: #d2b4de; }
         .rep-chip[data-fk] { cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent; }
         .paire-card { padding: 10px 12px; }
         .paire-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding-bottom: 6px; }
@@ -373,9 +408,10 @@
                 <option value="id">Tri : Numéro (ID)</option>
             </select>
         </div>
-        <div class="sort-bar" style="align-items:center; margin-top:-5px;">
-            <span class="rep-chip" id="btnDernieres" role="button" style="cursor:pointer; user-select:none;" onclick="toggleDernieres()">🕒 Dernières mesurées</span>
-            <input type="number" id="dernieresNb" inputmode="numeric" min="1" max="50" style="width:70px; margin:0;" onchange="setDernieresNb(this.value)" title="Nombre de piles">
+        <div class="sort-bar" style="align-items:center; margin-top:-5px; gap:6px;">
+            <span class="rep-chip" id="btnDernieres" role="button" style="cursor:pointer; user-select:none; padding:3px 8px; font-size:0.8rem;" onclick="toggleDernieres()">🕒 Dernières mesurées</span>
+            <input type="number" id="dernieresNb" inputmode="numeric" min="1" max="50" style="width:54px; min-width:0; margin:0; padding-left:6px; padding-right:4px;" onchange="setDernieresNb(this.value)" title="Nombre de piles">
+            <span class="rep-chip" id="btnEnCours" role="button" style="cursor:pointer; user-select:none; padding:3px 8px; font-size:0.8rem;" onclick="toggleEnCours()">⏳ En cours <b id="nbEnCours"></b></span>
         </div>
 
         <div id="listePiles"></div>
@@ -454,8 +490,17 @@
                 </div>
 
                 <div class="hint">Relevé facultatif : laisse tension et capacité vides pour enregistrer des piles sans mesure (à tester plus tard).</div>
-                <label>Date et heure du relevé :</label>
-                <input type="datetime-local" id="dateEntree">
+                <div class="hint">Astuce : renseigne seulement « Début du cycle » pour suivre un cycle en cours ; tension et mAh s'ajoutent à la fin (✏️ Cycle).</div>
+                <div class="grid-2 grid-dates">
+                    <div>
+                        <label>Début du cycle (opt.) :</label>
+                        <input type="datetime-local" id="dateDebutEntree" title="Optionnel : heure où vous avez lancé le cycle (utile au cycle #1 ou après une pause)">
+                    </div>
+                    <div>
+                        <label>Fin / relevé du cycle :</label>
+                        <input type="datetime-local" id="dateEntree">
+                    </div>
+                </div>
 
                 <div class="grid-2">
                     <div>
@@ -484,9 +529,13 @@
                     </div>
                 </div>
 
+                <div>
+                    <label>Tension repos ≥ 24h (V, opt.) :</label>
+                    <input type="text" inputmode="decimal" id="volt24h" placeholder="Ex: 1.33 (test autodécharge)">
+                </div>
                 <label class="surv-toggle" id="survAddLabel">
                     <input type="checkbox" id="surveille" onchange="document.getElementById('survAddLabel').classList.toggle('active', this.checked)">
-                    <span>👁️ Cycle surveillé (relancé dès la fin du précédent — analyse la vitesse de charge)</span>
+                    <span>👁️ Cycle surveillé (relancé dès la fin du précédent)</span>
                 </label>
 
                 <button type="submit" class="btn-primary">Enregistrer</button>
@@ -679,7 +728,7 @@
                     </div>
                 </div>
                 <div class="grid-2" style="margin-top: 15px;">
-                    <button type="submit" class="btn-primary" style="margin: 0;">Sauvegarder</button>
+                    <button type="submit" class="btn-primary" style="margin: 0;">Enregistrer</button>
                     <button type="button" class="btn-action secondary" style="margin: 0;" onclick="fermerModales()">Annuler</button>
                 </div>
             </form>
@@ -693,16 +742,25 @@
             <form id="editMesureForm">
                 <input type="hidden" id="editMesurePileIndex">
                 <input type="hidden" id="editMesureIndex">
-                <label>Date et heure :</label>
-                <input type="datetime-local" id="editMesureDate" required>
+                <div class="hint">Début seul (sans tension ni mAh) = cycle en cours.</div>
+                <div class="grid-2 grid-dates">
+                    <div>
+                        <label>Début (opt.) :</label>
+                        <input type="datetime-local" id="editMesureDateDebut">
+                    </div>
+                    <div>
+                        <label>Fin / relevé :</label>
+                        <input type="datetime-local" id="editMesureDate">
+                    </div>
+                </div>
                 <div class="grid-2">
                     <div>
                         <label>Tension (V) :</label>
-                        <input type="text" inputmode="decimal" id="editMesureVolt" required>
+                        <input type="text" inputmode="decimal" id="editMesureVolt">
                     </div>
                     <div>
                         <label>Capacité (mAh) :</label>
-                        <input type="number" inputmode="numeric" id="editMesureMah" required>
+                        <input type="number" inputmode="numeric" id="editMesureMah">
                     </div>
                 </div>
                 <div class="grid-2">
@@ -720,12 +778,16 @@
                         </select>
                     </div>
                 </div>
+                <div>
+                    <label>Tension après repos ≥ 24h (V, opt. — test autodécharge) :</label>
+                    <input type="text" inputmode="decimal" id="editMesureVolt24h" placeholder="Ex: 1.33 (mesurée ≥ 24h après fin de charge)">
+                </div>
                 <label class="surv-toggle" id="survEditLabel">
                     <input type="checkbox" id="editMesureSurveille" onchange="document.getElementById('survEditLabel').classList.toggle('active', this.checked)">
                     <span>👁️ Cycle surveillé (relancé dès la fin du précédent)</span>
                 </label>
                 <div class="grid-2" style="margin-top: 15px;">
-                    <button type="submit" class="btn-primary" style="margin: 0;">Sauvegarder</button>
+                    <button type="submit" class="btn-primary" style="margin: 0;">Enregistrer</button>
                     <button type="button" class="btn-action secondary" style="margin: 0;" onclick="fermerModales()">Annuler</button>
                 </div>
             </form>
@@ -808,8 +870,21 @@
             "Catégorie XXX -":"XXX - category",
             "👁️ Cycle surveillé (relancé dès la fin du précédent — analyse la vitesse de charge)":"👁️ Watched cycle (restarted right after previous — analyzes charge speed)",
             "👁️ Cycle surveillé (relancé dès la fin du précédent)":"👁️ Watched cycle (restarted right after previous)",
+            "👁️ Cycle surveillé (relancé dès la fin)":"👁️ Watched cycle (restarted right away)",
+            "Début du cycle (opt.) :":"Cycle start (opt.):",
+            "Fin / relevé du cycle :":"Cycle end / reading:",
+            "Optionnel : heure où vous avez lancé le cycle (utile au cycle #1 ou après une pause)":"Optional: time when you started the cycle (useful on cycle #1 or after a pause)",
+            "Tension repos ≥ 24h (V, opt.) :":"24h+ rest voltage (V, opt.):",
+            "Ex: 1.33 (test autodécharge)":"E.g. 1.33 (self-discharge test)",
+            "Début (opt.) :":"Start (opt.):",
+            "Fin / relevé :":"End / reading:",
+            "Tension après repos ≥ 24h (V, opt. — test autodécharge) :":"Voltage after 24h+ rest (V, opt. — self-discharge test):",
+            "Ex: 1.33 (mesurée ≥ 24h après fin de charge)":"E.g. 1.33 (measured ≥ 24h after charge)",
             "Choisissez le chargeur utilisé pour adapter les lots proposés, les chimies/formats supportés et les réglages.":"Choose the charger in use to adapt the suggested battery batches, supported chemistries/sizes and settings.",
             "Chargeur utilisé :":"Charger used:",
+            "⏳ En cours":"⏳ In progress",
+            "Début seul (sans tension ni mAh) = cycle en cours.":"Start time only (no voltage or mAh) = cycle in progress.",
+            "Astuce : renseigne seulement « Début du cycle » pour suivre un cycle en cours ; tension et mAh s'ajoutent à la fin (✏️ Cycle).":"Tip: fill in only “Cycle start” to track a cycle in progress; voltage and mAh can be added at the end (✏️ Cycle).",
             "🔄 Auto (selon chimie / format)":"🔄 Auto (by chemistry / size)",
             "⚙️ SkyRC NC3000 Pro (AA/AAA NiMH/NiCd)":"⚙️ SkyRC NC3000 Pro (AA/AAA NiMH/NiCd)",
             "🔋 XTAR VX4 V2 (Li-ion / LiFePO4 / NiMH)":"🔋 XTAR VX4 V2 (Li-ion / LiFePO4 / NiMH)",
@@ -846,6 +921,11 @@
                 noMeasure:'Aucun relevé pour le moment',
                 cyclesLbl:'Cycles :',
                 partialMeasure:'⚠️ Tension et capacité doivent être renseignées ensemble pour créer un relevé.',
+                inProgress:"En cours…", since:"depuis", finishBtn:"✅ Terminer",
+                finishCycleTitle:(id,num)=>`Terminer le cycle #${num} — #${id}`,
+                needStartOrResult:"⚠️ Renseignez au moins l'heure de début, ou tension + capacité.",
+                savedInProgress:"⏳ Cycle en cours enregistré. Ajoutez les résultats à la fin avec « Terminer ».",
+                confirmBackInProgress:"Sans tension ni capacité, ce cycle terminé repassera « En cours » et son relevé de fin sera effacé. Continuer ?",
                 adv_Excellent:'🟢 Excellente santé.', adv_Bon:'🟢 Bonne santé / Bon état.',
                 adv_Fatigue:'🟡 Résistance interne élevée / usure.', adv_Recycler:'⚠️ Capacité trop faible.',
                 adv_ToTest:'⚪ En attente de test.',
@@ -901,6 +981,11 @@
                 noMeasure:'No measurement yet',
                 cyclesLbl:'Cycles:',
                 partialMeasure:'⚠️ Voltage and capacity must be filled in together to save a measurement.',
+                inProgress:"In progress…", since:"since", finishBtn:"✅ Finish",
+                finishCycleTitle:(id,num)=>`Finish cycle #${num} — #${id}`,
+                needStartOrResult:"⚠️ Enter at least a start time, or voltage + capacity.",
+                savedInProgress:"⏳ Cycle in progress saved. Add the results when it ends with “Finish”.",
+                confirmBackInProgress:"With no voltage or capacity, this finished cycle will go back to “In progress” and its end reading will be erased. Continue?",
                 adv_Excellent:'🟢 Excellent health.', adv_Bon:'🟢 Good health.',
                 adv_Fatigue:'🟡 High internal resistance / wear.', adv_Recycler:'⚠️ Capacity too low.',
                 adv_ToTest:'⚪ Pending test.',
@@ -945,6 +1030,8 @@
         function T(key, ...args) { const v = D[LANG][key]; return typeof v === 'function' ? v(...args) : v; }
         function etatLabel(e) { return T('st_' + e) || e; }
         function dateLocale() { return LANG === 'en' ? 'en-GB' : 'fr-FR'; }
+        // Cycle « en cours » : heure de début saisie, sans tension ni capacité
+        function estEnCours(m) { return !!m && (m.enCours === true || (m.mah == null && m.voltage == null)); }
 
         const I18N_REFS = [];
         (function scanI18N() {
@@ -991,6 +1078,8 @@
         let dernieresActif = false;
         let dernieresNb = (() => { try { const n = parseInt(localStorage.getItem('dernieres_nb'), 10); return (n >= 1 && n <= 50) ? n : 4; } catch (e) { return 4; } })();
         window.toggleDernieres = function() { dernieresActif = !dernieresActif; chargerPiles(); };
+        let enCoursActif = false;
+        window.toggleEnCours = function() { enCoursActif = !enCoursActif; chargerPiles(); };
         window.setDernieresNb = function(v) {
             let n = parseInt(v, 10); if (isNaN(n)) n = 4;
             dernieresNb = Math.min(Math.max(n, 1), 50);
@@ -1044,6 +1133,7 @@
         const tabContents = document.querySelectorAll('.tab-content');
 
         window.ouvrirOnglet = function(nom) {
+            const boot = document.getElementById('bootTab'); if (boot) boot.remove();
             tabContents.forEach(tc => tc.classList.toggle('active', tc.id === `tab-${nom}`));
             tabBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.tab === nom));
             if (nom === 'calculateur') { try { remplirSelectPilesAssistant(); } catch (e) { console.error(e); } }
@@ -1405,7 +1495,7 @@
                 for (var j = 0; j < piles.length; j++) {
                     var item = piles[j];
                     var pp = item.p;
-                    var mesures = Array.isArray(pp.mesures) ? pp.mesures.slice() : [];
+                    var mesures = Array.isArray(pp.mesures) ? pp.mesures.filter(function(m){ return !estEnCours(m); }) : [];
                     mesures.sort(function(a, b) { return new Date(a.date) - new Date(b.date); });
                     var nMes = mesures.length;
                     var lastMah = nMes ? mesures[nMes - 1].mah : null;
@@ -1444,7 +1534,7 @@
         function analyserPilePourBreakIn(pile) {
             // Break-in = réveil chimie (neuf / long stockage / peu de cycles)
             // Seuils alignés sur les états : ≥80 Exc · ≥60 Bon · ≥40 Fatigue · <40 Recycler
-            const mesures = Array.isArray(pile.mesures) ? pile.mesures.slice().sort(function(a,b){ return new Date(a.date) - new Date(b.date); }) : [];
+            const mesures = Array.isArray(pile.mesures) ? pile.mesures.filter(function(m){ return !estEnCours(m); }).sort(function(a,b){ return new Date(a.date) - new Date(b.date); }) : [];
             const n = mesures.length;
             const mahNom = pile.mahNominal || 0;
             if (n === 0) {
@@ -1504,7 +1594,7 @@
         function analyserPilePourCycle(pile) {
             // Cycle = mesurer / stabiliser (max 3 sur NC3000)
             // Seuils alignés : ≥80 Exc · ≥60 Bon · ≥40 Fatigue · <40 Recycler
-            const mesures = Array.isArray(pile.mesures) ? pile.mesures.slice().sort(function(a,b){ return new Date(a.date) - new Date(b.date); }) : [];
+            const mesures = Array.isArray(pile.mesures) ? pile.mesures.filter(function(m){ return !estEnCours(m); }).sort(function(a,b){ return new Date(a.date) - new Date(b.date); }) : [];
             const n = mesures.length;
             const mahNom = pile.mahNominal || 0;
             if (n === 0) {
@@ -1910,8 +2000,8 @@
             if (indivVal === '__ALL__' && window._calcBatchPiles && window._calcBatchPiles.length) {
                 const lignesCyc = window._calcBatchPiles.map(({ p }) => {
                     const a = analyserPilePourCycle(p);
-                    const last = (p.mesures || []).length
-                        ? (function(){const s=p.mesures.slice().sort((x,y)=>new Date(x.date)-new Date(y.date));return s[s.length-1].mah;})()
+                    const last = (p.mesures || []).filter(x => !estEnCours(x)).length
+                        ? (function(){const s=p.mesures.filter(x=>!estEnCours(x)).sort((x,y)=>new Date(x.date)-new Date(y.date));return s[s.length-1].mah;})()
                         : '—';
                     const icon = a.level === 'yes' ? '✅' : a.level === 'maybe' ? '🟡' : '⛔';
                     return `<div style="margin:4px 0;padding:6px 8px;background:var(--card-bg);border-radius:4px;border:1px solid var(--border-color);font-size:0.82rem;">
@@ -1934,8 +2024,8 @@
 
                 const lignesBi = window._calcBatchPiles.map(({ p }) => {
                     const a = analyserPilePourBreakIn(p);
-                    const last = (p.mesures || []).length
-                        ? (function(){const s=p.mesures.slice().sort((x,y)=>new Date(x.date)-new Date(y.date));return s[s.length-1].mah;})()
+                    const last = (p.mesures || []).filter(x => !estEnCours(x)).length
+                        ? (function(){const s=p.mesures.filter(x=>!estEnCours(x)).sort((x,y)=>new Date(x.date)-new Date(y.date));return s[s.length-1].mah;})()
                         : '—';
                     const icon = a.level === 'yes' ? '✅' : a.level === 'maybe' ? '🟡' : '⛔';
                     return `<div style="margin:4px 0;padding:6px 8px;background:var(--card-bg);border-radius:4px;border:1px solid var(--border-color);font-size:0.82rem;">
@@ -2104,6 +2194,11 @@
         }, true);
 
         const CHAMPS_RELEVE = ['voltage', 'mah', 'ir', 'stressTest'];
+        const CHAMPS_MODALE = ['editMesureVolt', 'editMesureMah', 'editMesureIr', 'editMesureStress'];
+        function syncEditMesureRequired() {
+            const any = CHAMPS_MODALE.some(id => { const el = document.getElementById(id); return el && el.value.trim() !== ''; });
+            ['editMesureVolt', 'editMesureMah', 'editMesureDate'].forEach(id => { const el = document.getElementById(id); if (el) el.required = any; });
+        }
         function syncMesureRequired() {
             const any = CHAMPS_RELEVE.some(id => document.getElementById(id).value.trim() !== '');
             ['voltage', 'mah', 'dateEntree'].forEach(id => { document.getElementById(id).required = any; });
@@ -2114,8 +2209,10 @@
             el.setCustomValidity('');
             if (el.classList.contains('date-flex')) revalideDates();
             if (CHAMPS_RELEVE.includes(el.id)) syncMesureRequired();
+            if (CHAMPS_MODALE.includes(el.id)) syncEditMesureRequired();
         }, true);
         syncMesureRequired();
+        syncEditMesureRequired();
 
         const ICONES_CHIMIE = { 'NiMH': '♻️', 'NiCd': '🧪', 'Li-ion': '⚡', 'LiFePO4': '🛡️', 'Autre': '❔' };
         
@@ -2267,38 +2364,48 @@
             if (info) alerter(info.detail);
         };
 
-        // Analyse de la durée et de la vitesse de charge sur le XTAR VX4 V2 entre deux cycles consécutifs
-        // (En mode Grading VX4 V2 : Décharge 300 mA fixes + Recharge 500 mA en NiMH)
+        // Analyse de la durée et de la vitesse de charge sur le XTAR VX4 V2
+        // Base physique du calcul (Mode Grading XTAR VX4 V2) :
+        // 1) Décharge fixe à 300 mA : Temps_décharge = mAh_relevés / 300 (ex: 300 mAh = 1h00 incompressible)
+        // 2) Recharge fixe à 500 mA (NiMH) avec facteur de perte ~1,25x : Temps_recharge = (mAh_relevés × 1,25) / 500
+        // 3) Si enchaîné après un cycle terminé (pile déjà pleine) : ~12 min (0,20h) de top-off + Décharge + Recharge
         function analyserVitesseCycle(mesureActuelle, mesurePrecedente, toutesMesures, pile) {
-            if (!mesureActuelle || !mesurePrecedente || !mesureActuelle.date || !mesurePrecedente.date) return null;
-            const t1 = new Date(mesurePrecedente.date).getTime();
+            if (!mesureActuelle || !mesureActuelle.date || estEnCours(mesureActuelle)) return null;
+            if (mesurePrecedente && estEnCours(mesurePrecedente)) mesurePrecedente = null;
+            const aDebutExplicite = !!mesureActuelle.dateDebut;
+            const strDebut = mesureActuelle.dateDebut || (mesurePrecedente ? mesurePrecedente.date : null);
+            if (!strDebut) return null;
+
+            const t1 = new Date(strDebut).getTime();
             const t2 = new Date(mesureActuelle.date).getTime();
             if (isNaN(t1) || isNaN(t2) || t2 <= t1) return null;
             const deltaH = (t2 - t1) / 3600000;
-            if (deltaH < 0.15 || deltaH > 48) return null; // Ignore les saisies simultanées (<9 min) ou les pauses >48h
+            if (deltaH < 0.08 || (!aDebutExplicite && deltaH > 48)) return null;
 
             const mah = Number(mesureActuelle.mah) || 0;
             if (!(mah > 0)) return null;
 
-            const h1 = new Date(mesurePrecedente.date).getHours();
+            const h1 = new Date(strDebut).getHours();
             const h2 = new Date(mesureActuelle.date).getHours();
-            const memeJour = new Date(mesurePrecedente.date).toDateString() === new Date(mesureActuelle.date).toDateString();
-            const TraverseNuit = (!memeJour && (h1 >= 21 || h2 <= 8) && deltaH >= 5.5);
+            const memeJour = new Date(strDebut).toDateString() === new Date(mesureActuelle.date).toDateString();
+            const TraverseNuit = (!aDebutExplicite && !memeJour && (h1 >= 21 || h2 <= 8) && deltaH >= 5.5);
 
-            // Durée théorique d'un cycle Grad enchaîné sur XTAR VX4 V2 (accu déjà chargé à la fin du cycle précédent) :
-            // ~12 min (0.20h) de top-off/repos + décharge à 300 mA (mah/300) + recharge à 500 mA (mah*1.25/500)
-            const tDechargeH = mah / 300.0;
-            const tRechargeTheoH = (mah * 1.25) / 500.0;
+            // Durées physiques sur le XTAR VX4 V2 :
+            const tDechargeH = mah / 300.0; // Décharge à 300 mA fixes (incompressible)
+            const tRechargeTheoH = (mah * 1.25) / 500.0; // Recharge NiMH à 500 mA max
             const tTheoH = 0.20 + tDechargeH + tRechargeTheoH;
 
-            // Calculer aussi la durée habituelle (médiane) des cycles rapides/surveillés de cette pile
+            // Médiane des cycles rapides/surveillés ou à début explicite de cette pile
             let dureesRapides = [];
-            if (Array.isArray(toutesMesures) && toutesMesures.length >= 2) {
-                for (let i = 1; i < toutesMesures.length; i++) {
-                    const a = toutesMesures[i - 1], b = toutesMesures[i];
-                    if (!a.date || !b.date) continue;
-                    const dh = (new Date(b.date).getTime() - new Date(a.date).getTime()) / 3600000;
-                    if (b.surveille === true || (dh >= 0.4 && dh <= 4.5)) dureesRapides.push(dh);
+            if (Array.isArray(toutesMesures) && toutesMesures.length >= 1) {
+                for (let i = 0; i < toutesMesures.length; i++) {
+                    const b = toutesMesures[i];
+                    const a = (i > 0 && !estEnCours(toutesMesures[i - 1])) ? toutesMesures[i - 1] : null;
+                    if (estEnCours(b)) continue;
+                    const sDeb = b.dateDebut || (a ? a.date : null);
+                    if (!sDeb || !b.date) continue;
+                    const dh = (new Date(b.date).getTime() - new Date(sDeb).getTime()) / 3600000;
+                    if (dh >= 0.3 && (b.dateDebut || b.surveille === true || dh <= 4.5)) dureesRapides.push(dh);
                 }
             }
             dureesRapides.sort((x, y) => x - y);
@@ -2307,18 +2414,35 @@
             const dStr = formaterDureeHeures(deltaH);
             const theoStr = formaterDureeHeures(tTheoH);
             const vitMahH = Math.round(mah / deltaH);
-            const estSurveille = mesureActuelle.surveille === true;
+            const estSurveille = mesureActuelle.surveille === true || aDebutExplicite;
             const ratioTheo = deltaH / tTheoH;
             const ratioHab = tHabH ? (deltaH / tHabH) : ratioTheo;
+            const baseCalculFr = `\n\n📐 Base de calcul XTAR VX4 V2 pour ${mah} mAh :\n• Décharge à 300 mA fixes : ${formaterDureeHeures(tDechargeH)} (incompressible)\n• Recharge à 500 mA (+25%) : ~${formaterDureeHeures(tRechargeTheoH)}\n• Total théorique : ~${theoStr} (~135–165 mAh/h)`;
+            const baseCalculEn = `\n\n📐 XTAR VX4 V2 calculation basis for ${mah} mAh:\n• Fixed 300 mA discharge: ${formaterDureeHeures(tDechargeH)} (minimum)\n• 500 mA recharge (+25%): ~${formaterDureeHeures(tRechargeTheoH)}\n• Total theoretical: ~${theoStr} (~135–165 mAh/h)`;
+
+            // Cas 0 : Cycle TROP RAPIDE (physiquement suspect : temps total inférieur à Décharge 300mA + 60% Recharge 500mA)
+            const tMinPhysiqueH = tDechargeH + (mah / 500.0) * 0.65;
+            if (deltaH < tMinPhysiqueH && mah >= 150) {
+                return {
+                    cls: 'speed-fast',
+                    suspect24h: true,
+                    reason24h: LANG === 'en' ? 'Cycle abnormally fast (premature charge cut-off / false peak)' : 'Cycle anormalement rapide (coupure de charge prématurée / faux pic)',
+                    lbl: `⚡ ${dStr} ⚠️ ${LANG === 'en' ? 'Too fast!' : 'Trop rapide !'} (${vitMahH} mAh/h)`,
+                    detail: LANG === 'en'
+                        ? `⚠️ Abnormally fast cycle: ${dStr} for ${mah} mAh (${vitMahH} mAh/h)!\n\nJust discharging ${mah} mAh at 300 mA takes ${formaterDureeHeures(tDechargeH)}, leaving only ${formaterDureeHeures(Math.max(0, deltaH - tDechargeH))} for charging.\n\nDiagnosis: Either the start/end time is inaccurate, or the charger suffered a false premature voltage peak (high IR spike) and stopped charging before the cell was truly full.\n👉 Recommended: Measure resting voltage after 24h to verify if the cell holds its charge.${baseCalculEn}`
+                        : `⚠️ Cycle anormalement rapide : ${dStr} pour ${mah} mAh (${vitMahH} mAh/h) !\n\nRien que la décharge de ${mah} mAh à 300 mA prend ${formaterDureeHeures(tDechargeH)}, ce qui ne laisse que ${formaterDureeHeures(Math.max(0, deltaH - tDechargeH))} pour la recharge.\n\nDiagnostic : Soit l'heure de début/fin est imprécise, soit la pile a provoqué un faux pic de tension (coupure prématurée due à la résistance interne) et n'a pas été rechargée à fond.\n👉 Conseil : Faites un test de tension après 24h de repos pour vérifier si elle tient la charge.${baseCalculFr}`
+                };
+            }
 
             // Cas 1 : Cycle de nuit ou long non marqué surveillé
             if (!estSurveille && (TraverseNuit || deltaH > 6.5)) {
                 return {
                     cls: 'speed-unwatched',
+                    suspect24h: false,
                     lbl: `🌙 ${dStr}`,
                     detail: LANG === 'en'
-                        ? `Elapsed time since previous cycle: ${dStr} (overnight or unattended wait).\n\nTheoretical active XTAR VX4 V2 Grading time for ${mah} mAh is ~${theoStr} (~${ formaterDureeHeures(tDechargeH) } discharge at 300 mA + ~${ formaterDureeHeures(tRechargeTheoH) } recharge).\n\nTip: Click the badge or edit the cycle to mark it as "👁️ Watched" if you actually monitored it.`
-                        : `Temps écoulé depuis le cycle précédent : ${dStr} (nuit ou attente sans surveillance — non pris en compte comme anomalie).\n\nDurée active théorique sur le XTAR VX4 V2 pour ${mah} mAh : ~${theoStr} (~${ formaterDureeHeures(tDechargeH) } de décharge à 300 mA + ~${ formaterDureeHeures(tRechargeTheoH) } de recharge).\n\nAstuce : Si ce cycle a en réalité été surveillé, modifiez le cycle pour cocher « 👁️ Cycle surveillé ».`
+                        ? `Elapsed time since previous cycle: ${dStr} (overnight or unattended wait).${baseCalculEn}\n\nTip: You can enter the exact "Start time" or check "👁️ Watched cycle" when editing if you monitored it.`
+                        : `Temps écoulé depuis le cycle précédent : ${dStr} (nuit ou attente sans surveillance — non compté comme anomalie).${baseCalculFr}\n\nAstuce : Vous pouvez renseigner l'« Heure de début » ou cocher « 👁️ Cycle surveillé » en modifiant le cycle.`
                 };
             }
 
@@ -2326,10 +2450,11 @@
             if (mah < 120 && deltaH >= 2.2 && (estSurveille || !TraverseNuit)) {
                 return {
                     cls: 'speed-wakeup',
+                    suspect24h: false,
                     lbl: `${estSurveille ? '👁️ ' : '⏱️ '}${dStr} · ⚡ ${LANG === 'en' ? 'Wake-up' : 'Réveil'}`,
                     detail: LANG === 'en'
-                        ? `Cycle duration: ${dStr} for only ${mah} mAh (${vitMahH} mAh/h).\n\nThe 300 mA discharge cut off very quickly (~${Math.round(tDechargeH * 60)} min due to initial voltage sag), but the cell then absorbed over ${formaterDureeHeures(deltaH - tDechargeH)} of charge!\n\n👉 Run another Grading cycle: capacity should jump significantly on the next run.`
-                        : `Durée du cycle : ${dStr} pour seulement ${mah} mAh (${vitMahH} mAh/h).\n\nLa décharge à 300 mA a coupé très vite (~${Math.round(tDechargeH * 60)} min à cause d'une chute de tension initiale), mais la pile a ensuite absorbé plus de ${formaterDureeHeures(deltaH - tDechargeH)} de charge !\n\n👉 Relancez un cycle Grad : la capacité devrait bondir fortement au prochain relevé.`
+                        ? `Cycle duration: ${dStr} for only ${mah} mAh (${vitMahH} mAh/h).\n\nThe 300 mA discharge cut off very quickly (~${Math.round(tDechargeH * 60)} min due to initial voltage sag), but the cell then absorbed over ${formaterDureeHeures(deltaH - tDechargeH)} of charge!\n\n👉 Run another Grading cycle: capacity should jump significantly on the next run.${baseCalculEn}`
+                        : `Durée du cycle : ${dStr} pour seulement ${mah} mAh (${vitMahH} mAh/h).\n\nLa décharge à 300 mA a coupé très vite (~${Math.round(tDechargeH * 60)} min à cause d'une chute de tension initiale), mais la pile a ensuite absorbé plus de ${formaterDureeHeures(deltaH - tDechargeH)} de charge !\n\n👉 Relancez un cycle Grad : la capacité devrait bondir fortement au prochain relevé.${baseCalculFr}`
                 };
             }
 
@@ -2342,18 +2467,21 @@
                 if (estSurveille) {
                     return {
                         cls: 'speed-slow',
+                        suspect24h: true,
+                        reason24h: LANG === 'en' ? `Slow charge (${dStr} vs ~${theoStr}, effective ~${iChargeEff} mA)` : `Charge lente (${dStr} contre ~${theoStr}, courant effectif ~${iChargeEff} mA)`,
                         lbl: `👁️ ${dStr} ⚠️ ${LANG === 'en' ? 'Slow' : 'Lent'} (${vitMahH} mAh/h)`,
                         detail: LANG === 'en'
-                            ? `⚠️ Watched cycle took ${dStr}${habTxtEn} vs ~${theoStr} theoretical for ${mah} mAh!\n\n• 300 mA discharge took ~${formaterDureeHeures(tDechargeH)}\n• Remaining charge/rest took ~${formaterDureeHeures(tChargeReelleH)} (effective charge rate dropped to ~${iChargeEff} mA instead of 500 mA).\n\nDiagnosis: The XTAR VX4 V2 throttled current due to high internal resistance (IR) or the cell is struggling to reach the 1.45V CVSA full-charge cut-off (heating / self-discharge).`
-                            : `⚠️ Cycle surveillé anormalement long : ${dStr}${habTxtFr} au lieu de ~${theoStr} théorique pour ${mah} mAh !\n\n• Décharge à 300 mA : ~${formaterDureeHeures(tDechargeH)}\n• Charge + repos : ~${formaterDureeHeures(tChargeReelleH)} (courant effectif tombé à ~${iChargeEff} mA au lieu de 500 mA).\n\nDiagnostic : Soit le XTAR VX4 V2 a bridé le courant à cause d'une résistance interne (RI) élevée, soit la pile chauffe/patine sans réussir à déclencher la coupure CVSA à 1,45 V.`
+                            ? `⚠️ Watched cycle took ${dStr}${habTxtEn} vs ~${theoStr} theoretical for ${mah} mAh!\n\n• Remaining charge/rest took ~${formaterDureeHeures(tChargeReelleH)} (effective charge rate dropped to ~${iChargeEff} mA instead of 500 mA).\n\nDiagnosis: The XTAR VX4 V2 throttled current due to high internal resistance (IR) or the cell is heating / self-discharging and struggling to reach the 1.45V CVSA cut-off.\n👉 Recommended: Do a 24h rest voltage test to check for internal self-discharge.${baseCalculEn}`
+                            : `⚠️ Cycle surveillé anormalement long : ${dStr}${habTxtFr} au lieu de ~${theoStr} théorique pour ${mah} mAh !\n\n• La phase de charge + repos a duré ~${formaterDureeHeures(tChargeReelleH)} (courant effectif tombé à ~${iChargeEff} mA au lieu de 500 mA).\n\nDiagnostic : Soit le XTAR VX4 V2 a bridé le courant à cause d'une résistance interne (RI) élevée, soit la pile chauffe/patine (autodécharge interne) sans réussir à déclencher la coupure CVSA à 1,45 V.\n👉 Conseil : Faites un test de tension après 24h de repos pour vérifier son autodécharge.${baseCalculFr}`
                     };
                 } else {
                     return {
                         cls: 'speed-unwatched',
+                        suspect24h: false,
                         lbl: `⏱️ ${dStr} (${LANG === 'en' ? 'unwatched?' : 'oubli / lent ?'})`,
                         detail: LANG === 'en'
-                            ? `Elapsed time: ${dStr}${habTxtEn} vs ~${theoStr} theoretical for ${mah} mAh (${vitMahH} mAh/h).\n\n• Either the cell finished after ~${theoStr} and waited in the charger before being logged (unwatched / forgotten),\n• Or if you restarted it right away, it has a charging issue (high IR throttling or delayed cut-off). Check "👁️ Watched cycle" when editing if you monitored it.`
-                            : `Temps écoulé : ${dStr}${habTxtFr} contre ~${theoStr} théorique pour ${mah} mAh (${vitMahH} mAh/h).\n\n• Soit la pile a fini son cycle normalement en ~${theoStr} et a attendu avant d'être relevée (non surveillée / oubliée),\n• Soit vous l'avez relancée aussitôt et elle souffre d'un bridage de courant (RI haute / patinage en fin de charge). Cochez « 👁️ Cycle surveillé » dans l'édition du cycle si vous étiez présent.`
+                            ? `Elapsed time: ${dStr}${habTxtEn} vs ~${theoStr} theoretical for ${mah} mAh (${vitMahH} mAh/h).\n\n• Either the cell finished after ~${theoStr} and waited in the charger before being logged (unwatched / forgotten),\n• Or if you restarted it right away, it has a charging issue (high IR throttling or delayed cut-off). Enter "Start time" or check "👁️ Watched cycle" when editing if you monitored it.${baseCalculEn}`
+                            : `Temps écoulé : ${dStr}${habTxtFr} contre ~${theoStr} théorique pour ${mah} mAh (${vitMahH} mAh/h).\n\n• Soit la pile a fini son cycle normalement en ~${theoStr} et a attendu avant d'être relevée (non surveillée / oubliée),\n• Soit vous l'avez relancée aussitôt et elle souffre d'un bridage de courant (RI haute / patinage en fin de charge). Renseignez l'« Heure de début » ou cochez « 👁️ Cycle surveillé » si vous étiez présent.${baseCalculFr}`
                     };
                 }
             }
@@ -2361,18 +2489,75 @@
             // Cas 4 : Vitesse normale / charge franche (ratio proche du théorique)
             return {
                 cls: 'speed-ok',
+                suspect24h: false,
                 lbl: `${estSurveille ? '👁️ ' : '⏱️ '}${dStr} · ${vitMahH} mAh/h`,
                 detail: LANG === 'en'
-                    ? `✅ Normal cycle speed: ${dStr} for ${mah} mAh (${vitMahH} mAh/h, theoretical XTAR VX4 V2 time: ~${theoStr}).\n\n• 300 mA discharge: ~${formaterDureeHeures(tDechargeH)}\n• 500 mA recharge + rest: ~${formaterDureeHeures(Math.max(0.1, deltaH - tDechargeH))}\n\nGood current acceptance and clean CVSA end-of-charge detection.`
-                    : `✅ Vitesse de cycle normale : ${dStr} pour ${mah} mAh (${vitMahH} mAh/h, durée théorique XTAR VX4 V2 : ~${theoStr}).\n\n• Décharge à 300 mA : ~${formaterDureeHeures(tDechargeH)}\n• Recharge à 500 mA + repos : ~${formaterDureeHeures(Math.max(0.1, deltaH - tDechargeH))}\n\nBonne acceptation du courant de charge et détection de fin de charge CVSA franche.`
+                    ? `✅ Normal cycle speed: ${dStr} for ${mah} mAh (${vitMahH} mAh/h).\n\nGood current acceptance and clean CVSA end-of-charge detection.${baseCalculEn}`
+                    : `✅ Vitesse de cycle normale : ${dStr} pour ${mah} mAh (${vitMahH} mAh/h).\n\nBonne acceptation du courant de charge et détection de fin de charge CVSA franche.${baseCalculFr}`
             };
         }
 
         window.expliquerVitesseCycle = function(pIdx, mIdx) {
             const inv = JSON.parse(localStorage.getItem('stock_piles')) || [];
             const p = inv[pIdx];
-            if (!p || !Array.isArray(p.mesures) || mIdx < 1 || !p.mesures[mIdx]) return;
-            const info = analyserVitesseCycle(p.mesures[mIdx], p.mesures[mIdx - 1], p.mesures, p);
+            if (!p || !Array.isArray(p.mesures) || !p.mesures[mIdx]) return;
+            const mPrev = mIdx > 0 ? p.mesures[mIdx - 1] : null;
+            const info = analyserVitesseCycle(p.mesures[mIdx], mPrev, p.mesures, p);
+            if (info) alerter(info.detail);
+        };
+
+        // Évaluation de la tension après ≥ 24h de repos hors chargeur (test d'autodécharge / court-circuit interne)
+        function evaluerVolt24h(v24, voltFinCharge, chimie, voltNominal) {
+            const v = Number(v24);
+            if (!(v > 0)) return null;
+            const v0 = Number(voltFinCharge) || 0;
+            const drop = v0 > v ? Math.round((v0 - v) * 100) / 100 : null;
+            const dropTxt = drop !== null ? ` (-${drop.toFixed(2)}V)` : '';
+
+            if (chimie === 'NiMH' || chimie === 'NiCd') {
+                if (v >= 1.32) return {
+                    cls: 'v24-ok',
+                    lbl: `🧪 24h: ${v}V 🟢`,
+                    detail: LANG === 'en'
+                        ? `✅ Excellent 24h+ resting voltage: ${v} V${dropTxt}.\n\nLow self-discharge (LSD / healthy separator). The cell holds its charge very well.`
+                        : `✅ Excellente tenue à 24h+ : ${v} V${dropTxt}.\n\nFaible autodécharge (bonne santé du séparateur interne). La pile conserve très bien sa charge.`
+                };
+                if (v >= 1.28) return {
+                    cls: 'v24-mid',
+                    lbl: `🧪 24h: ${v}V 🟡`,
+                    detail: LANG === 'en'
+                        ? `🟡 Correct 24h+ resting voltage: ${v} V${dropTxt}.\n\nNormal for standard (non-LSD) NiMH/NiCd cells. Use within a few days/weeks after charging.`
+                        : `🟡 Tenue correcte à 24h+ : ${v} V${dropTxt}.\n\nNormal pour une NiMH/NiCd standard (non faible autodécharge). À utiliser dans les jours ou semaines suivant la charge.`
+                };
+                if (v >= 1.24) return {
+                    cls: 'v24-warn',
+                    lbl: `🧪 24h: ${v}V 🟠`,
+                    detail: LANG === 'en'
+                        ? `🟠 Fast self-discharge at 24h+: ${v} V${dropTxt} (< 1.28 V).\n\nThe cell loses charge quickly at rest. Do not use in clocks/remotes; use immediately after charging.`
+                        : `🟠 Autodécharge rapide à 24h+ : ${v} V${dropTxt} (< 1,28 V).\n\nLa pile perd vite sa charge au repos. Évitez les télécommandes/horloges ; à utiliser immédiatement après charge.`
+                };
+                return {
+                    cls: 'v24-bad',
+                    lbl: `🧪 24h: ${v}V 🔴`,
+                    detail: LANG === 'en'
+                        ? `🔴 Severe self-discharge / internal leakage at 24h+: ${v} V${dropTxt} (< 1.24 V)!\n\nInternal micro-short (dendrites). Even if capacity seemed okay right after charging, this cell empties itself within hours/days. Recycle.`
+                        : `🔴 Fuite interne / autodécharge sévère à 24h+ : ${v} V${dropTxt} (< 1,24 V) !\n\nMicro-court-circuit interne (dendrites). Même si les mAh semblaient corrects à chaud, la pile se vide toute seule en quelques heures/jours. À recycler.`
+                };
+            }
+            if (chimie === 'Li-ion' && (!voltNominal || voltNominal > 2.5)) {
+                if (v >= 4.12) return { cls: 'v24-ok', lbl: `🧪 24h: ${v}V 🟢`, detail: LANG === 'en' ? `✅ Healthy 24h resting voltage (${v} V${dropTxt}).` : `✅ Bonne tenue à 24h (${v} V${dropTxt}).` };
+                if (v >= 4.05) return { cls: 'v24-warn', lbl: `🧪 24h: ${v}V 🟠`, detail: LANG === 'en' ? `🟠 Noticeable voltage drop after 24h (${v} V${dropTxt}). Monitor self-discharge.` : `🟠 Chute de tension notable après 24h (${v} V${dropTxt}). Surveiller l'autodécharge.` };
+                return { cls: 'v24-bad', lbl: `🧪 24h: ${v}V 🔴`, detail: LANG === 'en' ? `🔴 High self-discharge on Li-ion (${v} V${dropTxt} < 4.05 V after 24h). Internal leakage risk.` : `🔴 Forte autodécharge sur Li-ion (${v} V${dropTxt} < 4,05 V après 24h). Risque de fuite interne.` };
+            }
+            return { cls: 'v24-ok', lbl: `🧪 24h: ${v}V`, detail: `24h+ : ${v} V${dropTxt}` };
+        }
+
+        window.expliquerVolt24h = function(pIdx, mIdx) {
+            const inv = JSON.parse(localStorage.getItem('stock_piles')) || [];
+            const p = inv[pIdx];
+            const m = p && p.mesures ? p.mesures[mIdx] : null;
+            if (!p || !m || !m.volt24h) return;
+            const info = evaluerVolt24h(m.volt24h, m.voltage, p.type, p.voltNominal);
             if (info) alerter(info.detail);
         };
 
@@ -2470,6 +2655,7 @@
         };
 
         function genererGrapheDegradation(mesures, mahNominal) {
+            mesures = (mesures || []).filter(m => !estEnCours(m));
             if (mesures.length < 2) return '';
             const arr = mesures.slice().sort((a,b) => new Date(a.date) - new Date(b.date));
             const vals = arr.map(m => Number(m.mah) || 0);
@@ -2798,13 +2984,17 @@
 
             let pilesTraitees = inventaire.map((pile, originalIndex) => {
                 pile.mesures.sort((m1, m2) => new Date(m1.date) - new Date(m2.date));
-                const totalCycles = pile.mesures.length;
+                const idxOk = [];
+                pile.mesures.forEach((m, i) => { if (!estEnCours(m)) idxOk.push(i); });
+                const totalCycles = idxOk.length;
+                const idxLast = totalCycles ? idxOk[totalCycles - 1] : -1;
+                const idxPrev = totalCycles >= 2 ? idxOk[totalCycles - 2] : -1;
                 
                 let stagnation = false;
                 let lastMah = 0, prevMah = 0;
                 if (totalCycles >= 3) {
-                    lastMah = pile.mesures[totalCycles - 1].mah;
-                    prevMah = pile.mesures[totalCycles - 2].mah;
+                    lastMah = pile.mesures[idxLast].mah;
+                    prevMah = pile.mesures[idxPrev].mah;
                     const etatActuel = evaluerEtat(lastMah, pile.mahNominal, pile.type, pile.format);
                     // Plateau : au moins 3 cycles, pile pas encore « Excellent », gain inférieur à 2 % (ou baisse) au dernier cycle
                     if (etatActuel !== 'Excellent' && prevMah > 0 && ((lastMah - prevMah) / prevMah) < 0.02) stagnation = true;
@@ -2814,11 +3004,11 @@
                     ...m, cycleNumero: index + 1, indexOriginal: index
                 })).reverse();
 
-                const derniere = mesuresAffichees[0] || { mah: 0, voltage: 0 };
+                const derniere = mesuresAffichees.find(m => !estEnCours(m)) || { mah: 0, voltage: 0 };
                 const etatGlobal = totalCycles === 0 ? 'ToTest' : evaluerEtat(derniere.mah, pile.mahNominal, pile.type, pile.format);
                 const scoreEtat = { 'Recycler':0, 'Fatigue':1, 'Bon':2, 'Excellent':3 }[etatGlobal] ?? 4;
 
-                return { pile, originalIndex, totalCycles, mesuresAffichees, derniere, etatGlobal, scoreEtat, stagnation, lastMah, prevMah };
+                return { pile, originalIndex, totalCycles, idxLast, idxPrev, enCours: pile.mesures.some(m => estEnCours(m)), mesuresAffichees, derniere, etatGlobal, scoreEtat, stagnation, lastMah, prevMah };
             });
 
             if (formatFiltreActif && !pilesTraitees.some(i => (i.pile.format || 'Autre') === formatFiltreActif)) formatFiltreActif = '';
@@ -2828,6 +3018,12 @@
 
             const query = searchInput.value.trim().toLowerCase();
             const modeTri = sortSelect.value;
+            const nbEnCours = pilesTraitees.filter(it => it.enCours).length;
+            if (enCoursActif && !nbEnCours) enCoursActif = false; // plus aucun cycle en cours : on retire le filtre
+            const btnEC = document.getElementById('btnEnCours');
+            if (btnEC) btnEC.classList.toggle('active', enCoursActif);
+            const nbEC = document.getElementById('nbEnCours');
+            if (nbEC) nbEC.textContent = nbEnCours ? nbEnCours : '';
 
             if (query) {
                 pilesTraitees = pilesTraitees.filter(item => {
@@ -2844,6 +3040,7 @@
             if (chimieFiltreActif) {
                 pilesTraitees = pilesTraitees.filter(item => (item.pile.type || 'Autre') === chimieFiltreActif);
             }
+            if (enCoursActif) pilesTraitees = pilesTraitees.filter(item => item.enCours);
             const btnDern = document.getElementById('btnDernieres');
             if (btnDern) btnDern.classList.toggle('active', dernieresActif);
             const inpDern = document.getElementById('dernieresNb');
@@ -2890,6 +3087,33 @@
                     conseilHtml = `<div class="conseil-banner" style="background: var(--header-bg); border-left: 4px solid ${bordureCouleur}; padding: 8px 10px; margin: 8px 0; font-size: 0.8rem; border-radius: 4px; line-height: 1.3; cursor: pointer;" title="${escapeAttr(T('clickInfo'))}" onclick="expliquerEtat('${item.etatGlobal}')">${texteConseil} <span style="opacity:0.55;font-size:0.75em;">ℹ️</span></div>`;
                 }
 
+                // Détection automatique d'une pile suspecte (trop rapide, trop lente, chute de mAh > 10 %, tension anormale ou RI usée) pour proposer le Test de repos 24h
+                if (item.totalCycles > 0 && !item.derniere.volt24h) {
+                    const mLast = item.pile.mesures[item.idxLast];
+                    const mPrevLast = item.totalCycles >= 2 ? item.pile.mesures[item.idxPrev] : null;
+                    const vitLast = analyserVitesseCycle(mLast, mPrevLast, item.pile.mesures, item.pile);
+                    const irInfoLast = mLast.ir ? evaluerIr(mLast.ir, item.pile.type, item.pile.format) : null;
+                    let raisonsSuspectes = [];
+                    if (vitLast && vitLast.suspect24h && vitLast.reason24h) raisonsSuspectes.push(vitLast.reason24h);
+                    if (mPrevLast && mPrevLast.mah > 0 && mLast.mah < mPrevLast.mah * 0.88) {
+                        raisonsSuspectes.push(LANG === 'en'
+                            ? `Capacity drop (${mPrevLast.mah} → ${mLast.mah} mAh)`
+                            : `Baisse de capacité (${mPrevLast.mah} → ${mLast.mah} mAh)`);
+                    }
+                    if (irInfoLast && (irInfoLast.cls === 'ir-warn' || irInfoLast.cls === 'ir-bad')) {
+                        raisonsSuspectes.push(LANG === 'en' ? `High IR (${mLast.ir} mΩ)` : `RI élevée (${mLast.ir} mΩ)`);
+                    }
+                    if ((item.pile.type === 'NiMH' || item.pile.type === 'NiCd') && (mLast.voltage >= 1.47 || (mLast.voltage > 0 && mLast.voltage <= 1.35))) {
+                        raisonsSuspectes.push(LANG === 'en' ? `Unusual end voltage (${mLast.voltage}V)` : `Tension fin de cycle atypique (${mLast.voltage}V)`);
+                    }
+                    if (raisonsSuspectes.length > 0) {
+                        const txtBtn24 = LANG === 'en'
+                            ? `🧪 Suspect cell (${raisonsSuspectes.join(' · ')}) — Click to log 24h rest voltage`
+                            : `🧪 Pile suspecte (${raisonsSuspectes.join(' · ')}) — Cliquez pour noter la tension après 24h de repos`;
+                        conseilHtml += `<div class="v24-suggest" onclick="ouvrirModaleMesure(${item.originalIndex}, ${item.idxLast}, true)">${escapeHtml(txtBtn24)}</div>`;
+                    }
+                }
+
                 const SEUIL_CYCLES_REPLIES = 4;
                 const clePile = normaliserCle(item.pile.marque, item.pile.id, item.pile.format, item.pile.annee);
                 const estDeplie = !!cyclesDeplies[clePile];
@@ -2898,12 +3122,30 @@
                 let boutonAccordeonHtml = '';
                 if (item.mesuresAffichees.length > SEUIL_CYCLES_REPLIES) {
                     const caches = item.mesuresAffichees.slice(SEUIL_CYCLES_REPLIES);
-                    const mahCaches = caches.map(c => Number(c.mah) || 0);
+                    const mahCaches = caches.filter(c => !estEnCours(c)).map(c => Number(c.mah) || 0);
+                    if (!mahCaches.length) mahCaches.push(0);
                     const labelBtn = estDeplie ? T('hideMoreCycles', caches.length) : T('showMoreCycles', caches.length, Math.min(...mahCaches), Math.max(...mahCaches));
                     boutonAccordeonHtml = `<button type="button" class="toggle-cycles-btn" data-cle="${escapeAttr(clePile)}" onclick="toggleCyclesPile(this)">${labelBtn}</button>`;
                 }
 
                 let mesuresHtml = mesuresVisibles.map(m => {
+                    if (estEnCours(m)) {
+                        const sDeb = String(m.dateDebut || m.date || '');
+                        const tDeb = new Date(sDeb).getTime();
+                        const ecoule = (!isNaN(tDeb) && Date.now() > tDeb) ? ` · ⏱️ ${formaterDureeHeures((Date.now() - tDeb) / 3600000)}` : '';
+                        return `
+                        <li class="mesure-item mesure-encours">
+                            <div>
+                                <span class="cycle-num">#${m.cycleNumero}</span>
+                                <span class="tag-encours">⏳ ${T('inProgress')}</span>${m.surveille ? ' <span class="speed-tag speed-ok">👁️</span>' : ''}<br>
+                                <small class="text-muted">${T('since')} ${escapeHtml(sDeb.replace('T', ' '))}${ecoule}</small>
+                            </div>
+                            <div class="action-btns">
+                                <button class="small-btn edit-btn" onclick="ouvrirModaleMesure(${item.originalIndex}, ${m.indexOriginal})">${T('finishBtn')}</button>
+                                <button class="small-btn delete-btn" onclick="supprimerMesure(${item.originalIndex}, ${m.indexOriginal})">❌</button>
+                            </div>
+                        </li>`;
+                    }
                     const etat = evaluerEtat(m.mah, item.pile.mahNominal, item.pile.type, item.pile.format);
                     const dateAffichage = m.date ? m.date.replace('T', ' ') : '-';
                     let ratioTxt = item.pile.mahNominal ? ` <small class="text-muted">(${Math.round((m.mah / item.pile.mahNominal) * 100)}%)</small>` : '';
@@ -2911,10 +3153,14 @@
                     let irTxt = m.ir ? ` | ${m.ir}mΩ` + (infoIr ? ` <span class="ir-tag ${infoIr.cls}" onclick="expliquerIr(${Number(m.ir)}, '${escapeAttr(item.pile.type)}', '${escapeAttr(item.pile.format)}')">${infoIr.lbl}</span>` : '') : '';
                     let stressTxt = m.stress ? ` | Max: ${escapeHtml(m.stress)}` : '';
                     const mPrev = m.indexOriginal > 0 ? item.pile.mesures[m.indexOriginal - 1] : null;
-                    const infoVit = mPrev ? analyserVitesseCycle(m, mPrev, item.pile.mesures, item.pile) : null;
+                    const infoVit = analyserVitesseCycle(m, mPrev, item.pile.mesures, item.pile);
                     const vitHtml = infoVit
                         ? ` <span class="speed-tag ${infoVit.cls}" title="${escapeAttr(T('clickInfo'))}" onclick="expliquerVitesseCycle(${item.originalIndex}, ${m.indexOriginal})">${escapeHtml(infoVit.lbl)}</span>`
                         : (m.surveille ? ` <span class="speed-tag speed-ok">👁️</span>` : '');
+                    const infoV24 = m.volt24h ? evaluerVolt24h(m.volt24h, m.voltage, item.pile.type, item.pile.voltNominal) : null;
+                    const v24Html = infoV24
+                        ? ` <span class="v24-tag ${infoV24.cls}" title="${escapeAttr(T('clickInfo'))}" onclick="expliquerVolt24h(${item.originalIndex}, ${m.indexOriginal})">${escapeHtml(infoV24.lbl)}</span>`
+                        : '';
 
                     return `
                         <li class="mesure-item">
@@ -2922,7 +3168,7 @@
                                 <span class="cycle-num">#${m.cycleNumero}</span>
                                 <span class="mesure-date">${escapeHtml(dateAffichage)}</span>${vitHtml}<br>
                                 <strong>${m.mah} mAh</strong>${ratioTxt} (${m.voltage}V${irTxt}${stressTxt})
-                                <span class="etat-tag tag-${etat}" title="${escapeAttr(T('clickInfo'))}" onclick="expliquerEtat('${etat}')">${etatLabel(etat)}</span>
+                                <span class="etat-tag tag-${etat}" title="${escapeAttr(T('clickInfo'))}" onclick="expliquerEtat('${etat}')">${etatLabel(etat)}</span>${v24Html}
                             </div>
                             <div class="action-btns">
                                 <button class="small-btn edit-btn" onclick="ouvrirModaleMesure(${item.originalIndex}, ${m.indexOriginal})">✏️ Cycle</button>
@@ -3105,13 +3351,19 @@
                 const ir = document.getElementById('ir').value ? parseInt(document.getElementById('ir').value, 10) : null;
                 const stress = document.getElementById('stressTest').value;
                 const surveille = !!(document.getElementById('surveille') && document.getElementById('surveille').checked);
+                const dateDebut = (document.getElementById('dateDebutEntree') && document.getElementById('dateDebutEntree').value) ? document.getElementById('dateDebutEntree').value : '';
+                const v24Raw = (document.getElementById('volt24h') && document.getElementById('volt24h').value) ? document.getElementById('volt24h').value.trim().replace(',', '.') : '';
+                const volt24h = v24Raw ? parseFloat(v24Raw) : null;
                 
                 if (aMesure) {
                     const vnSaisi = parseFloat(String(voltNominalInput.value || '').replace(',', '.'));
                     const alerteV = alerteTension(typeInput.value, isNaN(vnSaisi) ? null : vnSaisi, voltage);
                     if (alerteV && !(await dialogue(alerteV, { confirm: true }))) return;
                 }
-                const nouvelleMesure = aMesure ? { date, voltage, mah, ir, stress, surveille } : null;
+                const aEnCours = !aMesure && dateDebut !== '' && !document.getElementById('ir').value && !stress;
+                const nouvelleMesure = aMesure
+                    ? { date, dateDebut: dateDebut || undefined, voltage, mah, ir, stress, surveille, volt24h: (volt24h && !isNaN(volt24h)) ? volt24h : null }
+                    : (aEnCours ? { date: dateDebut, dateDebut, voltage: null, mah: null, ir: null, stress: '', surveille, volt24h: null, enCours: true } : null);
                 const idsACreer = idEnd ? genererIdsLot(idStart, idEnd) : [idStart];
                 let inventaire = JSON.parse(localStorage.getItem('stock_piles')) || [];
 
@@ -3119,7 +3371,7 @@
                 idsACreer.forEach(id => {
                     let pile = trouverPileExistante(inventaire, marque, id, formatInput.value, anneeNorm);
                     if (pile) {
-                        if (nouvelleMesure) pile.mesures.push({ ...nouvelleMesure });
+                        if (nouvelleMesure) ajouterMesureAPile(pile, nouvelleMesure);
                     } else {
                         let vnStr = voltNominalInput.value ? voltNominalInput.value.replace(',', '.') : '';
                         nbCrees++;
@@ -3140,6 +3392,8 @@
                 document.getElementById('mah').value = '';
                 document.getElementById('ir').value = '';
                 document.getElementById('stressTest').value = '';
+                if (document.getElementById('dateDebutEntree')) document.getElementById('dateDebutEntree').value = '';
+                if (document.getElementById('volt24h')) document.getElementById('volt24h').value = '';
                 if (document.getElementById('surveille')) {
                     document.getElementById('surveille').checked = false;
                     const sl = document.getElementById('survAddLabel');
@@ -3154,12 +3408,28 @@
                 sauverEtatsMarques();
                 chargerPiles();
                 remplirSelectPilesAssistant();
-                showToast(nouvelleMesure ? T('saved') : (nbCrees ? T('stockAdded', nbCrees) : T('alreadyStock')));
+                showToast(nouvelleMesure ? (aEnCours ? T('savedInProgress') : T('saved')) : (nbCrees ? T('stockAdded', nbCrees) : T('alreadyStock')));
                 
             } catch (err) {
                 alerter(T('saveErr') + err.message);
             }
         });
+
+        // Ajoute une mesure à une pile : un résultat remplace le cycle « en cours » existant (il le termine), un nouveau début le relance
+        function ajouterMesureAPile(pile, nouvelle) {
+            if (!Array.isArray(pile.mesures)) pile.mesures = [];
+            const iEC = pile.mesures.findIndex(m => estEnCours(m));
+            if (iEC === -1) { pile.mesures.push({ ...nouvelle }); return; }
+            const prev = pile.mesures[iEC];
+            if (estEnCours(nouvelle)) { pile.mesures[iEC] = { ...nouvelle }; return; }
+            const t0 = new Date(prev.dateDebut || prev.date).getTime();
+            const t1 = new Date(nouvelle.date).getTime();
+            if (!isNaN(t0) && !isNaN(t1) && t1 < t0) { pile.mesures.push({ ...nouvelle }); return; }
+            const m = { ...nouvelle };
+            if (!m.dateDebut && prev.dateDebut) m.dateDebut = prev.dateDebut;
+            if (prev.surveille) m.surveille = true;
+            pile.mesures[iEC] = m;
+        }
 
         window.ouvrirModalePile = function(index) {
             const pile = (JSON.parse(localStorage.getItem('stock_piles')) || [])[index];
@@ -3230,58 +3500,89 @@
             const now = new Date();
             now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
             document.getElementById('editMesureDate').value = now.toISOString().slice(0, 16);
-            ['editMesureVolt', 'editMesureMah', 'editMesureIr', 'editMesureStress'].forEach(id => { document.getElementById(id).value = ''; });
+            ['editMesureDateDebut', 'editMesureVolt', 'editMesureMah', 'editMesureIr', 'editMesureStress', 'editMesureVolt24h'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = '';
+            });
             const chkSurv = document.getElementById('editMesureSurveille');
             const lblSurv = document.getElementById('survEditLabel');
             if (chkSurv) chkSurv.checked = false;
             if (lblSurv) lblSurv.classList.remove('active');
+            syncEditMesureRequired();
             document.getElementById('editMesureModal').style.display = 'block';
             setTimeout(() => { try { document.getElementById('editMesureVolt').focus(); } catch (e) {} }, 100);
         };
 
-        window.ouvrirModaleMesure = function(pIdx, mIdx) {
+        window.ouvrirModaleMesure = function(pIdx, mIdx, focus24h = false) {
             const pl = (JSON.parse(localStorage.getItem('stock_piles')) || [])[pIdx];
             const m = pl?.mesures[mIdx];
             if (!m) return;
             const titre = document.getElementById('editMesureModalTitle');
             if (titre) titre.textContent = T('editCycleTitle', pl.id, mIdx + 1);
             document.getElementById('editMesurePileIndex').value = pIdx; document.getElementById('editMesureIndex').value = mIdx;
-            document.getElementById('editMesureDate').value = m.date; 
-            document.getElementById('editMesureVolt').value = m.voltage; 
-            document.getElementById('editMesureMah').value = m.mah;
+            const enc = estEnCours(m);
+            if (titre && enc) titre.textContent = T('finishCycleTitle', pl.id, mIdx + 1);
+            let finVal = m.date;
+            if (enc) { const n = new Date(); n.setMinutes(n.getMinutes() - n.getTimezoneOffset()); finVal = n.toISOString().slice(0, 16); }
+            document.getElementById('editMesureDate').value = finVal;
+            if (document.getElementById('editMesureDateDebut')) document.getElementById('editMesureDateDebut').value = m.dateDebut || (enc ? m.date : '') || '';
+            document.getElementById('editMesureVolt').value = m.voltage ?? ''; 
+            document.getElementById('editMesureMah').value = m.mah ?? '';
             document.getElementById('editMesureIr').value = m.ir || '';
             document.getElementById('editMesureStress').value = m.stress || '';
+            if (document.getElementById('editMesureVolt24h')) document.getElementById('editMesureVolt24h').value = m.volt24h || '';
             const chkSurv = document.getElementById('editMesureSurveille');
             const lblSurv = document.getElementById('survEditLabel');
             if (chkSurv) chkSurv.checked = !!m.surveille;
             if (lblSurv) lblSurv.classList.toggle('active', !!m.surveille);
+            syncEditMesureRequired();
             document.getElementById('editMesureModal').style.display = 'block';
+            if (focus24h) {
+                setTimeout(() => { try { document.getElementById('editMesureVolt24h').focus(); } catch (e) {} }, 100);
+            }
         };
 
         document.getElementById('editMesureForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const pIdx = parseInt(document.getElementById('editMesurePileIndex').value, 10), mIdx = parseInt(document.getElementById('editMesureIndex').value, 10);
             let inv = JSON.parse(localStorage.getItem('stock_piles')) || [];
-            
-            let vStr = document.getElementById('editMesureVolt').value.replace(',', '.');
-            if (inv[pIdx]) {
+            if (!inv[pIdx]) return;
+
+            const vStr = document.getElementById('editMesureVolt').value.trim().replace(',', '.');
+            const mahStr = document.getElementById('editMesureMah').value.trim();
+            const dateDebutVal = document.getElementById('editMesureDateDebut') ? document.getElementById('editMesureDateDebut').value : '';
+            const dateFinVal = document.getElementById('editMesureDate').value;
+            const surveille = !!(document.getElementById('editMesureSurveille') && document.getElementById('editMesureSurveille').checked);
+            if ((vStr !== '') !== (mahStr !== '')) { showToast(T('partialMeasure'), true); return; }
+
+            const nouveau = mIdx === -1;
+            const ancien = nouveau ? null : inv[pIdx].mesures[mIdx];
+            let mesureObj;
+            if (vStr !== '') {
+                if (!dateFinVal) { showToast(T('vRequired'), true); return; }
                 const alerteV = alerteTension(inv[pIdx].type, Number(inv[pIdx].voltNominal) || null, parseFloat(vStr));
                 if (alerteV && !(await dialogue(alerteV, { confirm: true }))) return;
+                const v24Str = document.getElementById('editMesureVolt24h') ? document.getElementById('editMesureVolt24h').value.trim().replace(',', '.') : '';
+                const v24Val = v24Str ? parseFloat(v24Str) : null;
+                mesureObj = {
+                    date: dateFinVal,
+                    dateDebut: dateDebutVal || undefined,
+                    voltage: parseFloat(vStr),
+                    mah: parseInt(mahStr, 10),
+                    ir: document.getElementById('editMesureIr').value ? parseInt(document.getElementById('editMesureIr').value, 10) : null,
+                    stress: document.getElementById('editMesureStress').value,
+                    surveille,
+                    volt24h: (v24Val && !isNaN(v24Val)) ? v24Val : null
+                };
+            } else {
+                // Début seul : cycle en cours
+                if (!dateDebutVal) { showToast(T('needStartOrResult'), true); return; }
+                if (ancien && !estEnCours(ancien) && !(await dialogue(T('confirmBackInProgress'), { confirm: true }))) return;
+                mesureObj = { date: dateDebutVal, dateDebut: dateDebutVal, voltage: null, mah: null, ir: null, stress: '', surveille, volt24h: null, enCours: true };
             }
-            
-            if (!inv[pIdx]) return;
-            const mesureObj = { 
-                date: document.getElementById('editMesureDate').value, 
-                voltage: parseFloat(vStr), 
-                mah: parseInt(document.getElementById('editMesureMah').value, 10),
-                ir: document.getElementById('editMesureIr').value ? parseInt(document.getElementById('editMesureIr').value, 10) : null,
-                stress: document.getElementById('editMesureStress').value,
-                surveille: !!(document.getElementById('editMesureSurveille') && document.getElementById('editMesureSurveille').checked)
-            };
-            const nouveau = mIdx === -1;
-            if (nouveau) inv[pIdx].mesures.push(mesureObj); else inv[pIdx].mesures[mIdx] = mesureObj;
+            if (nouveau) ajouterMesureAPile(inv[pIdx], mesureObj); else inv[pIdx].mesures[mIdx] = mesureObj;
             localStorage.setItem('stock_piles', JSON.stringify(inv)); fermerModales(); chargerPiles(); remplirSelectPilesAssistant();
-            showToast(nouveau ? T('saved') : T('cycleEdited'));
+            showToast(mesureObj.enCours ? T('savedInProgress') : (nouveau ? T('saved') : T('cycleEdited')));
         });
 
         window.fermerModales = function() { document.getElementById('editPileModal').style.display = 'none'; document.getElementById('editMesureModal').style.display = 'none'; };
@@ -3357,13 +3658,13 @@
 
         window.exporterCSV = function() {
             const inventaire = JSON.parse(localStorage.getItem('stock_piles')) || [];
-            let csv = 'marque,id,annee,format,type,appareil,cycle_grad,volt_indique,mah_indique,date_releve,voltage_releve,mah_releve,ir_mohm,courant_max,etat,surveille\n';
+            let csv = 'marque,id,annee,format,type,appareil,cycle_grad,volt_indique,mah_indique,date_debut,date_releve,voltage_releve,mah_releve,ir_mohm,courant_max,etat,surveille,volt_24h\n';
 
             inventaire.forEach(p => {
                 p.mesures.sort((m1, m2) => new Date(m1.date) - new Date(m2.date));
                 if (p.mesures.length === 0) {
                     const cl = val => `"${String(val ?? '').replace(/"/g, '""')}"`;
-                    csv += [cl(p.marque), cl(p.id), p.annee || '', cl(p.format), cl(p.type), cl(p.appareil), '', p.voltNominal || '', p.mahNominal || '', '', '', '', '', '', cl(''), ''].join(',') + '\n';
+                    csv += [cl(p.marque), cl(p.id), p.annee || '', cl(p.format), cl(p.type), cl(p.appareil), '', p.voltNominal || '', p.mahNominal || '', '', '', '', '', '', '', cl(''), '', ''].join(',') + '\n';
                 }
                 p.mesures.forEach((m, idx) => {
                     const etat = evaluerEtat(m.mah, p.mahNominal, p.type, p.format);
@@ -3371,7 +3672,7 @@
                     csv += [
                         clean(p.marque), clean(p.id), p.annee || '', clean(p.format), clean(p.type), clean(p.appareil),
                         idx + 1, p.voltNominal || '', p.mahNominal || '',
-                        clean(m.date), m.voltage, m.mah, m.ir || '', clean(m.stress), clean(etat), m.surveille ? '1' : ''
+                        clean(m.dateDebut || (estEnCours(m) ? m.date : '')), clean(estEnCours(m) ? '' : m.date), m.voltage ?? '', m.mah ?? '', m.ir || '', clean(m.stress), clean(estEnCours(m) ? 'En cours' : etat), m.surveille ? '1' : '', m.volt24h || ''
                     ].join(',') + '\n';
                 });
             });
@@ -3422,6 +3723,8 @@
             const idxStress = entetes.indexOf('courant_max');
             const idxAppareil = entetes.indexOf('appareil');
             const idxSurveille = entetes.indexOf('surveille');
+            const idxDateDebut = entetes.indexOf('date_debut');
+            const idxVolt24h = entetes.indexOf('volt_24h');
 
             if (idxId === -1 || idxVoltRel === -1 || idxMahRel === -1) {
                 throw new Error(T('badFormat'));
@@ -3456,6 +3759,9 @@
                 const stress = idxStress !== -1 ? cols[idxStress] : '';
                 const appareil = idxAppareil !== -1 ? cols[idxAppareil] : '';
                 const surveille = idxSurveille !== -1 && ['1', 'true', 'oui', 'yes'].includes(String(cols[idxSurveille] || '').toLowerCase());
+                const dateDebut = idxDateDebut !== -1 && cols[idxDateDebut] ? cols[idxDateDebut] : undefined;
+                const v24Str = idxVolt24h !== -1 && cols[idxVolt24h] ? String(cols[idxVolt24h]).replace(',', '.') : '';
+                const volt24h = v24Str ? parseFloat(v24Str) : null;
 
                 const cle = normaliserCle(marque, id, format, annee);
                 let pile = inventaire.find(p => normaliserCle(p.marque, p.id, p.format, p.annee) === cle);
@@ -3463,7 +3769,8 @@
                     pile = { id, marque, annee, format, type, appareil, voltNominal, mahNominal, mesures: [] };
                     inventaire.push(pile);
                 }
-                if (cols[idxMahRel] || voltRelStr) pile.mesures.push({ date, voltage, mah, ir, stress, surveille });
+                if (cols[idxMahRel] || voltRelStr) pile.mesures.push({ date, dateDebut, voltage, mah, ir, stress, surveille, volt24h });
+                else if (dateDebut && !date) pile.mesures.push({ date: dateDebut, dateDebut, voltage: null, mah: null, ir: null, stress: '', surveille, volt24h: null, enCours: true });
             }
             return inventaire;
         }
