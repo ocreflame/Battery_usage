@@ -205,6 +205,16 @@
         .ir-warn { background: #fef5e7; color: #e67e22; }
         .ir-bad { background: #fdedec; color: #c0392b; }
         :root[data-theme="dark"] .ir-tag { filter: brightness(0.9); }
+        .surv-toggle { display: flex; align-items: center; gap: 8px; margin-top: 10px; padding: 8px 12px; border-radius: 8px; font-size: 0.84rem; font-weight: bold; background: var(--header-bg); border: 1px solid var(--border-color); cursor: pointer; user-select: none; }
+        .surv-toggle input { width: auto; margin: 0; padding: 0; }
+        .surv-toggle.active { border-color: #27ae60; background: rgba(39,174,96,0.15); color: #27ae60; }
+        :root[data-theme="dark"] .surv-toggle.active { color: #58d68d; border-color: #58d68d; }
+        .speed-tag { font-size: 0.72rem; font-weight: bold; padding: 2px 6px; border-radius: 4px; margin-left: 4px; cursor: pointer; display: inline-block; vertical-align: middle; }
+        .speed-ok { background: #e8f8f5; color: #27ae60; border: 1px solid rgba(39,174,96,0.35); }
+        .speed-slow { background: #fef5e7; color: #d35400; border: 1px solid rgba(211,84,0,0.35); }
+        .speed-wakeup { background: #ebf5fb; color: #2980b9; border: 1px solid rgba(41,128,185,0.35); }
+        .speed-unwatched { background: var(--header-bg); color: var(--text-muted); border: 1px dashed var(--border-color); font-weight: normal; }
+        :root[data-theme="dark"] .speed-tag { filter: brightness(0.92); }
         .rep-chip[data-fk] { cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent; }
         .paire-card { padding: 10px 12px; }
         .paire-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding-bottom: 6px; }
@@ -474,6 +484,11 @@
                     </div>
                 </div>
 
+                <label class="surv-toggle" id="survAddLabel">
+                    <input type="checkbox" id="surveille" onchange="document.getElementById('survAddLabel').classList.toggle('active', this.checked)">
+                    <span>👁️ Cycle surveillé (relancé dès la fin du précédent — analyse la vitesse de charge)</span>
+                </label>
+
                 <button type="submit" class="btn-primary">Enregistrer</button>
             </form>
         </div>
@@ -489,9 +504,9 @@
                 <div>
                     <label>Chargeur utilisé :</label>
                     <select id="calcChargeur" onchange="changerChargeurAssistant()" oninput="changerChargeurAssistant()" onblur="changerChargeurAssistant()">
-                        <option value="auto" selected>🔄 Auto (selon chimie / format)</option>
+                        <option value="auto">🔄 Auto (selon chimie / format)</option>
                         <option value="nc3000">⚙️ SkyRC NC3000 Pro (AA/AAA NiMH/NiCd)</option>
-                        <option value="xtar">🔋 XTAR VX4 V2 (Li-ion / LiFePO4 / NiMH)</option>
+                        <option value="xtar" selected>🔋 XTAR VX4 V2 (Li-ion / LiFePO4 / NiMH)</option>
                     </select>
                 </div>
                 <div id="calcSlotsWrap" style="display:none;">
@@ -705,6 +720,10 @@
                         </select>
                     </div>
                 </div>
+                <label class="surv-toggle" id="survEditLabel">
+                    <input type="checkbox" id="editMesureSurveille" onchange="document.getElementById('survEditLabel').classList.toggle('active', this.checked)">
+                    <span>👁️ Cycle surveillé (relancé dès la fin du précédent)</span>
+                </label>
                 <div class="grid-2" style="margin-top: 15px;">
                     <button type="submit" class="btn-primary" style="margin: 0;">Sauvegarder</button>
                     <button type="button" class="btn-action secondary" style="margin: 0;" onclick="fermerModales()">Annuler</button>
@@ -787,6 +806,8 @@
             "Ex: 1850":"E.g. 1850",
             "Ex: 25":"E.g. 25",
             "Catégorie XXX -":"XXX - category",
+            "👁️ Cycle surveillé (relancé dès la fin du précédent — analyse la vitesse de charge)":"👁️ Watched cycle (restarted right after previous — analyzes charge speed)",
+            "👁️ Cycle surveillé (relancé dès la fin du précédent)":"👁️ Watched cycle (restarted right after previous)",
             "Choisissez le chargeur utilisé pour adapter les lots proposés, les chimies/formats supportés et les réglages.":"Choose the charger in use to adapt the suggested battery batches, supported chemistries/sizes and settings.",
             "Chargeur utilisé :":"Charger used:",
             "🔄 Auto (selon chimie / format)":"🔄 Auto (by chemistry / size)",
@@ -2246,6 +2267,115 @@
             if (info) alerter(info.detail);
         };
 
+        // Analyse de la durée et de la vitesse de charge sur le XTAR VX4 V2 entre deux cycles consécutifs
+        // (En mode Grading VX4 V2 : Décharge 300 mA fixes + Recharge 500 mA en NiMH)
+        function analyserVitesseCycle(mesureActuelle, mesurePrecedente, toutesMesures, pile) {
+            if (!mesureActuelle || !mesurePrecedente || !mesureActuelle.date || !mesurePrecedente.date) return null;
+            const t1 = new Date(mesurePrecedente.date).getTime();
+            const t2 = new Date(mesureActuelle.date).getTime();
+            if (isNaN(t1) || isNaN(t2) || t2 <= t1) return null;
+            const deltaH = (t2 - t1) / 3600000;
+            if (deltaH < 0.15 || deltaH > 48) return null; // Ignore les saisies simultanées (<9 min) ou les pauses >48h
+
+            const mah = Number(mesureActuelle.mah) || 0;
+            if (!(mah > 0)) return null;
+
+            const h1 = new Date(mesurePrecedente.date).getHours();
+            const h2 = new Date(mesureActuelle.date).getHours();
+            const memeJour = new Date(mesurePrecedente.date).toDateString() === new Date(mesureActuelle.date).toDateString();
+            const TraverseNuit = (!memeJour && (h1 >= 21 || h2 <= 8) && deltaH >= 5.5);
+
+            // Durée théorique d'un cycle Grad enchaîné sur XTAR VX4 V2 (accu déjà chargé à la fin du cycle précédent) :
+            // ~12 min (0.20h) de top-off/repos + décharge à 300 mA (mah/300) + recharge à 500 mA (mah*1.25/500)
+            const tDechargeH = mah / 300.0;
+            const tRechargeTheoH = (mah * 1.25) / 500.0;
+            const tTheoH = 0.20 + tDechargeH + tRechargeTheoH;
+
+            // Calculer aussi la durée habituelle (médiane) des cycles rapides/surveillés de cette pile
+            let dureesRapides = [];
+            if (Array.isArray(toutesMesures) && toutesMesures.length >= 2) {
+                for (let i = 1; i < toutesMesures.length; i++) {
+                    const a = toutesMesures[i - 1], b = toutesMesures[i];
+                    if (!a.date || !b.date) continue;
+                    const dh = (new Date(b.date).getTime() - new Date(a.date).getTime()) / 3600000;
+                    if (b.surveille === true || (dh >= 0.4 && dh <= 4.5)) dureesRapides.push(dh);
+                }
+            }
+            dureesRapides.sort((x, y) => x - y);
+            const tHabH = dureesRapides.length >= 2 ? dureesRapides[Math.floor(dureesRapides.length / 2)] : null;
+
+            const dStr = formaterDureeHeures(deltaH);
+            const theoStr = formaterDureeHeures(tTheoH);
+            const vitMahH = Math.round(mah / deltaH);
+            const estSurveille = mesureActuelle.surveille === true;
+            const ratioTheo = deltaH / tTheoH;
+            const ratioHab = tHabH ? (deltaH / tHabH) : ratioTheo;
+
+            // Cas 1 : Cycle de nuit ou long non marqué surveillé
+            if (!estSurveille && (TraverseNuit || deltaH > 6.5)) {
+                return {
+                    cls: 'speed-unwatched',
+                    lbl: `🌙 ${dStr}`,
+                    detail: LANG === 'en'
+                        ? `Elapsed time since previous cycle: ${dStr} (overnight or unattended wait).\n\nTheoretical active XTAR VX4 V2 Grading time for ${mah} mAh is ~${theoStr} (~${ formaterDureeHeures(tDechargeH) } discharge at 300 mA + ~${ formaterDureeHeures(tRechargeTheoH) } recharge).\n\nTip: Click the badge or edit the cycle to mark it as "👁️ Watched" if you actually monitored it.`
+                        : `Temps écoulé depuis le cycle précédent : ${dStr} (nuit ou attente sans surveillance — non pris en compte comme anomalie).\n\nDurée active théorique sur le XTAR VX4 V2 pour ${mah} mAh : ~${theoStr} (~${ formaterDureeHeures(tDechargeH) } de décharge à 300 mA + ~${ formaterDureeHeures(tRechargeTheoH) } de recharge).\n\nAstuce : Si ce cycle a en réalité été surveillé, modifiez le cycle pour cocher « 👁️ Cycle surveillé ».`
+                };
+            }
+
+            // Cas 2 : Décharge écourtée suivie d'une longue recharge (réveil chimique en cours)
+            if (mah < 120 && deltaH >= 2.2 && (estSurveille || !TraverseNuit)) {
+                return {
+                    cls: 'speed-wakeup',
+                    lbl: `${estSurveille ? '👁️ ' : '⏱️ '}${dStr} · ⚡ ${LANG === 'en' ? 'Wake-up' : 'Réveil'}`,
+                    detail: LANG === 'en'
+                        ? `Cycle duration: ${dStr} for only ${mah} mAh (${vitMahH} mAh/h).\n\nThe 300 mA discharge cut off very quickly (~${Math.round(tDechargeH * 60)} min due to initial voltage sag), but the cell then absorbed over ${formaterDureeHeures(deltaH - tDechargeH)} of charge!\n\n👉 Run another Grading cycle: capacity should jump significantly on the next run.`
+                        : `Durée du cycle : ${dStr} pour seulement ${mah} mAh (${vitMahH} mAh/h).\n\nLa décharge à 300 mA a coupé très vite (~${Math.round(tDechargeH * 60)} min à cause d'une chute de tension initiale), mais la pile a ensuite absorbé plus de ${formaterDureeHeures(deltaH - tDechargeH)} de charge !\n\n👉 Relancez un cycle Grad : la capacité devrait bondir fortement au prochain relevé.`
+                };
+            }
+
+            // Cas 3 : Durée anormalement longue par rapport au théorique (ou à l'habitude de cette pile)
+            if (ratioTheo > 1.65 || (tHabH && ratioHab > 1.8 && deltaH > tTheoH * 1.35)) {
+                const tChargeReelleH = Math.max(0.1, deltaH - tDechargeH);
+                const iChargeEff = Math.round(mah / tChargeReelleH);
+                const habTxtFr = tHabH ? ` (habituellement ~${formaterDureeHeures(tHabH)} sur cette pile)` : '';
+                const habTxtEn = tHabH ? ` (usually ~${formaterDureeHeures(tHabH)} on this cell)` : '';
+                if (estSurveille) {
+                    return {
+                        cls: 'speed-slow',
+                        lbl: `👁️ ${dStr} ⚠️ ${LANG === 'en' ? 'Slow' : 'Lent'} (${vitMahH} mAh/h)`,
+                        detail: LANG === 'en'
+                            ? `⚠️ Watched cycle took ${dStr}${habTxtEn} vs ~${theoStr} theoretical for ${mah} mAh!\n\n• 300 mA discharge took ~${formaterDureeHeures(tDechargeH)}\n• Remaining charge/rest took ~${formaterDureeHeures(tChargeReelleH)} (effective charge rate dropped to ~${iChargeEff} mA instead of 500 mA).\n\nDiagnosis: The XTAR VX4 V2 throttled current due to high internal resistance (IR) or the cell is struggling to reach the 1.45V CVSA full-charge cut-off (heating / self-discharge).`
+                            : `⚠️ Cycle surveillé anormalement long : ${dStr}${habTxtFr} au lieu de ~${theoStr} théorique pour ${mah} mAh !\n\n• Décharge à 300 mA : ~${formaterDureeHeures(tDechargeH)}\n• Charge + repos : ~${formaterDureeHeures(tChargeReelleH)} (courant effectif tombé à ~${iChargeEff} mA au lieu de 500 mA).\n\nDiagnostic : Soit le XTAR VX4 V2 a bridé le courant à cause d'une résistance interne (RI) élevée, soit la pile chauffe/patine sans réussir à déclencher la coupure CVSA à 1,45 V.`
+                    };
+                } else {
+                    return {
+                        cls: 'speed-unwatched',
+                        lbl: `⏱️ ${dStr} (${LANG === 'en' ? 'unwatched?' : 'oubli / lent ?'})`,
+                        detail: LANG === 'en'
+                            ? `Elapsed time: ${dStr}${habTxtEn} vs ~${theoStr} theoretical for ${mah} mAh (${vitMahH} mAh/h).\n\n• Either the cell finished after ~${theoStr} and waited in the charger before being logged (unwatched / forgotten),\n• Or if you restarted it right away, it has a charging issue (high IR throttling or delayed cut-off). Check "👁️ Watched cycle" when editing if you monitored it.`
+                            : `Temps écoulé : ${dStr}${habTxtFr} contre ~${theoStr} théorique pour ${mah} mAh (${vitMahH} mAh/h).\n\n• Soit la pile a fini son cycle normalement en ~${theoStr} et a attendu avant d'être relevée (non surveillée / oubliée),\n• Soit vous l'avez relancée aussitôt et elle souffre d'un bridage de courant (RI haute / patinage en fin de charge). Cochez « 👁️ Cycle surveillé » dans l'édition du cycle si vous étiez présent.`
+                    };
+                }
+            }
+
+            // Cas 4 : Vitesse normale / charge franche (ratio proche du théorique)
+            return {
+                cls: 'speed-ok',
+                lbl: `${estSurveille ? '👁️ ' : '⏱️ '}${dStr} · ${vitMahH} mAh/h`,
+                detail: LANG === 'en'
+                    ? `✅ Normal cycle speed: ${dStr} for ${mah} mAh (${vitMahH} mAh/h, theoretical XTAR VX4 V2 time: ~${theoStr}).\n\n• 300 mA discharge: ~${formaterDureeHeures(tDechargeH)}\n• 500 mA recharge + rest: ~${formaterDureeHeures(Math.max(0.1, deltaH - tDechargeH))}\n\nGood current acceptance and clean CVSA end-of-charge detection.`
+                    : `✅ Vitesse de cycle normale : ${dStr} pour ${mah} mAh (${vitMahH} mAh/h, durée théorique XTAR VX4 V2 : ~${theoStr}).\n\n• Décharge à 300 mA : ~${formaterDureeHeures(tDechargeH)}\n• Recharge à 500 mA + repos : ~${formaterDureeHeures(Math.max(0.1, deltaH - tDechargeH))}\n\nBonne acceptation du courant de charge et détection de fin de charge CVSA franche.`
+            };
+        }
+
+        window.expliquerVitesseCycle = function(pIdx, mIdx) {
+            const inv = JSON.parse(localStorage.getItem('stock_piles')) || [];
+            const p = inv[pIdx];
+            if (!p || !Array.isArray(p.mesures) || mIdx < 1 || !p.mesures[mIdx]) return;
+            const info = analyserVitesseCycle(p.mesures[mIdx], p.mesures[mIdx - 1], p.mesures, p);
+            if (info) alerter(info.detail);
+        };
+
         // Alerte douce : tension saisie incohérente avec la chimie (retourne '' si tout va bien)
         function alerteTension(type, voltNominal, v) {
             if (!(v > 0)) return '';
@@ -2780,12 +2910,17 @@
                     const infoIr = m.ir ? evaluerIr(m.ir, item.pile.type, item.pile.format) : null;
                     let irTxt = m.ir ? ` | ${m.ir}mΩ` + (infoIr ? ` <span class="ir-tag ${infoIr.cls}" onclick="expliquerIr(${Number(m.ir)}, '${escapeAttr(item.pile.type)}', '${escapeAttr(item.pile.format)}')">${infoIr.lbl}</span>` : '') : '';
                     let stressTxt = m.stress ? ` | Max: ${escapeHtml(m.stress)}` : '';
+                    const mPrev = m.indexOriginal > 0 ? item.pile.mesures[m.indexOriginal - 1] : null;
+                    const infoVit = mPrev ? analyserVitesseCycle(m, mPrev, item.pile.mesures, item.pile) : null;
+                    const vitHtml = infoVit
+                        ? ` <span class="speed-tag ${infoVit.cls}" title="${escapeAttr(T('clickInfo'))}" onclick="expliquerVitesseCycle(${item.originalIndex}, ${m.indexOriginal})">${escapeHtml(infoVit.lbl)}</span>`
+                        : (m.surveille ? ` <span class="speed-tag speed-ok">👁️</span>` : '');
 
                     return `
                         <li class="mesure-item">
                             <div>
                                 <span class="cycle-num">#${m.cycleNumero}</span>
-                                <span class="mesure-date">${escapeHtml(dateAffichage)}</span><br>
+                                <span class="mesure-date">${escapeHtml(dateAffichage)}</span>${vitHtml}<br>
                                 <strong>${m.mah} mAh</strong>${ratioTxt} (${m.voltage}V${irTxt}${stressTxt})
                                 <span class="etat-tag tag-${etat}" title="${escapeAttr(T('clickInfo'))}" onclick="expliquerEtat('${etat}')">${etatLabel(etat)}</span>
                             </div>
@@ -2969,13 +3104,14 @@
                 const mah = aMesure ? parseInt(mahRaw, 10) : null;
                 const ir = document.getElementById('ir').value ? parseInt(document.getElementById('ir').value, 10) : null;
                 const stress = document.getElementById('stressTest').value;
+                const surveille = !!(document.getElementById('surveille') && document.getElementById('surveille').checked);
                 
                 if (aMesure) {
                     const vnSaisi = parseFloat(String(voltNominalInput.value || '').replace(',', '.'));
                     const alerteV = alerteTension(typeInput.value, isNaN(vnSaisi) ? null : vnSaisi, voltage);
                     if (alerteV && !(await dialogue(alerteV, { confirm: true }))) return;
                 }
-                const nouvelleMesure = aMesure ? { date, voltage, mah, ir, stress } : null;
+                const nouvelleMesure = aMesure ? { date, voltage, mah, ir, stress, surveille } : null;
                 const idsACreer = idEnd ? genererIdsLot(idStart, idEnd) : [idStart];
                 let inventaire = JSON.parse(localStorage.getItem('stock_piles')) || [];
 
@@ -3004,6 +3140,11 @@
                 document.getElementById('mah').value = '';
                 document.getElementById('ir').value = '';
                 document.getElementById('stressTest').value = '';
+                if (document.getElementById('surveille')) {
+                    document.getElementById('surveille').checked = false;
+                    const sl = document.getElementById('survAddLabel');
+                    if (sl) sl.classList.remove('active');
+                }
                 syncMesureRequired();
                 pileIdEndInput.value = '';
                 setDateNow(); 
@@ -3090,6 +3231,10 @@
             now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
             document.getElementById('editMesureDate').value = now.toISOString().slice(0, 16);
             ['editMesureVolt', 'editMesureMah', 'editMesureIr', 'editMesureStress'].forEach(id => { document.getElementById(id).value = ''; });
+            const chkSurv = document.getElementById('editMesureSurveille');
+            const lblSurv = document.getElementById('survEditLabel');
+            if (chkSurv) chkSurv.checked = false;
+            if (lblSurv) lblSurv.classList.remove('active');
             document.getElementById('editMesureModal').style.display = 'block';
             setTimeout(() => { try { document.getElementById('editMesureVolt').focus(); } catch (e) {} }, 100);
         };
@@ -3106,6 +3251,10 @@
             document.getElementById('editMesureMah').value = m.mah;
             document.getElementById('editMesureIr').value = m.ir || '';
             document.getElementById('editMesureStress').value = m.stress || '';
+            const chkSurv = document.getElementById('editMesureSurveille');
+            const lblSurv = document.getElementById('survEditLabel');
+            if (chkSurv) chkSurv.checked = !!m.surveille;
+            if (lblSurv) lblSurv.classList.toggle('active', !!m.surveille);
             document.getElementById('editMesureModal').style.display = 'block';
         };
 
@@ -3126,7 +3275,8 @@
                 voltage: parseFloat(vStr), 
                 mah: parseInt(document.getElementById('editMesureMah').value, 10),
                 ir: document.getElementById('editMesureIr').value ? parseInt(document.getElementById('editMesureIr').value, 10) : null,
-                stress: document.getElementById('editMesureStress').value
+                stress: document.getElementById('editMesureStress').value,
+                surveille: !!(document.getElementById('editMesureSurveille') && document.getElementById('editMesureSurveille').checked)
             };
             const nouveau = mIdx === -1;
             if (nouveau) inv[pIdx].mesures.push(mesureObj); else inv[pIdx].mesures[mIdx] = mesureObj;
@@ -3207,13 +3357,13 @@
 
         window.exporterCSV = function() {
             const inventaire = JSON.parse(localStorage.getItem('stock_piles')) || [];
-            let csv = 'marque,id,annee,format,type,appareil,cycle_grad,volt_indique,mah_indique,date_releve,voltage_releve,mah_releve,ir_mohm,courant_max,etat\n';
+            let csv = 'marque,id,annee,format,type,appareil,cycle_grad,volt_indique,mah_indique,date_releve,voltage_releve,mah_releve,ir_mohm,courant_max,etat,surveille\n';
 
             inventaire.forEach(p => {
                 p.mesures.sort((m1, m2) => new Date(m1.date) - new Date(m2.date));
                 if (p.mesures.length === 0) {
                     const cl = val => `"${String(val ?? '').replace(/"/g, '""')}"`;
-                    csv += [cl(p.marque), cl(p.id), p.annee || '', cl(p.format), cl(p.type), cl(p.appareil), '', p.voltNominal || '', p.mahNominal || '', '', '', '', '', '', cl('')].join(',') + '\n';
+                    csv += [cl(p.marque), cl(p.id), p.annee || '', cl(p.format), cl(p.type), cl(p.appareil), '', p.voltNominal || '', p.mahNominal || '', '', '', '', '', '', cl(''), ''].join(',') + '\n';
                 }
                 p.mesures.forEach((m, idx) => {
                     const etat = evaluerEtat(m.mah, p.mahNominal, p.type, p.format);
@@ -3221,7 +3371,7 @@
                     csv += [
                         clean(p.marque), clean(p.id), p.annee || '', clean(p.format), clean(p.type), clean(p.appareil),
                         idx + 1, p.voltNominal || '', p.mahNominal || '',
-                        clean(m.date), m.voltage, m.mah, m.ir || '', clean(m.stress), clean(etat)
+                        clean(m.date), m.voltage, m.mah, m.ir || '', clean(m.stress), clean(etat), m.surveille ? '1' : ''
                     ].join(',') + '\n';
                 });
             });
@@ -3271,6 +3421,7 @@
             const idxIr = entetes.indexOf('ir_mohm'); 
             const idxStress = entetes.indexOf('courant_max');
             const idxAppareil = entetes.indexOf('appareil');
+            const idxSurveille = entetes.indexOf('surveille');
 
             if (idxId === -1 || idxVoltRel === -1 || idxMahRel === -1) {
                 throw new Error(T('badFormat'));
@@ -3304,6 +3455,7 @@
                 const ir = idxIr !== -1 && cols[idxIr] ? parseInt(cols[idxIr], 10) : null;
                 const stress = idxStress !== -1 ? cols[idxStress] : '';
                 const appareil = idxAppareil !== -1 ? cols[idxAppareil] : '';
+                const surveille = idxSurveille !== -1 && ['1', 'true', 'oui', 'yes'].includes(String(cols[idxSurveille] || '').toLowerCase());
 
                 const cle = normaliserCle(marque, id, format, annee);
                 let pile = inventaire.find(p => normaliserCle(p.marque, p.id, p.format, p.annee) === cle);
@@ -3311,7 +3463,7 @@
                     pile = { id, marque, annee, format, type, appareil, voltNominal, mahNominal, mesures: [] };
                     inventaire.push(pile);
                 }
-                if (cols[idxMahRel] || voltRelStr) pile.mesures.push({ date, voltage, mah, ir, stress });
+                if (cols[idxMahRel] || voltRelStr) pile.mesures.push({ date, voltage, mah, ir, stress, surveille });
             }
             return inventaire;
         }
