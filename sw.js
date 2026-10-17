@@ -1,4 +1,4 @@
-const C = 'battery-v1.4';
+const C = 'battery-v1.5';
 self.addEventListener('install', e => e.waitUntil(
   caches.open(C).then(c => c.addAll(['./', './index.html', './manifest.json']))));
 self.addEventListener('fetch', e => e.respondWith(
