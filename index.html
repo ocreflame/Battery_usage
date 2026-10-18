@@ -250,6 +250,8 @@
         .v24-suggest { background: #f4ecf7; color: #8e44ad; border: 1px dashed rgba(142,68,173,0.5); font-size: 0.75rem; font-weight: bold; padding: 5px 8px; border-radius: 5px; margin-top: 4px; cursor: pointer; display: inline-block; }
         :root[data-theme="dark"] .v24-tag, :root[data-theme="dark"] .v24-suggest { filter: brightness(0.95); }
         :root[data-theme="dark"] .v24-suggest { background: rgba(142,68,173,0.18); color: #d2b4de; }
+        .v24-add { display: inline-block; font-size: 0.72rem; font-weight: bold; padding: 1px 8px; border-radius: 10px; border: 1px dashed rgba(142,68,173,0.55); color: #8e44ad; cursor: pointer; margin-left: 4px; }
+        :root[data-theme="dark"] .v24-add { color: #d2b4de; }
         .rep-chip[data-fk] { cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent; }
         .paire-card { padding: 10px 12px; }
         .paire-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding-bottom: 6px; }
@@ -1797,6 +1799,20 @@
             const totalMin = Math.round(heures * 60);
             const h = Math.floor(totalMin / 60);
             const m = totalMin % 60;
+            // À partir de 24h : durée lisible en années / mois / jours + heures (ex. 26h15 → 1j 2h15, 506h24 → 21j 2h24)
+            if (h >= 24) {
+                const en = (typeof LANG !== 'undefined' && LANG === 'en');
+                let j = Math.floor(h / 24);
+                const hr = h % 24;
+                const a = Math.floor(j / 365); j -= a * 365;
+                const mo = Math.floor(j / 30); j -= mo * 30;
+                const parts = [];
+                if (a) parts.push(a + (en ? 'y' : 'a'));
+                if (mo) parts.push(mo + (en ? 'mo' : ' mois'));
+                if (j || !parts.length) parts.push(j + (en ? 'd' : 'j'));
+                parts.push(`${hr}h${String(m).padStart(2, '0')}`);
+                return parts.join(' ');
+            }
             return h > 0 ? `${h}h${String(m).padStart(2, '0')}` : `${m} min`;
         }
 
@@ -3238,6 +3254,7 @@
                     const tFinLast = new Date(item.pile.mesures[item.idxLast].date).getTime();
                     return isNaN(tFinLast) || isNaN(tDebX) || tDebX >= tFinLast;
                 });
+                let banniere24hAffichee = false;
                 if (item.totalCycles > 0 && !item.derniere.volt24h && !relanceApresDernier) {
                     const mLast = item.pile.mesures[item.idxLast];
                     const mPrevLast = item.totalCycles >= 2 ? item.pile.mesures[item.idxPrev] : null;
@@ -3257,6 +3274,7 @@
                         raisonsSuspectes.push(LANG === 'en' ? `Unusual end voltage (${mLast.voltage}V)` : `Tension fin de cycle atypique (${mLast.voltage}V)`);
                     }
                     if (raisonsSuspectes.length > 0) {
+                        banniere24hAffichee = true;
                         const t2Last = mLast.date ? new Date(mLast.date).getTime() : NaN;
                         const dhNow = (!isNaN(t2Last) && Date.now() > t2Last) ? (Date.now() - t2Last) / 3600000 : null;
                         let suffixeTempsFr = 'Cliquez pour noter la tension après 24h de repos';
@@ -3324,9 +3342,10 @@
                         ? ` <span class="speed-tag ${infoVit.cls}" title="${escapeAttr(T('clickInfo'))}" onclick="expliquerVitesseCycle(${item.originalIndex}, ${m.indexOriginal})">${escapeHtml(infoVit.lbl)}</span>`
                         : (m.surveille ? ` <span class="speed-tag speed-ok">👁️</span>` : '');
                     const infoV24 = m.volt24h ? evaluerVolt24h(m.volt24h, m.voltage, item.pile.type, item.pile.voltNominal, item.pile.format, m) : null;
+                    const peutAjouter24h = !infoV24 && !m.volt24h && m.indexOriginal === item.idxLast && !relanceApresDernier && !banniere24hAffichee;
                     const v24Html = infoV24
                         ? ` <span class="v24-tag ${infoV24.cls}" title="${escapeAttr(T('clickInfo'))}" onclick="expliquerVolt24h(${item.originalIndex}, ${m.indexOriginal})">${escapeHtml(infoV24.lbl)}</span>`
-                        : '';
+                        : (peutAjouter24h ? ` <span class="v24-add" onclick="ouvrirModaleMesure(${item.originalIndex}, ${m.indexOriginal}, true)">${LANG === 'en' ? '🧪 + 24h test' : '🧪 + Test 24h'}</span>` : '');
 
                     return `
                         <li class="mesure-item">
