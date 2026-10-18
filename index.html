@@ -498,7 +498,7 @@
                     </div>
                     <div>
                         <label>Fin / relevé du cycle :</label>
-                        <input type="datetime-local" id="dateEntree">
+                        <input type="datetime-local" id="dateEntree" oninput="majHintRepos24h('dateEntree', 'dateVolt24hEntree', 'volt24h', 'hintRepos24hAdd')">
                     </div>
                 </div>
 
@@ -529,9 +529,19 @@
                     </div>
                 </div>
 
-                <div>
-                    <label>Tension repos ≥ 24h (V, opt.) :</label>
-                    <input type="text" inputmode="decimal" id="volt24h" placeholder="Ex: 1.33 (test autodécharge)">
+                <button type="button" id="btn24Add" class="small-btn" style="margin-top:10px; padding:4px 10px; font-size:0.78rem; opacity:0.85;" onclick="basculer24h('Add', true, true)">🧪 Ajouter un test de repos 24h (autodécharge)</button>
+                <div id="bloc24Add" style="display:none;">
+                <div class="grid-2 grid-dates">
+                    <div>
+                        <label>Tension repos ≥ 24h (V, opt.) :</label>
+                        <input type="text" inputmode="decimal" id="volt24h" placeholder="Ex: 1.33 (test autodécharge)" oninput="majHintRepos24h('dateEntree', 'dateVolt24hEntree', 'volt24h', 'hintRepos24hAdd')">
+                    </div>
+                    <div>
+                        <label>Date relevé 24h+ (opt.) :</label>
+                        <input type="datetime-local" id="dateVolt24hEntree" oninput="majHintRepos24h('dateEntree', 'dateVolt24hEntree', 'volt24h', 'hintRepos24hAdd')">
+                    </div>
+                </div>
+                <div id="hintRepos24hAdd" class="hint" style="display:none; margin-top:4px; font-weight:bold;"></div>
                 </div>
                 <label class="surv-toggle" id="survAddLabel">
                     <input type="checkbox" id="surveille" onchange="document.getElementById('survAddLabel').classList.toggle('active', this.checked)">
@@ -742,7 +752,10 @@
             <form id="editMesureForm">
                 <input type="hidden" id="editMesurePileIndex">
                 <input type="hidden" id="editMesureIndex">
-                <div class="hint">Début seul (sans tension ni mAh) = cycle en cours.</div>
+                <div class="hint" style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
+                    <span>Début seul (sans tension ni mAh) = cycle en cours.</span>
+                    <button type="button" id="btnQuickStartCycle" class="small-btn add-cycle-btn" style="padding:4px 8px; font-size:0.75rem;" onclick="lancerCycleMaintenant()">⏳ Lancer maintenant</button>
+                </div>
                 <div class="grid-2 grid-dates">
                     <div>
                         <label>Début (opt.) :</label>
@@ -750,7 +763,7 @@
                     </div>
                     <div>
                         <label>Fin / relevé :</label>
-                        <input type="datetime-local" id="editMesureDate">
+                        <input type="datetime-local" id="editMesureDate" oninput="majHintRepos24h('editMesureDate', 'editMesureDateVolt24h', 'editMesureVolt24h', 'hintRepos24hEdit')">
                     </div>
                 </div>
                 <div class="grid-2">
@@ -778,9 +791,19 @@
                         </select>
                     </div>
                 </div>
-                <div>
-                    <label>Tension après repos ≥ 24h (V, opt. — test autodécharge) :</label>
-                    <input type="text" inputmode="decimal" id="editMesureVolt24h" placeholder="Ex: 1.33 (mesurée ≥ 24h après fin de charge)">
+                <button type="button" id="btn24Edit" class="small-btn" style="margin-top:10px; padding:4px 10px; font-size:0.78rem; opacity:0.85;" onclick="basculer24h('Edit', true, true)">🧪 Ajouter un test de repos 24h (autodécharge)</button>
+                <div id="bloc24Edit" style="display:none;">
+                <div class="grid-2 grid-dates">
+                    <div>
+                        <label>Tension après repos ≥ 24h (V, opt.) :</label>
+                        <input type="text" inputmode="decimal" id="editMesureVolt24h" placeholder="Ex: 1.33 (autodécharge)" oninput="majHintRepos24h('editMesureDate', 'editMesureDateVolt24h', 'editMesureVolt24h', 'hintRepos24hEdit')">
+                    </div>
+                    <div>
+                        <label>Date relevé 24h+ (opt.) :</label>
+                        <input type="datetime-local" id="editMesureDateVolt24h" oninput="majHintRepos24h('editMesureDate', 'editMesureDateVolt24h', 'editMesureVolt24h', 'hintRepos24hEdit')">
+                    </div>
+                </div>
+                <div id="hintRepos24hEdit" class="hint" style="display:none; margin-top:4px; font-weight:bold;"></div>
                 </div>
                 <label class="surv-toggle" id="survEditLabel">
                     <input type="checkbox" id="editMesureSurveille" onchange="document.getElementById('survEditLabel').classList.toggle('active', this.checked)">
@@ -879,10 +902,15 @@
             "Début (opt.) :":"Start (opt.):",
             "Fin / relevé :":"End / reading:",
             "Tension après repos ≥ 24h (V, opt. — test autodécharge) :":"Voltage after 24h+ rest (V, opt. — self-discharge test):",
+            "Tension après repos ≥ 24h (V, opt.) :":"24h+ rest voltage (V, opt.):",
+            "Date relevé 24h+ (opt.) :":"24h+ reading date (opt.):",
+            "Ex: 1.33 (autodécharge)":"E.g. 1.33 (self-discharge)",
+            "⏳ Lancer maintenant":"⏳ Start now",
             "Ex: 1.33 (mesurée ≥ 24h après fin de charge)":"E.g. 1.33 (measured ≥ 24h after charge)",
             "Choisissez le chargeur utilisé pour adapter les lots proposés, les chimies/formats supportés et les réglages.":"Choose the charger in use to adapt the suggested battery batches, supported chemistries/sizes and settings.",
             "Chargeur utilisé :":"Charger used:",
             "⏳ En cours":"⏳ In progress",
+            "🧪 Ajouter un test de repos 24h (autodécharge)":"🧪 Add a 24h rest test (self-discharge)",
             "Début seul (sans tension ni mAh) = cycle en cours.":"Start time only (no voltage or mAh) = cycle in progress.",
             "Astuce : renseigne seulement « Début du cycle » pour suivre un cycle en cours ; tension et mAh s'ajoutent à la fin (✏️ Cycle).":"Tip: fill in only “Cycle start” to track a cycle in progress; voltage and mAh can be added at the end (✏️ Cycle).",
             "🔄 Auto (selon chimie / format)":"🔄 Auto (by chemistry / size)",
@@ -1080,6 +1108,13 @@
         window.toggleDernieres = function() { dernieresActif = !dernieresActif; chargerPiles(); };
         let enCoursActif = false;
         window.toggleEnCours = function() { enCoursActif = !enCoursActif; chargerPiles(); };
+        // Bloc « test de repos 24h » : masqué par défaut, affiché à la demande (bouton discret) ou depuis la bannière « Pile suspecte »
+        window.basculer24h = function(mode, afficher, focus) {
+            const bloc = document.getElementById('bloc24' + mode), btn = document.getElementById('btn24' + mode);
+            if (bloc) bloc.style.display = afficher ? '' : 'none';
+            if (btn) btn.style.display = afficher ? 'none' : '';
+            if (afficher && focus) setTimeout(() => { try { document.getElementById(mode === 'Add' ? 'volt24h' : 'editMesureVolt24h').focus(); } catch (e) {} }, 50);
+        };
         window.setDernieresNb = function(v) {
             let n = parseInt(v, 10); if (isNaN(n)) n = 4;
             dernieresNb = Math.min(Math.max(n, 1), 50);
@@ -2374,16 +2409,32 @@
             if (mesurePrecedente && estEnCours(mesurePrecedente)) mesurePrecedente = null;
             const aDebutExplicite = !!mesureActuelle.dateDebut;
             const strDebut = mesureActuelle.dateDebut || (mesurePrecedente ? mesurePrecedente.date : null);
-            if (!strDebut) return null;
+
+            const mah = Number(mesureActuelle.mah) || 0;
+            // Cas spécial : 0 mAh renvoyé par le chargeur (effondrement immédiat sous 300 mA au début de la décharge Grad)
+            if (mah === 0 && mesureActuelle.mah != null && mesureActuelle.voltage != null) {
+                let dStr0 = '';
+                if (strDebut) {
+                    const t1_0 = new Date(strDebut).getTime(), t2_0 = new Date(mesureActuelle.date).getTime();
+                    if (!isNaN(t1_0) && !isNaN(t2_0) && t2_0 > t1_0) dStr0 = formaterDureeHeures((t2_0 - t1_0) / 3600000) + ' · ';
+                }
+                return {
+                    cls: 'speed-fast',
+                    suspect24h: true,
+                    reason24h: LANG === 'en' ? '0 mAh discharged (instant voltage collapse under 300 mA load — extreme IR)' : '0 mAh déchargés (effondrement immédiat sous 300 mA — RI critique)',
+                    lbl: `⚡ ${dStr0}⚠️ 0 mAh (${LANG === 'en' ? 'Collapse / High IR' : 'Effondrement / RI critique'})`,
+                    detail: LANG === 'en'
+                        ? `⚠️ 0 mAh recorded by charger (end voltage: ${mesureActuelle.voltage} V)!\n\nDuring the Grading discharge phase (300 mA load on XTAR VX4 V2), the cell voltage collapsed immediately below the cut-off threshold (0.9–1.0 V) due to extreme internal resistance (dry electrolyte / sulfation / internal oxidation), before recharging back to ${mesureActuelle.voltage} V.\n\n👉 Even if resting voltage looks high (${mesureActuelle.voltage} V unloaded), the cell cannot deliver current under load.`
+                        : `⚠️ 0 mAh relevé par le chargeur (tension fin : ${mesureActuelle.voltage} V) !\n\nLors du passage en décharge (300 mA sur le XTAR VX4 V2), la tension s'est effondrée instantanément sous le seuil de coupure (0,9–1,0 V) à cause d'une résistance interne (RI) critique (électrolyte sec / oxydation interne), avant de remonter à ${mesureActuelle.voltage} V en recharge sans charge.\n\n👉 Même si la tension à vide semble haute (${mesureActuelle.voltage} V), cette pile s'écroule dès qu'on lui demande du courant.`
+                };
+            }
+            if (!strDebut || !(mah > 0)) return null;
 
             const t1 = new Date(strDebut).getTime();
             const t2 = new Date(mesureActuelle.date).getTime();
             if (isNaN(t1) || isNaN(t2) || t2 <= t1) return null;
             const deltaH = (t2 - t1) / 3600000;
             if (deltaH < 0.08 || (!aDebutExplicite && deltaH > 48)) return null;
-
-            const mah = Number(mesureActuelle.mah) || 0;
-            if (!(mah > 0)) return null;
 
             const h1 = new Date(strDebut).getHours();
             const h2 = new Date(mesureActuelle.date).getHours();
@@ -2395,17 +2446,18 @@
             const tRechargeTheoH = (mah * 1.25) / 500.0; // Recharge NiMH à 500 mA max
             const tTheoH = 0.20 + tDechargeH + tRechargeTheoH;
 
-            // Médiane des cycles rapides/surveillés ou à début explicite de cette pile
+            // Médiane des cycles rapides/surveillés ou à début explicite de cette pile (filtre les écarts < 0.3h ou > 12h pour éviter les saisies erronées)
             let dureesRapides = [];
             if (Array.isArray(toutesMesures) && toutesMesures.length >= 1) {
                 for (let i = 0; i < toutesMesures.length; i++) {
                     const b = toutesMesures[i];
                     const a = (i > 0 && !estEnCours(toutesMesures[i - 1])) ? toutesMesures[i - 1] : null;
-                    if (estEnCours(b)) continue;
+                    if (estEnCours(b) || !(Number(b.mah) > 0)) continue;
                     const sDeb = b.dateDebut || (a ? a.date : null);
                     if (!sDeb || !b.date) continue;
                     const dh = (new Date(b.date).getTime() - new Date(sDeb).getTime()) / 3600000;
-                    if (dh >= 0.3 && (b.dateDebut || b.surveille === true || dh <= 4.5)) dureesRapides.push(dh);
+                    const minPhysB = (Number(b.mah) / 300.0) + (Number(b.mah) / 500.0) * 0.5;
+                    if (dh >= Math.max(0.3, minPhysB) && dh <= 12 && (b.dateDebut || b.surveille === true || dh <= 4.5)) dureesRapides.push(dh);
                 }
             }
             dureesRapides.sort((x, y) => x - y);
@@ -2420,7 +2472,7 @@
             const baseCalculFr = `\n\n📐 Base de calcul XTAR VX4 V2 pour ${mah} mAh :\n• Décharge à 300 mA fixes : ${formaterDureeHeures(tDechargeH)} (incompressible)\n• Recharge à 500 mA (+25%) : ~${formaterDureeHeures(tRechargeTheoH)}\n• Total théorique : ~${theoStr} (~135–165 mAh/h)`;
             const baseCalculEn = `\n\n📐 XTAR VX4 V2 calculation basis for ${mah} mAh:\n• Fixed 300 mA discharge: ${formaterDureeHeures(tDechargeH)} (minimum)\n• 500 mA recharge (+25%): ~${formaterDureeHeures(tRechargeTheoH)}\n• Total theoretical: ~${theoStr} (~135–165 mAh/h)`;
 
-            // Cas 0 : Cycle TROP RAPIDE (physiquement suspect : temps total inférieur à Décharge 300mA + 60% Recharge 500mA)
+            // Cas 0 : Cycle TROP RAPIDE (physiquement suspect : temps total inférieur à Décharge 300mA + 65% Recharge 500mA)
             const tMinPhysiqueH = tDechargeH + (mah / 500.0) * 0.65;
             if (deltaH < tMinPhysiqueH && mah >= 150) {
                 return {
@@ -2506,50 +2558,141 @@
             if (info) alerter(info.detail);
         };
 
-        // Évaluation de la tension après ≥ 24h de repos hors chargeur (test d'autodécharge / court-circuit interne)
-        function evaluerVolt24h(v24, voltFinCharge, chimie, voltNominal) {
+        // Calcule la durée de repos entre la fin du cycle (T2 = m.date) et le relevé 24h+ (T3 = m.dateVolt24h)
+        // Fallback : si m.mah === 0 et dateDebut existe sans dateVolt24h (ex: Duracell #3), utilise Fin - Début
+        function calculerHeuresRepos24h(m) {
+            if (!m) return null;
+            if (m.date && m.dateVolt24h) {
+                const t2 = new Date(m.date).getTime();
+                const t3 = new Date(m.dateVolt24h).getTime();
+                if (!isNaN(t2) && !isNaN(t3) && t3 > t2) return (t3 - t2) / 3600000;
+            }
+            if (m.dateDebut && m.date && Number(m.mah) === 0 && !m.dateVolt24h) {
+                const t1 = new Date(m.dateDebut).getTime();
+                const t2 = new Date(m.date).getTime();
+                if (!isNaN(t1) && !isNaN(t2) && t2 > t1 && ((t2 - t1) / 3600000) >= 6) return (t2 - t1) / 3600000;
+            }
+            return null;
+        }
+
+        window.majHintRepos24h = function(idDateFin, idDateV24, idInputV24, idHint) {
+            const elFin = document.getElementById(idDateFin);
+            const elV24Date = document.getElementById(idDateV24);
+            const elV24Val = document.getElementById(idInputV24);
+            const hint = document.getElementById(idHint);
+            if (!hint) return;
+            // Si on saisit une tension 24h et que la date 24h est vide, on la pré-remplit à maintenant (si T_maintenant > T2)
+            if (elV24Val && elV24Val.value.trim() !== '' && elV24Date && !elV24Date.value && elFin && elFin.value) {
+                const t2 = new Date(elFin.value).getTime();
+                if (!isNaN(t2) && Date.now() > t2 + 600000) {
+                    const n = new Date();
+                    n.setMinutes(n.getMinutes() - n.getTimezoneOffset());
+                    elV24Date.value = n.toISOString().slice(0, 16);
+                }
+            }
+            if (!elFin || !elFin.value) { hint.style.display = 'none'; return; }
+            const t2 = new Date(elFin.value).getTime();
+            const t3 = (elV24Date && elV24Date.value) ? new Date(elV24Date.value).getTime() : Date.now();
+            if (isNaN(t2) || isNaN(t3) || t3 <= t2) { hint.style.display = 'none'; return; }
+            const dh = (t3 - t2) / 3600000;
+            const dStr = formaterDureeHeures(dh);
+            const cible24 = new Date(t2 + 24 * 3600000);
+            const cibleStr = cible24.toLocaleDateString(dateLocale()) + ' ' + T('at') + ' ' + cible24.toLocaleTimeString(dateLocale(), { hour: '2-digit', minute: '2-digit' });
+            hint.style.display = 'block';
+            if (dh >= 24) {
+                hint.style.color = '#27ae60';
+                hint.textContent = LANG === 'en'
+                    ? `✅ Rest duration since cycle end (T2): ${dStr} (≥ 24h reached)`
+                    : `✅ Durée de repos depuis la fin du cycle (T2) : ${dStr} (≥ 24h atteint)`;
+            } else {
+                hint.style.color = '#e67e22';
+                hint.textContent = LANG === 'en'
+                    ? `⏳ Rest since cycle end (T2): ${dStr} / 24h (24h reached on ${cibleStr})`
+                    : `⏳ Repos depuis la fin du cycle (T2) : ${dStr} / 24h (24h atteint le ${cibleStr})`;
+            }
+        };
+
+        // Évaluation de la tension après repos hors chargeur (test d'autodécharge / court-circuit interne)
+        function evaluerVolt24h(v24, voltFinCharge, chimie, voltNominal, format, mesureObj) {
             const v = Number(v24);
             if (!(v > 0)) return null;
             const v0 = Number(voltFinCharge) || 0;
             const drop = v0 > v ? Math.round((v0 - v) * 100) / 100 : null;
             const dropTxt = drop !== null ? ` (-${drop.toFixed(2)}V)` : '';
+            const reposH = calculerHeuresRepos24h(mesureObj);
+            const lblTemps = reposH !== null ? formaterDureeHeures(reposH) : '24h+';
+            const detailTempsFr = reposH !== null
+                ? `\n⏱️ Temps de repos (T3 − T2) : ${formaterDureeHeures(reposH)}${mesureObj && mesureObj.dateVolt24h ? ' (relevé le ' + String(mesureObj.dateVolt24h).replace('T', ' ') + ')' : ''}${reposH < 20 ? ' — ⚠️ repos inférieur à 24h, la tension peut encore baisser' : ''}.`
+                : '';
+            const detailTempsEn = reposH !== null
+                ? `\n⏱️ Rest duration (T3 − T2): ${formaterDureeHeures(reposH)}${mesureObj && mesureObj.dateVolt24h ? ' (logged on ' + String(mesureObj.dateVolt24h).replace('T', ' ') + ')' : ''}${reposH < 20 ? ' — ⚠️ rest under 24h, voltage may still drop further' : ''}.`
+                : '';
+
+            // Cas particulier : 0 mAh sur NiMH/NiCd avec tension haute perchée (> 1.44 V) -> pile à impédance infinie / sèche
+            if ((chimie === 'NiMH' || chimie === 'NiCd') && mesureObj && mesureObj.mah !== null && Number(mesureObj.mah) === 0 && v >= 1.44) {
+                return {
+                    cls: 'v24-bad',
+                    lbl: `🧪 ${lblTemps}: ${v}V ⚠️ (0 mAh)`,
+                    detail: LANG === 'en'
+                        ? `⚠️ High unloaded voltage (${v} V${dropTxt}) but 0 mAh capacity!${detailTempsEn}\n\nOn a NiMH/NiCd cell that delivered 0 mAh under 300 mA load, staying perched at ${v} V at rest means the internal resistance is critically high (dried-out cell) or it is a 1.5V non-NiMH cell: it holds surface voltage unloaded but collapses immediately under load.`
+                        : `⚠️ Tension à vide haute (${v} V${dropTxt}) mais capacité 0 mAh !${detailTempsFr}\n\nSur une pile NiMH/NiCd ayant donné 0 mAh sous 300 mA, rester perchée à ${v} V au repos indique une résistance interne critique (pile sèche / ouverte) ou une pile 1,5V : elle garde une tension de surface à vide mais s'écroule dès qu'on tire du courant.`
+                };
+            }
 
             if (chimie === 'NiMH' || chimie === 'NiCd') {
                 if (v >= 1.32) return {
                     cls: 'v24-ok',
-                    lbl: `🧪 24h: ${v}V 🟢`,
+                    lbl: `🧪 ${lblTemps}: ${v}V 🟢`,
                     detail: LANG === 'en'
-                        ? `✅ Excellent 24h+ resting voltage: ${v} V${dropTxt}.\n\nLow self-discharge (LSD / healthy separator). The cell holds its charge very well.`
-                        : `✅ Excellente tenue à 24h+ : ${v} V${dropTxt}.\n\nFaible autodécharge (bonne santé du séparateur interne). La pile conserve très bien sa charge.`
+                        ? `✅ Excellent resting voltage (${lblTemps}): ${v} V${dropTxt}.${detailTempsEn}\n\nLow self-discharge (LSD / healthy separator). The cell holds its charge very well.`
+                        : `✅ Excellente tenue au repos (${lblTemps}) : ${v} V${dropTxt}.${detailTempsFr}\n\nFaible autodécharge (bonne santé du séparateur interne). La pile conserve très bien sa charge.`
                 };
                 if (v >= 1.28) return {
                     cls: 'v24-mid',
-                    lbl: `🧪 24h: ${v}V 🟡`,
+                    lbl: `🧪 ${lblTemps}: ${v}V 🟡`,
                     detail: LANG === 'en'
-                        ? `🟡 Correct 24h+ resting voltage: ${v} V${dropTxt}.\n\nNormal for standard (non-LSD) NiMH/NiCd cells. Use within a few days/weeks after charging.`
-                        : `🟡 Tenue correcte à 24h+ : ${v} V${dropTxt}.\n\nNormal pour une NiMH/NiCd standard (non faible autodécharge). À utiliser dans les jours ou semaines suivant la charge.`
+                        ? `🟡 Correct resting voltage (${lblTemps}): ${v} V${dropTxt}.${detailTempsEn}\n\nNormal for standard (non-LSD) NiMH/NiCd cells. Use within a few days/weeks after charging.`
+                        : `🟡 Tenue correcte au repos (${lblTemps}) : ${v} V${dropTxt}.${detailTempsFr}\n\nNormal pour une NiMH/NiCd standard (non faible autodécharge). À utiliser dans les jours ou semaines suivant la charge.`
                 };
                 if (v >= 1.24) return {
                     cls: 'v24-warn',
-                    lbl: `🧪 24h: ${v}V 🟠`,
+                    lbl: `🧪 ${lblTemps}: ${v}V 🟠`,
                     detail: LANG === 'en'
-                        ? `🟠 Fast self-discharge at 24h+: ${v} V${dropTxt} (< 1.28 V).\n\nThe cell loses charge quickly at rest. Do not use in clocks/remotes; use immediately after charging.`
-                        : `🟠 Autodécharge rapide à 24h+ : ${v} V${dropTxt} (< 1,28 V).\n\nLa pile perd vite sa charge au repos. Évitez les télécommandes/horloges ; à utiliser immédiatement après charge.`
+                        ? `🟠 Fast self-discharge (${lblTemps}): ${v} V${dropTxt} (< 1.28 V).${detailTempsEn}\n\nThe cell loses charge quickly at rest. Do not use in clocks/remotes; use immediately after charging.`
+                        : `🟠 Autodécharge rapide (${lblTemps}) : ${v} V${dropTxt} (< 1,28 V).${detailTempsFr}\n\nLa pile perd vite sa charge au repos. Évitez les télécommandes/horloges ; à utiliser immédiatement après charge.`
                 };
                 return {
                     cls: 'v24-bad',
-                    lbl: `🧪 24h: ${v}V 🔴`,
+                    lbl: `🧪 ${lblTemps}: ${v}V 🔴`,
                     detail: LANG === 'en'
-                        ? `🔴 Severe self-discharge / internal leakage at 24h+: ${v} V${dropTxt} (< 1.24 V)!\n\nInternal micro-short (dendrites). Even if capacity seemed okay right after charging, this cell empties itself within hours/days. Recycle.`
-                        : `🔴 Fuite interne / autodécharge sévère à 24h+ : ${v} V${dropTxt} (< 1,24 V) !\n\nMicro-court-circuit interne (dendrites). Même si les mAh semblaient corrects à chaud, la pile se vide toute seule en quelques heures/jours. À recycler.`
+                        ? `🔴 Severe self-discharge / internal leakage (${lblTemps}): ${v} V${dropTxt} (< 1.24 V)!${detailTempsEn}\n\nInternal micro-short (dendrites). Even if capacity seemed okay right after charging, this cell empties itself within hours/days. Recycle.`
+                        : `🔴 Fuite interne / autodécharge sévère (${lblTemps}) : ${v} V${dropTxt} (< 1,24 V) !${detailTempsFr}\n\nMicro-court-circuit interne (dendrites). Même si les mAh semblaient corrects à chaud, la pile se vide toute seule en quelques heures/jours. À recycler.`
+                };
+            }
+            // Li-ion 1.5V régulé (AA/AAA)
+            const isLi15 = chimie === 'Li-ion' && ((voltNominal && voltNominal <= 1.8) || format === 'AA' || format === 'AAA');
+            if (isLi15) {
+                if (v >= 1.48) return {
+                    cls: 'v24-ok',
+                    lbl: `🧪 ${lblTemps}: ${v}V 🟢`,
+                    detail: LANG === 'en'
+                        ? `✅ Regulated 1.5V Li-ion output active (${v} V${dropTxt}).${detailTempsEn}\n\nNote: Built-in step-down converter maintains a flat 1.5V until the internal 3.6V cell is depleted.`
+                        : `✅ Sortie régulée Li-ion 1,5V active (${v} V${dropTxt}).${detailTempsFr}\n\nNote : Le convertisseur abaisseur intégré maintient 1,5V fixe tant que la cellule interne 3,6V n'est pas vide.`
+                };
+                return {
+                    cls: 'v24-bad',
+                    lbl: `🧪 ${lblTemps}: ${v}V 🔴`,
+                    detail: LANG === 'en'
+                        ? `🔴 Abnormal voltage on 1.5V regulated Li-ion (${v} V${dropTxt} < 1.48 V)!${detailTempsEn}\n\nEither the internal 3.6V cell self-discharged below BMS cut-off, or the step-down converter is faulty.`
+                        : `🔴 Tension anormale sur Li-ion 1,5V régulée (${v} V${dropTxt} < 1,48 V) !${detailTempsFr}\n\nSoit la cellule interne 3,6V s'est autodéchargée sous le seuil du BMS, soit le convertisseur abaisseur est défaillant.`
                 };
             }
             if (chimie === 'Li-ion' && (!voltNominal || voltNominal > 2.5)) {
-                if (v >= 4.12) return { cls: 'v24-ok', lbl: `🧪 24h: ${v}V 🟢`, detail: LANG === 'en' ? `✅ Healthy 24h resting voltage (${v} V${dropTxt}).` : `✅ Bonne tenue à 24h (${v} V${dropTxt}).` };
-                if (v >= 4.05) return { cls: 'v24-warn', lbl: `🧪 24h: ${v}V 🟠`, detail: LANG === 'en' ? `🟠 Noticeable voltage drop after 24h (${v} V${dropTxt}). Monitor self-discharge.` : `🟠 Chute de tension notable après 24h (${v} V${dropTxt}). Surveiller l'autodécharge.` };
-                return { cls: 'v24-bad', lbl: `🧪 24h: ${v}V 🔴`, detail: LANG === 'en' ? `🔴 High self-discharge on Li-ion (${v} V${dropTxt} < 4.05 V after 24h). Internal leakage risk.` : `🔴 Forte autodécharge sur Li-ion (${v} V${dropTxt} < 4,05 V après 24h). Risque de fuite interne.` };
+                if (v >= 4.12) return { cls: 'v24-ok', lbl: `🧪 ${lblTemps}: ${v}V 🟢`, detail: LANG === 'en' ? `✅ Healthy resting voltage (${v} V${dropTxt}).${detailTempsEn}` : `✅ Bonne tenue au repos (${v} V${dropTxt}).${detailTempsFr}` };
+                if (v >= 4.05) return { cls: 'v24-warn', lbl: `🧪 ${lblTemps}: ${v}V 🟠`, detail: LANG === 'en' ? `🟠 Noticeable voltage drop (${v} V${dropTxt}).${detailTempsEn}` : `🟠 Chute de tension notable (${v} V${dropTxt}).${detailTempsFr}` };
+                return { cls: 'v24-bad', lbl: `🧪 ${lblTemps}: ${v}V 🔴`, detail: LANG === 'en' ? `🔴 High self-discharge on Li-ion (${v} V${dropTxt} < 4.05 V).${detailTempsEn}` : `🔴 Forte autodécharge sur Li-ion (${v} V${dropTxt} < 4,05 V).${detailTempsFr}` };
             }
-            return { cls: 'v24-ok', lbl: `🧪 24h: ${v}V`, detail: `24h+ : ${v} V${dropTxt}` };
+            return { cls: 'v24-ok', lbl: `🧪 ${lblTemps}: ${v}V`, detail: `${lblTemps} : ${v} V${dropTxt}${LANG === 'en' ? detailTempsEn : detailTempsFr}` };
         }
 
         window.expliquerVolt24h = function(pIdx, mIdx) {
@@ -2557,7 +2700,7 @@
             const p = inv[pIdx];
             const m = p && p.mesures ? p.mesures[mIdx] : null;
             if (!p || !m || !m.volt24h) return;
-            const info = evaluerVolt24h(m.volt24h, m.voltage, p.type, p.voltNominal);
+            const info = evaluerVolt24h(m.volt24h, m.voltage, p.type, p.voltNominal, p.format, m);
             if (info) alerter(info.detail);
         };
 
@@ -3107,9 +3250,25 @@
                         raisonsSuspectes.push(LANG === 'en' ? `Unusual end voltage (${mLast.voltage}V)` : `Tension fin de cycle atypique (${mLast.voltage}V)`);
                     }
                     if (raisonsSuspectes.length > 0) {
+                        const t2Last = mLast.date ? new Date(mLast.date).getTime() : NaN;
+                        const dhNow = (!isNaN(t2Last) && Date.now() > t2Last) ? (Date.now() - t2Last) / 3600000 : null;
+                        let suffixeTempsFr = 'Cliquez pour noter la tension après 24h de repos';
+                        let suffixeTempsEn = 'Click to log 24h rest voltage';
+                        if (dhNow !== null) {
+                            const dNowStr = formaterDureeHeures(dhNow);
+                            if (dhNow >= 24) {
+                                suffixeTempsFr = `✅ Repos ≥ 24h atteint (${dNowStr}) — Cliquez pour noter la tension`;
+                                suffixeTempsEn = `✅ 24h+ rest reached (${dNowStr}) — Click to log voltage`;
+                            } else {
+                                const cible24 = new Date(t2Last + 24 * 3600000);
+                                const hCible = cible24.toLocaleTimeString(dateLocale(), { hour: '2-digit', minute: '2-digit' });
+                                suffixeTempsFr = `⏳ Repos en cours : ${dNowStr} / 24h (mesurer à partir de ${hCible})`;
+                                suffixeTempsEn = `⏳ Resting: ${dNowStr} / 24h (measure from ${hCible})`;
+                            }
+                        }
                         const txtBtn24 = LANG === 'en'
-                            ? `🧪 Suspect cell (${raisonsSuspectes.join(' · ')}) — Click to log 24h rest voltage`
-                            : `🧪 Pile suspecte (${raisonsSuspectes.join(' · ')}) — Cliquez pour noter la tension après 24h de repos`;
+                            ? `🧪 Suspect cell (${raisonsSuspectes.join(' · ')}) — ${suffixeTempsEn}`
+                            : `🧪 Pile suspecte (${raisonsSuspectes.join(' · ')}) — ${suffixeTempsFr}`;
                         conseilHtml += `<div class="v24-suggest" onclick="ouvrirModaleMesure(${item.originalIndex}, ${item.idxLast}, true)">${escapeHtml(txtBtn24)}</div>`;
                     }
                 }
@@ -3157,7 +3316,7 @@
                     const vitHtml = infoVit
                         ? ` <span class="speed-tag ${infoVit.cls}" title="${escapeAttr(T('clickInfo'))}" onclick="expliquerVitesseCycle(${item.originalIndex}, ${m.indexOriginal})">${escapeHtml(infoVit.lbl)}</span>`
                         : (m.surveille ? ` <span class="speed-tag speed-ok">👁️</span>` : '');
-                    const infoV24 = m.volt24h ? evaluerVolt24h(m.volt24h, m.voltage, item.pile.type, item.pile.voltNominal) : null;
+                    const infoV24 = m.volt24h ? evaluerVolt24h(m.volt24h, m.voltage, item.pile.type, item.pile.voltNominal, item.pile.format, m) : null;
                     const v24Html = infoV24
                         ? ` <span class="v24-tag ${infoV24.cls}" title="${escapeAttr(T('clickInfo'))}" onclick="expliquerVolt24h(${item.originalIndex}, ${m.indexOriginal})">${escapeHtml(infoV24.lbl)}</span>`
                         : '';
@@ -3354,6 +3513,8 @@
                 const dateDebut = (document.getElementById('dateDebutEntree') && document.getElementById('dateDebutEntree').value) ? document.getElementById('dateDebutEntree').value : '';
                 const v24Raw = (document.getElementById('volt24h') && document.getElementById('volt24h').value) ? document.getElementById('volt24h').value.trim().replace(',', '.') : '';
                 const volt24h = v24Raw ? parseFloat(v24Raw) : null;
+                const dateVolt24h = (volt24h && !isNaN(volt24h) && document.getElementById('dateVolt24hEntree') && document.getElementById('dateVolt24hEntree').value)
+                    ? document.getElementById('dateVolt24hEntree').value : undefined;
                 
                 if (aMesure) {
                     const vnSaisi = parseFloat(String(voltNominalInput.value || '').replace(',', '.'));
@@ -3362,7 +3523,7 @@
                 }
                 const aEnCours = !aMesure && dateDebut !== '' && !document.getElementById('ir').value && !stress;
                 const nouvelleMesure = aMesure
-                    ? { date, dateDebut: dateDebut || undefined, voltage, mah, ir, stress, surveille, volt24h: (volt24h && !isNaN(volt24h)) ? volt24h : null }
+                    ? { date, dateDebut: dateDebut || undefined, voltage, mah, ir, stress, surveille, volt24h: (volt24h && !isNaN(volt24h)) ? volt24h : null, dateVolt24h }
                     : (aEnCours ? { date: dateDebut, dateDebut, voltage: null, mah: null, ir: null, stress: '', surveille, volt24h: null, enCours: true } : null);
                 const idsACreer = idEnd ? genererIdsLot(idStart, idEnd) : [idStart];
                 let inventaire = JSON.parse(localStorage.getItem('stock_piles')) || [];
@@ -3394,6 +3555,9 @@
                 document.getElementById('stressTest').value = '';
                 if (document.getElementById('dateDebutEntree')) document.getElementById('dateDebutEntree').value = '';
                 if (document.getElementById('volt24h')) document.getElementById('volt24h').value = '';
+                if (document.getElementById('dateVolt24hEntree')) document.getElementById('dateVolt24hEntree').value = '';
+                basculer24h('Add', false);
+                if (document.getElementById('hintRepos24hAdd')) document.getElementById('hintRepos24hAdd').style.display = 'none';
                 if (document.getElementById('surveille')) {
                     document.getElementById('surveille').checked = false;
                     const sl = document.getElementById('survAddLabel');
@@ -3490,6 +3654,20 @@
             showToast(renommerLot ? T('lotRenamed', autres.length + 1) : T('pileEdited'));
         });
 
+        window.lancerCycleMaintenant = function() {
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            const iso = now.toISOString().slice(0, 16);
+            const deb = document.getElementById('editMesureDateDebut');
+            if (deb && !deb.value) deb.value = iso;
+            ['editMesureVolt', 'editMesureMah', 'editMesureIr', 'editMesureStress', 'editMesureVolt24h', 'editMesureDateVolt24h'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = '';
+            });
+            syncEditMesureRequired();
+            document.getElementById('editMesureForm').requestSubmit();
+        };
+
         window.ouvrirModaleAjoutMesure = function(pIdx) {
             const p = (JSON.parse(localStorage.getItem('stock_piles')) || [])[pIdx];
             if (!p) return;
@@ -3499,11 +3677,18 @@
             document.getElementById('editMesureIndex').value = -1; // -1 = nouveau cycle
             const now = new Date();
             now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-            document.getElementById('editMesureDate').value = now.toISOString().slice(0, 16);
-            ['editMesureDateDebut', 'editMesureVolt', 'editMesureMah', 'editMesureIr', 'editMesureStress', 'editMesureVolt24h'].forEach(id => {
+            const isoNow = now.toISOString().slice(0, 16);
+            document.getElementById('editMesureDate').value = isoNow;
+            if (document.getElementById('editMesureDateDebut')) document.getElementById('editMesureDateDebut').value = isoNow;
+            ['editMesureVolt', 'editMesureMah', 'editMesureIr', 'editMesureStress', 'editMesureVolt24h', 'editMesureDateVolt24h'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.value = '';
             });
+            const btnQS = document.getElementById('btnQuickStartCycle');
+            if (btnQS) btnQS.style.display = '';
+            basculer24h('Edit', false);
+            const hint24 = document.getElementById('hintRepos24hEdit');
+            if (hint24) hint24.style.display = 'none';
             const chkSurv = document.getElementById('editMesureSurveille');
             const lblSurv = document.getElementById('survEditLabel');
             if (chkSurv) chkSurv.checked = false;
@@ -3522,8 +3707,11 @@
             document.getElementById('editMesurePileIndex').value = pIdx; document.getElementById('editMesureIndex').value = mIdx;
             const enc = estEnCours(m);
             if (titre && enc) titre.textContent = T('finishCycleTitle', pl.id, mIdx + 1);
-            let finVal = m.date;
-            if (enc) { const n = new Date(); n.setMinutes(n.getMinutes() - n.getTimezoneOffset()); finVal = n.toISOString().slice(0, 16); }
+            const btnQS = document.getElementById('btnQuickStartCycle');
+            if (btnQS) btnQS.style.display = 'none';
+            const n = new Date(); n.setMinutes(n.getMinutes() - n.getTimezoneOffset());
+            const isoNow = n.toISOString().slice(0, 16);
+            let finVal = enc ? isoNow : m.date;
             document.getElementById('editMesureDate').value = finVal;
             if (document.getElementById('editMesureDateDebut')) document.getElementById('editMesureDateDebut').value = m.dateDebut || (enc ? m.date : '') || '';
             document.getElementById('editMesureVolt').value = m.voltage ?? ''; 
@@ -3531,11 +3719,16 @@
             document.getElementById('editMesureIr').value = m.ir || '';
             document.getElementById('editMesureStress').value = m.stress || '';
             if (document.getElementById('editMesureVolt24h')) document.getElementById('editMesureVolt24h').value = m.volt24h || '';
+            if (document.getElementById('editMesureDateVolt24h')) {
+                document.getElementById('editMesureDateVolt24h').value = m.dateVolt24h || (focus24h ? isoNow : '');
+            }
             const chkSurv = document.getElementById('editMesureSurveille');
             const lblSurv = document.getElementById('survEditLabel');
             if (chkSurv) chkSurv.checked = !!m.surveille;
             if (lblSurv) lblSurv.classList.toggle('active', !!m.surveille);
             syncEditMesureRequired();
+            majHintRepos24h('editMesureDate', 'editMesureDateVolt24h', 'editMesureVolt24h', 'hintRepos24hEdit');
+            basculer24h('Edit', !!(focus24h || m.volt24h || m.dateVolt24h), false);
             document.getElementById('editMesureModal').style.display = 'block';
             if (focus24h) {
                 setTimeout(() => { try { document.getElementById('editMesureVolt24h').focus(); } catch (e) {} }, 100);
@@ -3564,6 +3757,14 @@
                 if (alerteV && !(await dialogue(alerteV, { confirm: true }))) return;
                 const v24Str = document.getElementById('editMesureVolt24h') ? document.getElementById('editMesureVolt24h').value.trim().replace(',', '.') : '';
                 const v24Val = v24Str ? parseFloat(v24Str) : null;
+                let dateV24Val = (document.getElementById('editMesureDateVolt24h') && document.getElementById('editMesureDateVolt24h').value) ? document.getElementById('editMesureDateVolt24h').value : '';
+                if (v24Val && !isNaN(v24Val) && !dateV24Val) {
+                    if (ancien && ancien.dateVolt24h) dateV24Val = ancien.dateVolt24h;
+                    else {
+                        const n = new Date(); n.setMinutes(n.getMinutes() - n.getTimezoneOffset());
+                        dateV24Val = n.toISOString().slice(0, 16);
+                    }
+                }
                 mesureObj = {
                     date: dateFinVal,
                     dateDebut: dateDebutVal || undefined,
@@ -3572,7 +3773,8 @@
                     ir: document.getElementById('editMesureIr').value ? parseInt(document.getElementById('editMesureIr').value, 10) : null,
                     stress: document.getElementById('editMesureStress').value,
                     surveille,
-                    volt24h: (v24Val && !isNaN(v24Val)) ? v24Val : null
+                    volt24h: (v24Val && !isNaN(v24Val)) ? v24Val : null,
+                    dateVolt24h: (v24Val && !isNaN(v24Val) && dateV24Val) ? dateV24Val : undefined
                 };
             } else {
                 // Début seul : cycle en cours
@@ -3658,13 +3860,13 @@
 
         window.exporterCSV = function() {
             const inventaire = JSON.parse(localStorage.getItem('stock_piles')) || [];
-            let csv = 'marque,id,annee,format,type,appareil,cycle_grad,volt_indique,mah_indique,date_debut,date_releve,voltage_releve,mah_releve,ir_mohm,courant_max,etat,surveille,volt_24h\n';
+            let csv = 'marque,id,annee,format,type,appareil,cycle_grad,volt_indique,mah_indique,date_debut,date_releve,voltage_releve,mah_releve,ir_mohm,courant_max,etat,surveille,volt_24h,date_volt_24h\n';
 
             inventaire.forEach(p => {
                 p.mesures.sort((m1, m2) => new Date(m1.date) - new Date(m2.date));
                 if (p.mesures.length === 0) {
                     const cl = val => `"${String(val ?? '').replace(/"/g, '""')}"`;
-                    csv += [cl(p.marque), cl(p.id), p.annee || '', cl(p.format), cl(p.type), cl(p.appareil), '', p.voltNominal || '', p.mahNominal || '', '', '', '', '', '', '', cl(''), '', ''].join(',') + '\n';
+                    csv += [cl(p.marque), cl(p.id), p.annee || '', cl(p.format), cl(p.type), cl(p.appareil), '', p.voltNominal || '', p.mahNominal || '', '', '', '', '', '', '', cl(''), '', '', ''].join(',') + '\n';
                 }
                 p.mesures.forEach((m, idx) => {
                     const etat = evaluerEtat(m.mah, p.mahNominal, p.type, p.format);
@@ -3672,7 +3874,7 @@
                     csv += [
                         clean(p.marque), clean(p.id), p.annee || '', clean(p.format), clean(p.type), clean(p.appareil),
                         idx + 1, p.voltNominal || '', p.mahNominal || '',
-                        clean(m.dateDebut || (estEnCours(m) ? m.date : '')), clean(estEnCours(m) ? '' : m.date), m.voltage ?? '', m.mah ?? '', m.ir || '', clean(m.stress), clean(estEnCours(m) ? 'En cours' : etat), m.surveille ? '1' : '', m.volt24h || ''
+                        clean(m.dateDebut || (estEnCours(m) ? m.date : '')), clean(estEnCours(m) ? '' : m.date), m.voltage ?? '', m.mah ?? '', m.ir || '', clean(m.stress), clean(estEnCours(m) ? 'En cours' : etat), m.surveille ? '1' : '', m.volt24h || '', clean(m.dateVolt24h || '')
                     ].join(',') + '\n';
                 });
             });
@@ -3725,6 +3927,7 @@
             const idxSurveille = entetes.indexOf('surveille');
             const idxDateDebut = entetes.indexOf('date_debut');
             const idxVolt24h = entetes.indexOf('volt_24h');
+            const idxDateVolt24h = entetes.indexOf('date_volt_24h');
 
             if (idxId === -1 || idxVoltRel === -1 || idxMahRel === -1) {
                 throw new Error(T('badFormat'));
@@ -3762,6 +3965,7 @@
                 const dateDebut = idxDateDebut !== -1 && cols[idxDateDebut] ? cols[idxDateDebut] : undefined;
                 const v24Str = idxVolt24h !== -1 && cols[idxVolt24h] ? String(cols[idxVolt24h]).replace(',', '.') : '';
                 const volt24h = v24Str ? parseFloat(v24Str) : null;
+                const dateVolt24h = idxDateVolt24h !== -1 && cols[idxDateVolt24h] ? cols[idxDateVolt24h] : undefined;
 
                 const cle = normaliserCle(marque, id, format, annee);
                 let pile = inventaire.find(p => normaliserCle(p.marque, p.id, p.format, p.annee) === cle);
@@ -3769,7 +3973,7 @@
                     pile = { id, marque, annee, format, type, appareil, voltNominal, mahNominal, mesures: [] };
                     inventaire.push(pile);
                 }
-                if (cols[idxMahRel] || voltRelStr) pile.mesures.push({ date, dateDebut, voltage, mah, ir, stress, surveille, volt24h });
+                if (cols[idxMahRel] !== '' || voltRelStr !== '') pile.mesures.push({ date, dateDebut, voltage, mah, ir, stress, surveille, volt24h, dateVolt24h });
                 else if (dateDebut && !date) pile.mesures.push({ date: dateDebut, dateDebut, voltage: null, mah: null, ir: null, stress: '', surveille, volt24h: null, enCours: true });
             }
             return inventaire;
@@ -3859,7 +4063,14 @@
                                             var doublon = false;
                                             for (var di = 0; di < match.mesures.length; di++) {
                                                 var mExist = match.mesures[di];
+                                                if (estEnCours(mExist) && estEnCours(mImport) && (mExist.dateDebut || mExist.date) === (mImport.dateDebut || mImport.date)) {
+                                                    doublon = true;
+                                                    break;
+                                                }
                                                 if (mExist.date === mImport.date && mExist.voltage === mImport.voltage && mExist.mah === mImport.mah) {
+                                                    if (mImport.volt24h && !mExist.volt24h) mExist.volt24h = mImport.volt24h;
+                                                    if (mImport.dateVolt24h && !mExist.dateVolt24h) mExist.dateVolt24h = mImport.dateVolt24h;
+                                                    if (mImport.dateDebut && !mExist.dateDebut) mExist.dateDebut = mImport.dateDebut;
                                                     doublon = true;
                                                     break;
                                                 }
