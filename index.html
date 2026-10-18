@@ -3231,7 +3231,14 @@
                 }
 
                 // Détection automatique d'une pile suspecte (trop rapide, trop lente, chute de mAh > 10 %, tension anormale ou RI usée) pour proposer le Test de repos 24h
-                if (item.totalCycles > 0 && !item.derniere.volt24h) {
+                // Un nouveau cycle (En cours) lancé après le dernier cycle terminé : la pile est de nouveau au chargeur, plus de notion de repos 24h
+                const relanceApresDernier = item.totalCycles > 0 && item.pile.mesures.some(x => {
+                    if (!estEnCours(x)) return false;
+                    const tDebX = new Date(x.dateDebut || x.date).getTime();
+                    const tFinLast = new Date(item.pile.mesures[item.idxLast].date).getTime();
+                    return isNaN(tFinLast) || isNaN(tDebX) || tDebX >= tFinLast;
+                });
+                if (item.totalCycles > 0 && !item.derniere.volt24h && !relanceApresDernier) {
                     const mLast = item.pile.mesures[item.idxLast];
                     const mPrevLast = item.totalCycles >= 2 ? item.pile.mesures[item.idxPrev] : null;
                     const vitLast = analyserVitesseCycle(mLast, mPrevLast, item.pile.mesures, item.pile);
