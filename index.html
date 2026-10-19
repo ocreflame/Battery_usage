@@ -2586,8 +2586,7 @@
                     const bdP = estNc ? Number(b.iDecharge) : 300, bcP = estNc ? Number(b.iCharge) : 500;
                     if (!(bdP > 0 && bcP > 0)) continue;
                     const minPhysB = (Number(b.mah) / bdP) + (Number(b.mah) / bcP) * 0.5;
-                    const bNuit = new Date(sDeb).toDateString() !== new Date(b.date).toDateString() && (new Date(sDeb).getHours() >= 21 || new Date(b.date).getHours() <= 8) && dh >= 5.5;
-                    if (dh >= Math.max(0.3, minPhysB) && dh <= 12 && (b.dateDebut || b.surveille === true || dh <= 4.5) && !(bNuit && b.surveille !== true)) dureesRapides.push(dh);
+                    if (dh >= Math.max(0.3, minPhysB) && dh <= 12 && (b.surveille === true || dh <= 4.5)) dureesRapides.push(dh);
                 }
             }
             dureesRapides.sort((x, y) => x - y);
@@ -2596,8 +2595,8 @@
             const dStr = formaterDureeHeures(deltaH);
             const theoStr = formaterDureeHeures(tTheoH);
             const vitMahH = Math.round(mah / deltaH);
-            // Début saisi = surveillé, sauf si le cycle a traversé la nuit sans que « surveillé » soit coché (pile laissée au chargeur : l'heure de relevé n'est pas la fin de charge)
-            const estSurveille = mesureActuelle.surveille === true || (aDebutExplicite && !TraverseNuit);
+            // Surveillé = case « 👁️ Cycle surveillé » cochée. Saisir l'heure de début ne suffit pas : pile laissée au chargeur (jour ou nuit), l'heure de relevé n'est pas la fin de charge
+            const estSurveille = mesureActuelle.surveille === true;
             const ratioTheo = deltaH / tTheoH;
             const ratioHab = tHabH ? (deltaH / tHabH) : ratioTheo;
             const baseCalculFr = `\n\n📐 Base de calcul ${nomChg} pour ${mah} mAh :\n• Décharge à ${iDechTxt} mA${estNc ? '' : ' fixes'} : ${formaterDureeHeures(tDechargeH)} (incompressible)\n• Recharge à ${iChgTxt} mA (+25%) : ~${formaterDureeHeures(tRechargeTheoH)}\n• Total théorique : ~${theoStr} (~135–165 mAh/h)`;
@@ -2624,8 +2623,8 @@
                     suspect24h: false,
                     lbl: `🌙 ${dStr}`,
                     detail: LANG === 'en'
-                        ? `Elapsed time since previous cycle: ${dStr} (overnight or unattended wait).${baseCalculEn}\n\nTip: You can enter the exact "Start time" or check "👁️ Watched cycle" when editing if you monitored it.`
-                        : `Temps écoulé depuis le cycle précédent : ${dStr} (nuit ou attente sans surveillance — non compté comme anomalie).${baseCalculFr}\n\nAstuce : Vous pouvez renseigner l'« Heure de début » ou cocher « 👁️ Cycle surveillé » en modifiant le cycle.`
+                        ? `Elapsed time since previous cycle: ${dStr} (overnight or unattended wait).${baseCalculEn}\n\nTip: check "👁️ Watched cycle" when editing if you monitored it (entering the start time alone is not enough).`
+                        : `Temps écoulé depuis le cycle précédent : ${dStr} (nuit ou attente sans surveillance — non compté comme anomalie).${baseCalculFr}\n\nAstuce : cochez « 👁️ Cycle surveillé » en modifiant le cycle si vous l'avez surveillé (saisir l'heure de début ne suffit pas).`
                 };
             }
 
