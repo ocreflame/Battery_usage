@@ -2,7 +2,11 @@
 <html lang="fr" data-theme="auto">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#27ae60">
+    <meta name="mobile-web-app-capable" content="yes">
     <title>Gestionnaire Piles & Accus</title>
     <meta name="theme-color" content="#27ae60">
     <script>
@@ -132,6 +136,151 @@
 
         .badge { background: var(--header-bg); color: var(--text-color); padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; margin-right: 4px; display: inline-block; margin-top: 3px; border: 1px solid var(--border-color); }
         .badge-cycles { background: #e8eaf6; color: #3f51b5; font-weight: bold; border-color: #c5cae9; }
+        .badge-mode { background: #fff3e0; color: #e65100; font-weight: bold; border-color: #ffcc80; }
+        .badge-breakin { background: #f3e5f5; color: #6a1b9a; font-weight: bold; border-color: #ce93d8; }
+        .alertes-container { margin-bottom: 10px; }
+        .alertes-bar { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 5px 10px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; user-select: none; font-size: 0.8rem; }
+        .alertes-bar:hover { box-shadow: 0 1px 6px rgba(0,0,0,0.15); }
+        .alertes-title { font-weight: bold; font-size: 0.8rem; color: var(--text-muted); margin-right: auto; }
+        .alertes-chip { padding: 1px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: bold; border: 1px solid; white-space: nowrap; }
+        .alertes-chip.critical { background: #ffebee; border-color: #ef5350; color: #c62828; }
+        .alertes-chip.warning { background: #fff8e1; border-color: #ffb74d; color: #e65100; }
+        .alertes-chip.info { background: #e3f2fd; border-color: #64b5f6; color: #1565c0; }
+        .alertes-chip.success { background: #e8f5e9; border-color: #81c784; color: #2e7d32; }
+        :root[data-theme="dark"] .alertes-chip.critical { background: #4a1518; color: #ef9a9a; }
+        :root[data-theme="dark"] .alertes-chip.warning { background: #4a3818; color: #ffcc80; }
+        :root[data-theme="dark"] .alertes-chip.info { background: #0d3c5c; color: #90caf9; }
+        :root[data-theme="dark"] .alertes-chip.success { background: #0d3d1a; color: #a5d6a7; }
+        .alertes-caret { color: var(--text-muted); font-size: 0.75rem; }
+        #alertesDetail { max-height: 38vh; overflow-y: auto; margin-top: 6px; }
+        .alerte-detail { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 6px; padding: 4px 8px; margin: 3px 0; font-size: 0.78rem; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+        .alerte-detail .alerte-pile { font-weight: bold; }
+        .alerte-detail .alerte-desc { color: var(--text-muted); flex: 1; }
+        .alerte-detail .alerte-action { font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; white-space: nowrap; }
+        .alerte-action.cycle { background: #27ae60; color: white; }
+        .alerte-action.test { background: #2980b9; color: white; }
+        .alerte-action.recycler { background: #c0392b; color: white; }
+        .alerte-action.voir { background: #7f8c8d; color: white; }
+        .refdb-container { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-bottom: 15px; }
+        .refdb-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; cursor: pointer; }
+        .refdb-title { font-weight: bold; font-size: 0.9rem; }
+        .refdb-search { width: 100%; padding: 8px 10px; border: 1px solid var(--border-color); border-radius: 5px; margin-bottom: 10px; font-size: 0.85rem; background: var(--input-bg); color: var(--text-color); }
+        .refdb-filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+        .refdb-filter { padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; cursor: pointer; border: 1px solid var(--border-color); background: var(--header-bg); color: var(--text-color); }
+        .refdb-filter.active { background: #27ae60; color: white; border-color: #27ae60; }
+        .refdb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; max-height: 400px; overflow-y: auto; }
+        .refdb-card { background: var(--header-bg); border: 1px solid var(--border-color); border-radius: 6px; padding: 10px; cursor: pointer; transition: all 0.2s; }
+        .refdb-card:hover { border-color: #27ae60; box-shadow: 0 2px 8px rgba(39,174,96,0.2); }
+        .refdb-card.selected { border-color: #27ae60; background: rgba(39,174,96,0.1); }
+        .refdb-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
+        .refdb-card-name { font-weight: bold; font-size: 0.85rem; }
+        .refdb-card-brand { font-size: 0.75rem; color: var(--text-muted); }
+        .refdb-card-specs { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+        .refdb-spec { font-size: 0.7rem; padding: 2px 6px; border-radius: 3px; background: var(--card-bg); border: 1px solid var(--border-color); }
+        .refdb-spec.highlight { background: #e8f5e9; color: #2e7d32; border-color: #81c784; }
+        .refdb-match { font-size: 0.7rem; color: #27ae60; font-weight: bold; margin-top: 4px; }
+        .refdb-empty { text-align: center; padding: 20px; color: var(--text-muted); font-size: 0.85rem; }
+        .wizard-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 5000; overflow-y: auto; padding: 20px; }
+        .wizard-container { background: var(--card-bg); border-radius: 12px; max-width: 600px; margin: 20px auto; padding: 20px; border: 1px solid var(--border-color); box-shadow: 0 10px 40px rgba(0,0,0,0.3); }
+        .wizard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid var(--border-color); }
+        .wizard-title { font-size: 1.2rem; font-weight: bold; color: #27ae60; }
+        .wizard-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted); padding: 0; width: auto; }
+        .wizard-step { display: none; }
+        .wizard-step.active { display: block; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .wizard-step-header { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; }
+        .wizard-step-num { background: #27ae60; color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.9rem; }
+        .wizard-step-title { font-weight: bold; font-size: 1rem; }
+        .wizard-step-desc { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 15px; line-height: 1.5; }
+        .wizard-params { background: var(--header-bg); border-radius: 8px; padding: 12px; margin: 15px 0; border-left: 4px solid #27ae60; }
+        .wizard-params-title { font-weight: bold; font-size: 0.85rem; margin-bottom: 8px; color: #27ae60; }
+        .wizard-param-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 0.85rem; border-bottom: 1px dashed var(--border-color); }
+        .wizard-param-row:last-child { border-bottom: none; }
+        .wizard-param-label { color: var(--text-muted); }
+        .wizard-param-value { font-weight: bold; }
+        .wizard-actions { display: flex; gap: 10px; margin-top: 20px; }
+        .wizard-btn { flex: 1; padding: 12px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; font-size: 0.9rem; transition: all 0.2s; }
+        .wizard-btn.primary { background: #27ae60; color: white; }
+        .wizard-btn.primary:hover { background: #219653; }
+        .wizard-btn.secondary { background: var(--header-bg); color: var(--text-color); border: 1px solid var(--border-color); }
+        .wizard-btn.danger { background: #c0392b; color: white; }
+        .wizard-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .wizard-progress { display: flex; gap: 5px; margin-bottom: 20px; }
+        .wizard-progress-bar { flex: 1; height: 4px; background: var(--border-color); border-radius: 2px; overflow: hidden; }
+        .wizard-progress-fill { height: 100%; background: #27ae60; transition: width 0.3s; }
+        .wizard-result { text-align: center; padding: 20px; }
+        .wizard-result-icon { font-size: 4rem; margin-bottom: 15px; }
+        .wizard-result-title { font-size: 1.3rem; font-weight: bold; margin-bottom: 10px; }
+        .wizard-result-desc { color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; margin-bottom: 20px; }
+        .wizard-timer { background: #e3f2fd; border: 1px solid #64b5f6; border-radius: 8px; padding: 15px; text-align: center; margin: 15px 0; }
+        .wizard-timer-time { font-size: 2rem; font-weight: bold; color: #1565c0; font-family: monospace; }
+        .wizard-timer-label { font-size: 0.8rem; color: #1565c0; margin-top: 5px; }
+        .wizard-checklist { list-style: none; padding: 0; margin: 15px 0; }
+        .wizard-checklist li { padding: 8px 0; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 10px; font-size: 0.9rem; }
+        .wizard-checklist li:last-child { border-bottom: none; }
+        .wizard-check { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--border-color); display: flex; align-items: center; justify-content: center; font-size: 0.7rem; }
+        .wizard-check.done { background: #27ae60; border-color: #27ae60; color: white; }
+        .wizard-check.active { border-color: #f39c12; animation: pulse 1.5s infinite; }
+        .recup-btn { background: linear-gradient(135deg, #27ae60, #2ecc71); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.9rem; margin-top: 10px; box-shadow: 0 2px 8px rgba(39,174,96,0.3); }
+        .recup-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(39,174,96,0.4); }
+        /* Utilisé comme bouton de la rangée d'actions d'une pile : même gabarit que + Cycle / Cloner / Pile / Suppr. */
+        .small-btn.recup-btn { padding: 4px 8px; margin-top: 5px; border-radius: 4px; font-size: 0.75rem; box-shadow: none; }
+        .small-btn.recup-btn:hover { transform: none; box-shadow: none; }
+        .stats-container { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 15px; margin-bottom: 20px; }
+        .stats-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; cursor: pointer; }
+        .stats-title { font-weight: bold; font-size: 1rem; display: flex; align-items: center; gap: 8px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 15px; }
+        .stats-card { background: var(--header-bg); border-radius: 8px; padding: 12px; text-align: center; border: 1px solid var(--border-color); }
+        .stats-card-value { font-size: 1.8rem; font-weight: bold; color: #27ae60; }
+        .stats-card-value.warning { color: #e67e22; }
+        .stats-card-value.danger { color: #c0392b; }
+        .stats-card-value.info { color: #2980b9; }
+        .stats-card-label { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; }
+        .stats-section { margin-top: 15px; }
+        .stats-section-title { font-weight: bold; font-size: 0.9rem; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid var(--border-color); }
+        .stats-bar-container { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+        .stats-bar-label { width: 100px; font-size: 0.8rem; text-align: right; flex-shrink: 0; }
+        .stats-bar-wrapper { flex: 1; height: 20px; background: var(--header-bg); border-radius: 4px; overflow: hidden; position: relative; }
+        .stats-bar-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; font-size: 0.7rem; font-weight: bold; color: white; min-width: 30px; }
+        .stats-bar-fill.excellent { background: #27ae60; }
+        .stats-bar-fill.bon { background: #2ecc71; }
+        .stats-bar-fill.fatigue { background: #e67e22; }
+        .stats-bar-fill.recycler { background: #c0392b; }
+        .stats-bar-fill.totest { background: #95a5a6; }
+        .stats-bar-value { width: 50px; font-size: 0.8rem; font-weight: bold; flex-shrink: 0; }
+        .stats-chart { display: flex; align-items: flex-end; gap: 4px; height: 100px; padding: 10px 0; border-bottom: 1px solid var(--border-color); margin-bottom: 5px; }
+        .stats-chart-bar { flex: 1; background: #3498db; border-radius: 3px 3px 0 0; position: relative; min-height: 4px; transition: height 0.3s; cursor: pointer; }
+        .stats-chart-bar:hover { background: #2980b9; }
+        .stats-chart-bar::after { content: attr(data-value); position: absolute; top: -20px; left: 50%; transform: translateX(-50%); font-size: 0.65rem; font-weight: bold; opacity: 0; transition: opacity 0.2s; }
+        .stats-chart-bar:hover::after { opacity: 1; }
+        .stats-chart-labels { display: flex; gap: 4px; }
+        .stats-chart-label { flex: 1; text-align: center; font-size: 0.65rem; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .stats-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+        .stats-table th, .stats-table td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border-color); }
+        .stats-table th { background: var(--header-bg); font-weight: bold; }
+        .stats-table tr:hover { background: var(--header-bg); }
+        .stats-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem; font-weight: bold; }
+        .stats-badge.success { background: #d5f4e6; color: #27ae60; }
+        .stats-badge.warning { background: #fdebd0; color: #e67e22; }
+        .stats-badge.danger { background: #fdedec; color: #c0392b; }
+        .stats-tabs { display: flex; gap: 5px; margin-bottom: 15px; }
+        .stats-tab { padding: 8px 15px; border-radius: 6px 6px 0 0; border: 1px solid var(--border-color); border-bottom: none; cursor: pointer; font-size: 0.85rem; font-weight: bold; background: var(--header-bg); color: var(--text-muted); }
+        .stats-tab.active { background: var(--card-bg); color: var(--text-color); border-bottom: 2px solid #27ae60; }
+        .stats-tab-content { display: none; }
+        .stats-tab-content.active { display: block; }
+        .stats-empty { text-align: center; padding: 30px; color: var(--text-muted); font-size: 0.9rem; }
+        .stats-comparison { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+        .stats-comparison-card { background: var(--header-bg); border-radius: 8px; padding: 12px; border: 1px solid var(--border-color); }
+        .stats-comparison-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .stats-comparison-name { font-weight: bold; font-size: 0.85rem; }
+        .stats-comparison-value { font-size: 1.5rem; font-weight: bold; }
+        .stats-comparison-sub { font-size: 0.75rem; color: var(--text-muted); }
+        .stats-trend { display: inline-flex; align-items: center; gap: 4px; font-size: 0.75rem; font-weight: bold; }
+        .stats-trend.up { color: #27ae60; }
+        .stats-trend.down { color: #c0392b; }
+        .stats-trend.stable { color: #7f8c8d; }
+        :root[data-theme="dark"] .badge-mode { background: #4e342e; color: #ffab91; border-color: #8d6e63; }
+        :root[data-theme="dark"] .badge-breakin { background: #4a148c; color: #ce93d8; border-color: #7b1fa2; }
         .badge-specs { background: #fdf2e9; color: #d35400; border-color: #fad7a1; }
         .badge-appareil { background: #e1f5fe; color: #0277bd; border-color: #81d4fa; }
         
@@ -164,6 +313,42 @@
             .pile-header { flex-direction: column; align-items: flex-start; gap: 10px; }
             .pile-header .action-btns { width: 100%; justify-content: space-between; margin-top: 4px; gap: 4px; }
             .pile-header .small-btn { flex: 1 1 auto; margin: 0; text-align: center; padding: 8px 4px; font-size: 0.75rem; white-space: nowrap; }
+        }
+
+        /* ===== AJOUTS (assistant pas-à-pas, stats, base de référence) =====
+           Les règles génériques « mobile » qui grossissaient boutons, tags, cartes,
+           champs, modales et toasts ont été retirées : le rendu reprend celui de
+           l'ancienne version (argon18). Seuls les composants ajoutés gardent leur adaptation mobile. */
+        :root {
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        @media (max-width: 768px) {
+            .wizard-container { margin: 0; border-radius: 0; min-height: 100vh; padding: 20px 15px calc(20px + var(--safe-bottom)); }
+            .wizard-overlay { padding: 0; }
+            .stats-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 5px; }
+            .stats-tab { white-space: nowrap; padding: 10px 15px; }
+            .refdb-grid { grid-template-columns: 1fr; }
+            .stats-table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+            .stats-chart-bar { min-width: 30px; }
+            .wizard-checklist li { padding: 12px 0; font-size: 1rem; }
+            .wizard-check { width: 28px; height: 28px; }
+            .wizard-actions { flex-direction: column; }
+            .wizard-btn { width: 100%; padding: 16px; }
+            .wizard-param-row { padding: 10px 0; font-size: 0.95rem; }
+            .alertes-bar { min-height: 36px; }
+        }
+
+        @media (max-height: 500px) and (orientation: landscape) {
+            .wizard-container { min-height: auto; }
+        }
+
+        .stats-tabs, .refdb-grid, .stats-table { -webkit-overflow-scrolling: touch; }
+
+        /* Accessibilité : focus clavier visible (sans effet sur le rendu souris/tactile) */
+        button:focus-visible, input:focus-visible, select:focus-visible {
+            outline: 2px solid #27ae60;
+            outline-offset: 2px;
         }
 
         .grid-2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
@@ -206,6 +391,15 @@
         .btn-group-small button:hover { background: var(--border-color); }
 
         .calc-result-card { background: var(--header-bg); border-radius: 6px; padding: 12px; margin-top: 15px; border: 1px solid var(--border-color); line-height: 1.5; }
+        .skyrc-acc { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 6px; margin-top: 8px; padding: 6px 10px; }
+        .skyrc-acc summary { font-weight: bold; cursor: pointer; user-select: none; padding: 4px 0; outline: none; }
+        .skyrc-acc[open] summary { border-bottom: 1px dashed var(--border-color); margin-bottom: 8px; padding-bottom: 6px; }
+        .skyrc-preset { background: var(--header-bg); border-left: 4px solid #27ae60; border-radius: 4px; padding: 8px 10px; margin: 6px 0; font-size: 0.84rem; }
+        .skyrc-preset.warn { border-left-color: #e67e22; }
+        .skyrc-diag { background: rgba(52, 152, 219, 0.12); border: 1px solid rgba(52, 152, 219, 0.4); border-radius: 6px; padding: 8px 10px; margin: 6px 0; font-size: 0.82rem; line-height: 1.4; }
+        .skyrc-tbl { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin: 6px 0; }
+        .skyrc-tbl th, .skyrc-tbl td { border: 1px solid var(--border-color); padding: 4px 6px; text-align: left; }
+        .skyrc-tbl th { background: var(--header-bg); }
 
         .fmt-AA { color: var(--fmt-AA); } .fmt-AAA { color: var(--fmt-AAA); } .fmt-C { color: var(--fmt-C); }
         .fmt-D { color: var(--fmt-D); } .fmt-18650 { color: var(--fmt-18650); } .fmt-21700 { color: var(--fmt-21700); }
@@ -346,6 +540,35 @@
             h1 { font-size: 1.15rem; }
         }
     </style>
+
+    <!-- PWA Manifest pour installation mobile -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            // Créer un manifest inline pour PWA
+            const manifest = {
+                name: 'Gestionnaire Piles & Accus',
+                short_name: 'Piles',
+                start_url: '.',
+                display: 'standalone',
+                background_color: '#121212',
+                theme_color: '#27ae60',
+                icons: [
+                    {
+                        src: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="%2327ae60"/><text x="50" y="65" font-size="50" text-anchor="middle">🔋</text></svg>',
+                        sizes: 'any',
+                        type: 'image/svg+xml'
+                    }
+                ]
+            };
+
+            const manifestBlob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
+            const manifestURL = URL.createObjectURL(manifestBlob);
+            const manifestLink = document.createElement('link');
+            manifestLink.rel = 'manifest';
+            manifestLink.href = manifestURL;
+            document.head.appendChild(manifestLink);
+        }
+    </script>
 </head>
 <body>
 
@@ -383,6 +606,81 @@
         </div>
 
         <div class="repartition" id="repartition"></div>
+
+        <!-- Alertes intelligentes -->
+        <div class="alertes-container" id="alertesContainer" style="display:none;">
+            <div class="alertes-bar" id="alertesResume" role="button" tabindex="0" onclick="toggleAlertesDetail()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleAlertesDetail();}"></div>
+            <div id="alertesDetail" style="display:none;"></div>
+        </div>
+
+        <!-- Statistiques avancées -->
+        <div class="stats-container" id="statsContainer" style="display:none;">
+            <div class="stats-header" onclick="toggleStats()">
+                <span class="stats-title">📊 Statistiques avancées</span>
+                <span id="statsToggleIcon">▼</span>
+            </div>
+            <div id="statsContent">
+                <div class="stats-tabs">
+                    <span class="stats-tab active" data-tab="vue" onclick="setStatsTab('vue')">Vue d'ensemble</span>
+                    <span class="stats-tab" data-tab="marques" onclick="setStatsTab('marques')">Par marque</span>
+                    <span class="stats-tab" data-tab="tendances" onclick="setStatsTab('tendances')">Tendances</span>
+                    <span class="stats-tab" data-tab="recuperation" onclick="setStatsTab('recuperation')">Récupération</span>
+                </div>
+
+                <div class="stats-tab-content active" id="statsTab-vue">
+                    <div class="stats-grid" id="statsVueGrid"></div>
+                    <div class="stats-section">
+                        <div class="stats-section-title">Répartition par état</div>
+                        <div id="statsEtatsBars"></div>
+                    </div>
+                    <div class="stats-section">
+                        <div class="stats-section-title">Répartition par format</div>
+                        <div id="statsFormatChart"></div>
+                    </div>
+                </div>
+
+                <div class="stats-tab-content" id="statsTab-marques">
+                    <div class="stats-section">
+                        <div class="stats-section-title">Performance par marque</div>
+                        <table class="stats-table" id="statsMarquesTable">
+                            <thead>
+                                <tr>
+                                    <th>Marque</th>
+                                    <th>Piles</th>
+                                    <th>Cap. moyenne</th>
+                                    <th>% nominal</th>
+                                    <th>RI moyen</th>
+                                    <th>État</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="stats-tab-content" id="statsTab-tendances">
+                    <div class="stats-section">
+                        <div class="stats-section-title">Évolution de la collection</div>
+                        <div id="statsTendancesChart"></div>
+                    </div>
+                    <div class="stats-section">
+                        <div class="stats-section-title">Piles les plus anciennes</div>
+                        <div id="statsAnciennes"></div>
+                    </div>
+                </div>
+
+                <div class="stats-tab-content" id="statsTab-recuperation">
+                    <div class="stats-section">
+                        <div class="stats-section-title">Taux de récupération Break-in</div>
+                        <div class="stats-grid" id="statsRecupGrid"></div>
+                    </div>
+                    <div class="stats-section">
+                        <div class="stats-section-title">Durée de vie par marque</div>
+                        <div id="statsDureeVie"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <div class="list-header-actions">
             <h3>Mes Piles Enregistrées</h3>
@@ -424,6 +722,26 @@
 
     <!-- Onglet 2 : Ajouter -->
     <div class="tab-content" id="tab-ajouter">
+        <!-- Base de données de référence -->
+        <div class="refdb-container" id="refdbContainer">
+            <div class="refdb-header" onclick="toggleRefDb()">
+                <span class="refdb-title">📚 Base de données piles (cliquer pour replier)</span>
+                <span id="refdbToggle">▼</span>
+            </div>
+            <div id="refdbContent">
+                <input type="text" class="refdb-search" id="refdbSearch" placeholder="Rechercher une pile... (ex: Eneloop, AA, 1900)" oninput="filtrerRefDb()">
+                <div class="refdb-filters" id="refdbFilters">
+                    <span class="refdb-filter active" data-filter="all" onclick="setRefDbFilter('all')">Tous</span>
+                    <span class="refdb-filter" data-filter="AA" onclick="setRefDbFilter('AA')">AA</span>
+                    <span class="refdb-filter" data-filter="AAA" onclick="setRefDbFilter('AAA')">AAA</span>
+                    <span class="refdb-filter" data-filter="NiMH" onclick="setRefDbFilter('NiMH')">NiMH</span>
+                    <span class="refdb-filter" data-filter="LSD" onclick="setRefDbFilter('LSD')">LSD</span>
+                    <span class="refdb-filter" data-filter="HighCap" onclick="setRefDbFilter('HighCap')">Haute capacité</span>
+                </div>
+                <div class="refdb-grid" id="refdbGrid"></div>
+            </div>
+        </div>
+
         <div class="card">
             <h3 style="margin-top: 0;">Ajouter une mesure / lot (Grad)</h3>
             <form id="pileForm">
@@ -530,6 +848,17 @@
                             <option value="1000mA">Passe 1000mA (Haute conso)</option>
                             <option value="500mA">Passe 500mA (Moyenne)</option>
                             <option value="250mA">Échec >250mA (Faible conso)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid-2" style="margin-top:10px;">
+                    <div>
+                        <label>Mode de cycle :</label>
+                        <select id="modeCycle">
+                            <option value="">Auto (détection par durée)</option>
+                            <option value="cycle">🔁 Cycle (Charge→Décharge→Charge)</option>
+                            <option value="breakin">🔄 Rôdage / Break-in (16h à 0.1C)</option>
                         </select>
                     </div>
                 </div>
@@ -689,7 +1018,148 @@
 
     <!-- Elements Volants -->
     <div id="grapheTooltip" class="graph-tooltip"></div>
-    <button id="fabTop" class="fab-top" onclick="window.scrollTo({ top: 0, behavior: 'smooth' });">⬆️</button>
+    <!-- FAB avec menu rapide mobile -->
+        <div class="fab-container" style="position: fixed; bottom: calc(20px + var(--safe-bottom)); right: calc(20px + var(--safe-right)); z-index: 99;">
+            <div id="fabMenu" style="display: none; flex-direction: column; gap: 10px; margin-bottom: 10px;">
+                <button class="fab-top" onclick="ouvrirOnglet('ajouter'); toggleFabMenu();" style="position: static; width: 52px; height: 52px; font-size: 1.3rem; background: #27ae60;">➕</button>
+                <button class="fab-top" onclick="ouvrirWizard(); toggleFabMenu();" style="position: static; width: 52px; height: 52px; font-size: 1.3rem; background: #8e44ad;">🔄</button>
+                <button class="fab-top" onclick="exporterJSON(); toggleFabMenu();" style="position: static; width: 52px; height: 52px; font-size: 1.3rem; background: #2980b9;">💾</button>
+            </div>
+            <button id="fabMain" class="fab-top" onclick="toggleFabMenu()" style="width: 56px; height: 56px; font-size: 1.5rem;">☰</button>
+        </div>
+
+        <script>
+            window.toggleFabMenu = function() {
+                const menu = document.getElementById('fabMenu');
+                const main = document.getElementById('fabMain');
+                if (menu.style.display === 'none') {
+                    menu.style.display = 'flex';
+                    main.textContent = '✕';
+                    main.style.transform = 'rotate(90deg)';
+                } else {
+                    menu.style.display = 'none';
+                    main.textContent = '☰';
+                    main.style.transform = 'rotate(0deg)';
+                }
+            };
+        </script>
+    <!-- Wizard Récupération Avancée -->
+    <div class="wizard-overlay" id="wizardOverlay">
+        <div class="wizard-container">
+            <div class="wizard-header">
+                <span class="wizard-title">🔄 Récupération Avancée</span>
+                <button class="wizard-close" onclick="fermerWizard()">×</button>
+            </div>
+
+            <div class="wizard-progress">
+                <div class="wizard-progress-bar"><div class="wizard-progress-fill" id="progress1" style="width: 0%"></div></div>
+                <div class="wizard-progress-bar"><div class="wizard-progress-fill" id="progress2" style="width: 0%"></div></div>
+                <div class="wizard-progress-bar"><div class="wizard-progress-fill" id="progress3" style="width: 0%"></div></div>
+                <div class="wizard-progress-bar"><div class="wizard-progress-fill" id="progress4" style="width: 0%"></div></div>
+            </div>
+
+            <!-- Étape 0: Sélection pile -->
+            <div class="wizard-step active" id="wizardStep0">
+                <div class="wizard-step-header">
+                    <span class="wizard-step-num">1</span>
+                    <span class="wizard-step-title">Sélectionner la pile à récupérer</span>
+                </div>
+                <div class="wizard-step-desc">
+                    Choisissez la pile que vous souhaitez tenter de récupérer. 
+                    Le wizard analysera son état et proposera la meilleure stratégie.
+                </div>
+                <select id="wizardPileSelect" style="width: 100%; padding: 10px; margin-bottom: 15px;">
+                    <option value="">-- Choisir une pile --</option>
+                </select>
+                <div id="wizardPileInfo"></div>
+                <div class="wizard-actions">
+                    <button class="wizard-btn primary" id="btnWizardStart" onclick="wizardAnalyser()" disabled>Analyser</button>
+                </div>
+            </div>
+
+            <!-- Étape 1: Break-in -->
+            <div class="wizard-step" id="wizardStep1">
+                <div class="wizard-step-header">
+                    <span class="wizard-step-num">2</span>
+                    <span class="wizard-step-title">Break-in (Rôdage)</span>
+                </div>
+                <div class="wizard-step-desc">
+                    <strong>Pourquoi ?</strong> Les piles stockées longtemps ou jamais formatées 
+                    ont besoin d'une activation chimique lente à 0.1C pendant 16h.
+                </div>
+                <div class="wizard-params" id="wizardBreakInParams"></div>
+                <div class="wizard-timer" id="wizardBreakInTimer" style="display:none;">
+                    <div class="wizard-timer-time" id="breakInTimeRemaining">16:00:00</div>
+                    <div class="wizard-timer-label">Temps restant estimé</div>
+                </div>
+                <div class="wizard-actions">
+                    <button class="wizard-btn secondary" onclick="wizardPrev(0)">← Retour</button>
+                    <button class="wizard-btn primary" onclick="wizardLancerBreakIn()">🚀 Lancer Break-in</button>
+                    <button class="wizard-btn secondary" onclick="wizardSkipBreakIn()">Passer →</button>
+                </div>
+            </div>
+
+            <!-- Étape 2: Cycles -->
+            <div class="wizard-step" id="wizardStep2">
+                <div class="wizard-step-header">
+                    <span class="wizard-step-num">3</span>
+                    <span class="wizard-step-title">Cycles de mesure (×3 max)</span>
+                </div>
+                <div class="wizard-step-desc">
+                    <strong>Pourquoi ?</strong> Les cycles permettent de mesurer la capacité réelle 
+                    et de "réveiller" chimiquement la pile. Arrêtez si la capacité baisse ou stagne.
+                </div>
+                <div class="wizard-params" id="wizardCycleParams"></div>
+                <ul class="wizard-checklist" id="wizardCycleChecklist">
+                    <li><span class="wizard-check" id="check1">1</span> Cycle 1 - Mesure initiale</li>
+                    <li><span class="wizard-check" id="check2">2</span> Cycle 2 - Vérification</li>
+                    <li><span class="wizard-check" id="check3">3</span> Cycle 3 - Confirmation</li>
+                </ul>
+                <div class="wizard-actions">
+                    <button class="wizard-btn secondary" onclick="wizardPrev(1)">← Retour</button>
+                    <button class="wizard-btn primary" onclick="wizardLancerCycle()">▶ Lancer Cycle</button>
+                    <button class="wizard-btn secondary" onclick="wizardSkipCycles()">Passer →</button>
+                </div>
+            </div>
+
+            <!-- Étape 3: Test 24h -->
+            <div class="wizard-step" id="wizardStep3">
+                <div class="wizard-step-header">
+                    <span class="wizard-step-num">4</span>
+                    <span class="wizard-step-title">Test de repos 24h</span>
+                </div>
+                <div class="wizard-step-desc">
+                    <strong>Pourquoi ?</strong> Le test d'autodécharge révèle les fuites internes 
+                    invisibles à chaud. Une pile peut afficher 2000mAh mais se vider en 2 jours.
+                </div>
+                <div class="wizard-params">
+                    <div class="wizard-params-title">📋 Procédure</div>
+                    <div class="wizard-param-row"><span class="wizard-param-label">1. Fin de charge</span><span class="wizard-param-value">Noter heure (T2)</span></div>
+                    <div class="wizard-param-row"><span class="wizard-param-label">2. Repos hors chargeur</span><span class="wizard-param-value">24h minimum</span></div>
+                    <div class="wizard-param-row"><span class="wizard-param-label">3. Mesure tension</span><span class="wizard-param-value">Multimètre</span></div>
+                    <div class="wizard-param-row"><span class="wizard-param-label">4. Interprétation</span><span class="wizard-param-value" id="wizardV24Attendu">≥ 1.32V = OK</span></div>
+                </div>
+                <div class="wizard-actions">
+                    <button class="wizard-btn secondary" onclick="wizardPrev(2)">← Retour</button>
+                    <button class="wizard-btn primary" onclick="wizardNoterT24()">📝 Noter Tension</button>
+                </div>
+            </div>
+
+            <!-- Étape 4: Décision finale -->
+            <div class="wizard-step" id="wizardStep4">
+                <div class="wizard-step-header">
+                    <span class="wizard-step-num">✓</span>
+                    <span class="wizard-step-title">Décision finale</span>
+                </div>
+                <div class="wizard-result" id="wizardResult"></div>
+                <div class="wizard-actions">
+                    <button class="wizard-btn secondary" onclick="wizardRestart()">🔄 Nouvelle pile</button>
+                    <button class="wizard-btn danger" onclick="fermerWizard()">Fermer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="toastMessage" class="toast"></div>
 
     <!-- Boîte de dialogue -->
@@ -815,6 +1285,17 @@
                             <option value="1000mA">1000mA (Haute)</option>
                             <option value="500mA">500mA (Moyenne)</option>
                             <option value="250mA">Échec >250mA (Faible)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid-2" style="margin-top:10px;">
+                    <div>
+                        <label>Mode de cycle :</label>
+                        <select id="editMesureMode">
+                            <option value="">Auto (détection par durée)</option>
+                            <option value="cycle">🔁 Cycle</option>
+                            <option value="breakin">🔄 Rôdage / Break-in</option>
                         </select>
                     </div>
                 </div>
@@ -994,6 +1475,16 @@
                 evol:n=>`Évolution capacité (${n} cycles)`, clickInfo:'Cliquez pour info',
                 clone:'Cloner', del:'Suppr.', pileWord:'Pile',
                 st_Excellent:'Excellent', st_Bon:'Bon', st_Fatigue:'Fatigue', st_Recycler:'Recycler', st_ToTest:'À tester',
+                alertes_titre:'🚨 Alertes & Rappels',
+                alertes_voir_detail:'Voir le détail',
+                alertes_masquer_detail:'Masquer le détail',
+                alertes_critique:'pile(s) critique(s)',
+                alertes_warning:'alerte(s)',
+                alertes_info:'rappel(s)',
+                alertes_success:'bonne(s) nouvelle(s)',
+                alertes_action_requise:'Action requise',
+                alertes_surveillance:'Surveillance recommandée',
+                alertes_maintenance:'Maintenance préventive',
                 mos:n=>`${n} mois`,
                 vRequired:'Veuillez remplir ce champ.', vInvalid:'Veuillez saisir une valeur valide.',
                 vDate:'Date invalide. Exemples : 2022, 05/2022, 2022-05 ou 14/05/2022.',
@@ -1054,6 +1545,16 @@
                 evol:n=>`Capacity trend (${n} cycles)`, clickInfo:'Click for info',
                 clone:'Clone', del:'Del.', pileWord:'Battery',
                 st_Excellent:'Excellent', st_Bon:'Good', st_Fatigue:'Worn', st_Recycler:'Recycle', st_ToTest:'To test',
+                alertes_titre:'🚨 Alerts & Reminders',
+                alertes_voir_detail:'View details',
+                alertes_masquer_detail:'Hide details',
+                alertes_critique:'critical battery(ies)',
+                alertes_warning:'alert(s)',
+                alertes_info:'reminder(s)',
+                alertes_success:'good news',
+                alertes_action_requise:'Action required',
+                alertes_surveillance:'Monitoring recommended',
+                alertes_maintenance:'Preventive maintenance',
                 mos:n=>`${n} mo`,
                 vRequired:'Please fill out this field.', vInvalid:'Please enter a valid value.',
                 vDate:'Invalid date. Examples: 2022, 05/2022, 2022-05 or 14/05/2022.',
@@ -1799,88 +2300,125 @@
             };
         }
 
-        function htmlCycleBloc(mah, chimie, format, analyse, pileLabel) {
+        function htmlCycleBloc(mah, chimie, format, analyse, pileLabel, opts) {
             if (chimie !== 'NiMH' && chimie !== 'NiCd') return '';
             if (format !== 'AA' && format !== 'AAA') return '';
+            opts = opts || {};
             const arrondi01 = v => Math.round(v * 10) / 10;
-            // Charge 0.5C, discharge 0.2C (industry capacity test)
-            const cCharge = arrondi01(Math.min(3.0, Math.max(0.2, mah * 0.5 / 1000)));
-            const cDech = arrondi01(Math.min(2.5, Math.max(0.2, mah * 0.2 / 1000)));
-            const mahBuf = Math.round(mah * 1.20);
-            const titre = LANG === 'en' ? 'CYCLE PROGRAM' : 'PROGRAMME CYCLE';
-            let verdict;
-            if (!analyse) {
-                verdict = LANG === 'en'
-                    ? 'General Cycle settings (no specific cell selected).'
-                    : 'Réglages Cycle généraux (aucune pile précise sélectionnée).';
-            } else if (analyse.level === 'yes') {
-                verdict = `✅ ${analyse.reason}`;
-            } else if (analyse.level === 'maybe') {
-                verdict = `🟡 ${analyse.reason}`;
-            } else {
-                verdict = `⛔ ${analyse.reason}`;
+            const cCharge = opts.courantCharge || arrondi01(Math.min(3.0, Math.max(0.2, mah * 0.5 / 1000)));
+            const cDech = opts.courantDecharge || arrondi01(Math.min(2.5, Math.max(0.2, mah * 0.2 / 1000)));
+            const mahProtection = Math.min(5000, Math.max(100, Math.round(mah * 1.2 / 100) * 100)); // plage appareil 100–5000 mAh
+            const deltaV = opts.deltaV || 3;
+            const minuteur = opts.minuteurEffectif || opts.minuteur || Math.max(60, Math.ceil((mah * 1.5 / (cCharge * 1000)) * 60 / 10) * 10);
+            const modeCourantFr = opts.useIrAuto ? `IR Auto (actif -> ${opts.iEffectifIrAutoA ? opts.iEffectifIrAutoA.toFixed(2) + ' A' : 'auto'})` : 'Fixé (Fixed)';
+            const modeCourantEn = opts.useIrAuto ? `IR Auto (active -> ${opts.iEffectifIrAutoA ? opts.iEffectifIrAutoA.toFixed(2) + ' A' : 'auto'})` : 'Fixed';
+            const nbCyc = (analyse && analyse.cycles) ? analyse.cycles : 1;
+            const dCutCurr = opts.needsDischargeFirst ? '100 mA' : 'OFF';
+
+            let sensConseille = 'C->D->C';
+            let noteSensFr = 'termine par une charge (pile prête à l’emploi). Attention : C->D laisse la pile vide (1,00 V) !';
+            let noteSensEn = 'ends with a charge (ready to use). Warning: C->D leaves the cell empty (1.00 V)!';
+            if (opts.needsDischargeFirst) {
+                sensConseille = nbCyc === 1 ? 'D->C' : 'D->C->D';
+                noteSensFr = `⚠️ début par DÉCHARGE (${sensConseille}) calculé automatiquement (${opts.raisonDechargeFr || 'forte RI / tension crête'}) pour éviter la mise en défaut au démarrage`;
+                noteSensEn = `⚠️ start with DISCHARGE (${sensConseille}) auto-selected (${opts.raisonDechargeEn || 'high IR / peak voltage'}) to prevent start-up fault`;
             }
-            const labelPile = pileLabel ? `<br><small>${escapeHtml(pileLabel)}</small>` : '';
-            const nbCyc = (analyse && analyse.cycles) ? analyse.cycles : 2;
+
+            const badgeVerdict = !analyse ? '' : (analyse.level === 'yes' ? '✅' : analyse.level === 'maybe' ? '🟡' : '⛔');
+            const titre = LANG === 'en' ? `🔁 Mode: Cycle ${badgeVerdict}` : `🔁 Mode : Cycle ${badgeVerdict}`;
+            const verdict = !analyse
+                ? (LANG === 'en' ? 'General Cycle settings (select a specific battery above for tailored advice).' : 'Réglages Cycle généraux (sélectionnez une pile précise ci-dessus pour un diagnostic sur mesure).')
+                : `${badgeVerdict} ${analyse.reason}`;
+            const labelPile = pileLabel ? `<div><small><b>${escapeHtml(pileLabel)}</b></small></div>` : '';
+            const openAttr = opts.openByDefault ? ' open' : '';
+
             if (analyse && !analyse.useful) {
+                return `<details class="skyrc-acc"${openAttr}><summary>${titre}</summary>${labelPile}${verdict}</details>`;
+            }
+            if (LANG === 'en') {
                 return `
-                    <br><strong>🔁 ${titre} :</strong>${labelPile}<br>
-                    ${verdict}
-                `;
+                <details class="skyrc-acc"${openAttr}>
+                    <summary>${titre}</summary>
+                    ${labelPile}${verdict}<br>
+                    • <strong>Capacity:</strong> <b>${mahProtection} mAh</b> <small>(rated ${mah} mAh + 20% buffer)</small><br>
+                    • <strong>C. Current (Charge):</strong> <b>${cCharge.toFixed(2)} A</b> <small>(0.5C)</small><br>
+                    • <strong>D. Current (Discharge):</strong> <b>${cDech.toFixed(2)} A</b> <small>(0.2C standard)</small><br>
+                    • <strong>D. Cut-off Curr.:</strong> <b>${dCutCurr}</b> <small>(100 mA drains voltage rebound at 1.00 V on high-IR cells; OFF on healthy cells)</small><br>
+                    • <strong>Target Volt:</strong> <b>1.65 V</b><br>
+                    • <strong>D. Cut-off Volt:</strong> <b>1.00 V</b><br>
+                    • <strong>Cut-off Timer:</strong> <b>${minuteur} Min</b><br>
+                    • <strong>Resting After C.:</strong> <b>${opts.needsDischargeFirst ? 15 : 10} Min</b><br>
+                    • <strong>Resting After D.:</strong> <b>${opts.needsDischargeFirst ? 15 : 10} Min</b><br>
+                    • <strong>Delta Peak (-ΔV):</strong> <b>${deltaV} mV</b><br>
+                    • <strong>Cycle Mode:</strong> <b>${sensConseille}</b> <small>(${noteSensEn})</small><br>
+                    • <strong>Cycle Count:</strong> <b>${nbCyc}</b> <small>(max 3)</small><br>
+                    • <strong>Current Mode:</strong> <b>${modeCourantEn}</b>
+                </details>`;
             }
             return `
-                <br><strong>🔁 ${titre} :</strong>${labelPile}<br>
-                ${verdict}<br>
-                • <strong>${LANG === 'en' ? 'Capacity to enter' : 'Capacité à régler'} :</strong><br>
-                &nbsp;&nbsp;– <strong>Pro:</strong> <b>${mah} mAh</b> <span style="color:#e67e22;font-weight:bold;">(+20% → ${Math.round(mah * 1.2 / 100) * 100} mAh)</span><br>
-                &nbsp;&nbsp;– <strong>Octa:</strong> <b>${mah} mAh</b> <small>(${LANG === 'en' ? 'auto +20%' : 'auto +20 %'} → ~${mahBuf} mAh)</small><br>
-                • <strong>${LANG === 'en' ? 'Charge current' : 'Courant de charge'} :</strong> <b>${cCharge} A</b> <small>(0.5C)</small><br>
-                • <strong>${LANG === 'en' ? 'Discharge current' : 'Courant de décharge'} :</strong> <b>${cDech} A</b> <small>(0.2C · ${LANG === 'en' ? 'capacity measurement standard' : 'standard mesure de capacité'})</small><br>
-                • <strong>${LANG === 'en' ? 'Target voltage' : 'Tension cible'} :</strong> 1.65 V · <strong>${LANG === 'en' ? 'D. cut-off' : 'Coupure déch.'} :</strong> 1.00 V<br>
-                • <strong>-ΔV :</strong> 3 mV · <strong>${LANG === 'en' ? 'Rest after C/D' : 'Repos après C/D'} :</strong> 10–30 min<br>
-                • <strong>${LANG === 'en' ? 'Cycle count' : 'Nombre de cycles'} :</strong> <b>${nbCyc}</b> <small>(${LANG === 'en' ? 'device max 3' : 'max appareil 3'})</small> · <strong>${LANG === 'en' ? 'Mode' : 'Sens'} :</strong> C→D<br>
-                • <strong>Trickle / Restart :</strong> Off · <strong>Current Mode :</strong> Fixed<br>
-                • <small>${LANG === 'en' ? 'Use Cycle to measure real capacity and lightly refresh. Prefer Break-in only for new / long-stored cells.' : 'Utiliser Cycle pour mesurer la capacité réelle et rafraîchir légèrement. Préférer Break-in seulement pour piles neuves / longtemps stockées.'}</small>
-            `;
+                <details class="skyrc-acc"${openAttr}>
+                    <summary>${titre}</summary>
+                    ${labelPile}${verdict}<br>
+                    • <strong>Capacité :</strong> <b>${mahProtection} mAh</b> <small>(nominale ${mah} mAh + 20 % tampon protection)</small><br>
+                    • <strong>Courant de charge :</strong> <b>${cCharge.toFixed(2)} A</b> <small>(0.5C)</small><br>
+                    • <strong>Courant de décharge :</strong> <b>${cDech.toFixed(2)} A</b> <small>(0.2C · mesure standard)</small><br>
+                    • <strong>Courant de coupure en décharge :</strong> <b>${dCutCurr}</b> <small>(100 mA résorbe le rebond de tension à 1,00 V sur forte RI ; OFF sur pile saine)</small><br>
+                    • <strong>Tension cible :</strong> <b>1,65 V</b><br>
+                    • <strong>Tension de coupure en décharge :</strong> <b>1,00 V</b><br>
+                    • <strong>Minuterie de coupure :</strong> <b>${minuteur} Min</b><br>
+                    • <strong>Temps repos charge :</strong> <b>${opts.needsDischargeFirst ? 15 : 10} Min</b><br>
+                    • <strong>Repos décharge :</strong> <b>${opts.needsDischargeFirst ? 15 : 10} Min</b><br>
+                    • <strong>Delta Peak -ΔV :</strong> <b>${deltaV} mV</b><br>
+                    • <strong>Mode cycle :</strong> <b>${sensConseille}</b> <small>(${noteSensFr})</small><br>
+                    • <strong>Nombre cycle :</strong> <b>${nbCyc}</b> <small>(max appareil 3)</small><br>
+                    • <strong>Mode Courant :</strong> <b>${modeCourantFr}</b>
+                </details>`;
         }
 
-        function htmlBreakInBloc(mah, chimie, format, analyse, pileLabel) {
+        function htmlBreakInBloc(mah, chimie, format, analyse, pileLabel, opts) {
             if (chimie !== 'NiMH' && chimie !== 'NiCd') return '';
             if (format !== 'AA' && format !== 'AAA') return '';
-            const arrondi01 = v => Math.round(v * 10) / 10;
-            const c01 = arrondi01(Math.min(3.0, Math.max(0.2, mah * 0.1 / 1000)));
-            const c02 = arrondi01(Math.min(2.5, Math.max(0.2, mah * 0.2 / 1000)));
-            const titre = LANG === 'en' ? 'BREAK-IN PROGRAM' : 'PROGRAMME BREAK-IN';
-            let verdict;
-            if (!analyse) {
-                verdict = LANG === 'en'
-                    ? 'General Break-in settings (no specific cell selected).'
-                    : 'Réglages Break-in généraux (aucune pile précise sélectionnée).';
-            } else if (analyse.level === 'yes') {
-                verdict = `✅ ${analyse.reason}`;
-            } else if (analyse.level === 'maybe') {
-                verdict = `🟡 ${analyse.reason}`;
-            } else {
-                verdict = `⛔ ${analyse.reason}`;
-            }
-            const labelPile = pileLabel ? `<br><small>${escapeHtml(pileLabel)}</small>` : '';
+            opts = opts || {};
+            const c01 = (mah * 0.1 / 1000).toFixed(2);
+            const c02 = (mah * 0.2 / 1000).toFixed(2);
+            const sensBi = opts.needsDischargeFirst ? 'D->C->D' : 'C->D->C';
+            const badgeVerdict = !analyse ? '' : (analyse.level === 'yes' ? '✅' : analyse.level === 'maybe' ? '🟡' : '⛔');
+            const titre = LANG === 'en' ? `🔄 Mode: Break-in (Formatting) ${badgeVerdict}` : `🔄 Mode : Rôdage (Break-in) ${badgeVerdict}`;
+            const verdict = !analyse
+                ? (LANG === 'en' ? 'For new batteries, cells stored > 3 months, or cells not recovered by Cycle mode (16h at 0.1C).' : 'Pour piles neuves, stockées > 3 mois, ou non récupérées par le mode Cycle (charge lente 16h à 0.1C).')
+                : `${badgeVerdict} ${analyse.reason}`;
+            const labelPile = pileLabel ? `<div><small><b>${escapeHtml(pileLabel)}</b></small></div>` : '';
             if (analyse && !analyse.useful) {
+                return `<details class="skyrc-acc"><summary>${titre}</summary>${labelPile}${verdict}</details>`;
+            }
+            if (LANG === 'en') {
                 return `
-                    <br><strong>🔄 ${titre} :</strong>${labelPile}<br>
-                    ${verdict}
-                `;
+                <details class="skyrc-acc">
+                    <summary>${titre}</summary>
+                    ${labelPile}${verdict}<br>
+                    • <strong>Capacity:</strong> <b>${mah} mAh</b> <small>(exact rated capacity — NO +20% buffer in Break-in!)</small><br>
+                    • <strong>C. Current (Charge):</strong> <b>${c01} A</b> <small>(fixed at 0.1C by charger for 16h)</small><br>
+                    • <strong>D. Current (Discharge):</strong> <b>${c02} A</b> <small>(fixed at 0.2C by charger)</small><br>
+                    • <strong>D. Cut-off Volt:</strong> <b>1.00 V</b><br>
+                    • <strong>Resting After C.:</strong> <b>10 Min</b><br>
+                    • <strong>Resting After D.:</strong> <b>10 Min</b><br>
+                    • <strong>Cycle Mode:</strong> <b>${sensBi}</b> <small>(C->D->C ends full; D->C->D starts with discharge if cell faults on initial charge)</small><br>
+                    • <small>Repeat 1–3× only if capacity improves by &gt;10% (SkyRC Rescue procedure).</small>
+                </details>`;
             }
             return `
-                <br><strong>🔄 ${titre} :</strong>${labelPile}<br>
-                ${verdict}<br>
-                • <strong>${LANG === 'en' ? 'Rated capacity (Pro)' : 'Capacité nominale (Pro)'} :</strong> <b>${mah} mAh</b> <small>(${LANG === 'en' ? 'exact — no +20% buffer in Break-in' : 'exacte — pas de tampon +20 % en Break-in'})</small><br>
-                • <strong>${LANG === 'en' ? 'Octa Break-in' : 'Break-in Octa'} :</strong> <small>${LANG === 'en' ? 'capacity fixed at 0.1C — not set manually' : 'capacité fixe à 0.1C — non réglable manuellement'}</small><br>
-                • <strong>${LANG === 'en' ? 'Charge current' : 'Courant de charge'} :</strong> <b>${c01} A</b> <small>(0.1C · ${LANG === 'en' ? '16 h typical' : '16 h typique'})</small><br>
-                • <strong>${LANG === 'en' ? 'Discharge current' : 'Courant de décharge'} :</strong> <b>${c02} A</b> <small>(0.2C)</small><br>
-                • <strong>${LANG === 'en' ? 'Cut-off voltage' : 'Tension de coupure'} :</strong> 1.00 V<br>
-                • <strong>${LANG === 'en' ? 'Sequence' : 'Séquence'} :</strong> ${LANG === 'en' ? '0.1C charge 16h → rest → 0.2C discharge → rest → 0.1C charge 16h' : 'charge 0.1C 16 h → repos → décharge 0.2C → repos → charge 0.1C 16 h'}<br>
-                • <small>${LANG === 'en' ? 'Repeat 1–3× only if capacity is still rising.' : 'Répéter 1–3× seulement si la capacité continue de monter.'}</small>
-            `;
+                <details class="skyrc-acc">
+                    <summary>${titre}</summary>
+                    ${labelPile}${verdict}<br>
+                    • <strong>Capacité :</strong> <b>${mah} mAh</b> <small>(capacité nominale EXACTE — pas de +20 % en Rôdage !)</small><br>
+                    • <strong>Courant de charge :</strong> <b>${c01} A</b> <small>(fixé à 0.1C par le chargeur pendant 16 h)</small><br>
+                    • <strong>Courant de décharge :</strong> <b>${c02} A</b> <small>(fixé à 0.2C par le chargeur)</small><br>
+                    • <strong>Tension de coupure en décharge :</strong> <b>1,00 V</b><br>
+                    • <strong>Temps repos charge :</strong> <b>10 Min</b><br>
+                    • <strong>Repos décharge :</strong> <b>10 Min</b><br>
+                    • <strong>Mode cycle :</strong> <b>${sensBi}</b> <small>(C->D->C finit pleine ; D->C->D commence par vider la pile si elle se met en défaut en charge)</small><br>
+                    • <small>Procédure « Rescue » SkyRC : 1 à 3 Cycles d’abord, puis Rôdage si capacité basse. Répéter 1 à 3× si le gain dépasse +10 %.</small>
+                </details>`;
         }
 
         function formaterDureeHeures(heures) {
@@ -1888,7 +2426,6 @@
             const totalMin = Math.round(heures * 60);
             const h = Math.floor(totalMin / 60);
             const m = totalMin % 60;
-            // À partir de 24h : durée lisible en années / mois / jours + heures (ex. 26h15 → 1j 2h15, 506h24 → 21j 2h24)
             if (h >= 24) {
                 const en = (typeof LANG !== 'undefined' && LANG === 'en');
                 let j = Math.floor(h / 24);
@@ -1939,7 +2476,6 @@
             const box = document.getElementById('calcResultats');
             if (!box) return;
 
-            // Déterminer quel chargeur afficher
             const estXtar = modeChargeur === 'xtar' || (modeChargeur === 'auto' && (chimie === 'Li-ion' || chimie === 'LiFePO4' || (format !== 'AA' && format !== 'AAA')));
 
             if (estXtar) {
@@ -2003,7 +2539,6 @@
                     voltDechargeEn = '~0.90–1.00 V at fixed 300 mA';
                 }
 
-                // Biais de mesure 300mA vs 0.2C IEC
                 const iIec02C = Math.round(mah * 0.2);
                 let noteBiaisFr = '';
                 let noteBiaisEn = '';
@@ -2068,7 +2603,7 @@
                 return;
             }
 
-            // Plages officielles SkyRC NC3000 Pro (AA/AAA NiMH & NiCd)
+            // Plages officielles SkyRC NC3000 Pro (AA/AAA NiMH & NiCd) + Calcul physique automatique
             const cRate = parseFloat(cibleRaw) || 0.5;
             const arrondi01 = v => Math.round(v * 10) / 10;
             const courantTheorique = (mah * cRate) / 1000;
@@ -2076,45 +2611,101 @@
             let courantDecharge = arrondi01(Math.min(2.5, Math.max(0.2, (mah * 0.2) / 1000)));
             const cEffectif = (courantCharge * 1000) / mah;
 
-            // Calibrage dynamique du Delta Peak (-ΔV) selon la chimie, l'âge et la RI
-            const ageAns = anneeMinLot ? (new Date().getFullYear() - anneeMinLot) : 0;
-            let deltaV = 3;
-            let deltaVNoteFr = '3 mV standard Eneloop / NiMH saine';
-            let deltaVNoteEn = '3 mV standard for healthy Eneloop / NiMH';
-            if (chimie === 'NiCd') {
-                deltaV = 6;
-                deltaVNoteFr = '5–8 mV recommandé en NiCd (évite les fausses coupures, surtout sur accus anciens)';
-                deltaVNoteEn = '5–8 mV recommended for NiCd (prevents premature cut-off on older cells)';
-            } else if ((irMaxLot && irMaxLot > 50) || ageAns >= 10) {
-                deltaV = 5;
-                deltaVNoteFr = `5 mV conseillé (pile ancienne${ageAns ? ' ~' + ageAns + ' ans' : ''}${irMaxLot ? ', RI ' + irMaxLot + ' mΩ' : ''} : 3 mV risque de couper trop tôt)`;
-                deltaVNoteEn = `5 mV advised (older cell${ageAns ? ' ~' + ageAns + ' yrs' : ''}${irMaxLot ? ', IR ' + irMaxLot + ' mΩ' : ''}: 3 mV may cut off early)`;
+            const inventaire = JSON.parse(localStorage.getItem('stock_piles')) || [];
+            let marqueLot = '';
+            let etatPireLot = 'Bon';
+            let vReposConnue = null;
+            let aEuEffondrement = false;
+            if (window._calcBatchPiles && window._calcBatchPiles.length) {
+                const ciblesP = (indivVal !== '' && indivVal !== '__ALL__')
+                    ? window._calcBatchPiles.filter(x => String(x.idx) === String(indivVal))
+                    : window._calcBatchPiles;
+                ciblesP.forEach(({ p }) => {
+                    if (p.marque) marqueLot += ' ' + p.marque;
+                    const mesOk = (p.mesures || []).filter(m => !estEnCours(m)).sort((a,b) => new Date(a.date) - new Date(b.date));
+                    if (mesOk.length) {
+                        const lastM = mesOk[mesOk.length - 1];
+                        const et = evaluerEtat(lastM.mah, p.mahNominal, p.type, p.format);
+                        if (et === 'Recycler' || (et === 'Fatigue' && etatPireLot !== 'Recycler')) etatPireLot = et;
+                        if (lastM.volt24h && lastM.volt24h > 0 && lastM.volt24h < 1.48) vReposConnue = Number(lastM.volt24h);
+                        if (Number(lastM.mah) === 0 || (p.mahNominal && lastM.mah / p.mahNominal < 0.45)) aEuEffondrement = true;
+                    }
+                });
             }
 
-            const trickleMax = Math.min(300, Math.max(10, Math.round((mah * 0.05) / 10) * 10));
-            const mahAvecTampon = Math.round(mah * 1.20);
-            const mahProtection = Math.round(mah * 1.2 / 100) * 100;
-            const dureeChargeEstH = (mah * 1.32) / (courantCharge * 1000);
+            const ageAns = anneeMinLot ? (new Date().getFullYear() - anneeMinLot) : 0;
+            const isEneloopOrLsd = /eneloop|fujitsu|ladda|imedion|evolta|recyko/i.test(marqueLot);
+            const vDepart = vReposConnue || 1.35; // Tension typique d'une pile non déchargée qu'on insère
+            const vPolarisation = (ageAns >= 8 || etatPireLot === 'Fatigue' || etatPireLot === 'Recycler') ? 0.14 : 0.08;
+            const vTarget = 1.65;
+            const vSeuilRejet = vTarget - 0.05; // 1.60 V : zone où le NC3000 Pro risque Calibration Failed! ou faux -ΔV
+
+            // Seuil théorique maximal de RI (en mΩ) avant que V_pic ne dépasse 1,60 V sous courantCharge
+            const irSeuilPhysique = Math.max(25, Math.round(((vSeuilRejet - vDepart - vPolarisation) / courantCharge) * 1000));
+            const irSeuilFormat = format === 'AAA' ? 55 : 40;
+            const irSeuilAuto = Math.min(irSeuilPhysique, irSeuilFormat);
+
+            const vPicEstimee = irMaxLot ? (vDepart + courantCharge * (irMaxLot / 1000) + vPolarisation) : null;
+            const depasseVpic = vPicEstimee !== null && vPicEstimee >= vSeuilRejet;
+            const depasseIr = irMaxLot !== null && irMaxLot >= irSeuilAuto;
+            const needsDischargeFirst = depasseVpic || depasseIr || aEuEffondrement || ageAns >= 10 || etatPireLot === 'Fatigue' || etatPireLot === 'Recycler';
+            const useIrAuto = needsDischargeFirst || (irMaxLot !== null && irMaxLot > 25);
+
+            // Calcul du courant effectif après bridage IR Auto (Manuel p.12 : >20mΩ -> 1.5A, >40mΩ -> 0.8A, >60mΩ -> 0.4A)
+            let iEffectifIrAutoA = courantCharge;
+            if (useIrAuto && irMaxLot) {
+                if (irMaxLot > 60) iEffectifIrAutoA = Math.min(courantCharge, 0.40);
+                else if (irMaxLot > 40) iEffectifIrAutoA = Math.min(courantCharge, 0.80);
+                else if (irMaxLot > 20) iEffectifIrAutoA = Math.min(courantCharge, 1.50);
+            } else if (useIrAuto && !irMaxLot && needsDischargeFirst) {
+                // Si RI non mesurée mais vieille pile fatiguée, on anticipe un bridage possible à 0.40 A pour la minuterie
+                iEffectifIrAutoA = Math.min(courantCharge, 0.40);
+            }
+
+            let raisonsFr = [], raisonsEn = [];
+            if (vPicEstimee !== null) {
+                raisonsFr.push(`V_pic estimée au démarrage = ${vPicEstimee.toFixed(2)} V (RI ${irMaxLot} mΩ × ${courantCharge.toFixed(2)} A) ${depasseVpic ? '≥ 1,60 V (risque de rejet)' : ''}`);
+                raisonsEn.push(`Est. start V_peak = ${vPicEstimee.toFixed(2)} V (IR ${irMaxLot} mΩ × ${courantCharge.toFixed(2)} A) ${depasseVpic ? '≥ 1.60 V (fault risk)' : ''}`);
+            } else {
+                raisonsFr.push(`RI max sans défaut à ${courantCharge.toFixed(2)} A : ≤ ${irSeuilAuto} mΩ`);
+                raisonsEn.push(`Max fault-free IR at ${courantCharge.toFixed(2)} A: ≤ ${irSeuilAuto} mΩ`);
+            }
+            if (ageAns >= 10) { raisonsFr.push(`âge ~${ageAns} ans`); raisonsEn.push(`age ~${ageAns} yrs`); }
+            if (etatPireLot === 'Fatigue' || etatPireLot === 'Recycler') { raisonsFr.push(`état ${etatPireLot}`); raisonsEn.push(`state ${etatPireLot}`); }
+
+            let deltaV = 3;
+            let deltaVNoteFr = '3 mV (idéal Eneloop / NiMH saine : évite toute chauffe en fin de charge)';
+            let deltaVNoteEn = '3 mV (ideal for healthy Eneloop / NiMH: prevents end-of-charge heating)';
+            if (chimie === 'NiCd') {
+                deltaV = 6;
+                deltaVNoteFr = '5–8 mV recommandé en NiCd (évite les fausses coupures)';
+                deltaVNoteEn = '5–8 mV recommended for NiCd (prevents premature cut-off)';
+            } else if (needsDischargeFirst) {
+                deltaV = 5;
+                deltaVNoteFr = `5 mV auto-calculé (${raisonsFr.join(', ')} : 3 mV couperait trop tôt sur faux pic)`;
+                deltaVNoteEn = `5 mV auto-computed (${raisonsEn.join(', ')}: 3 mV would cut off early on false peak)`;
+            }
+
+            const mahProtection = Math.min(5000, Math.max(100, Math.round(mah * 1.2 / 100) * 100)); // plage appareil 100–5000 mAh
+            const dureeChargeEstH = (mah * 1.32) / (iEffectifIrAutoA * 1000);
             const dureeDechargeEstH = mah / (courantDecharge * 1000);
-            const dureeCycleEstH = dureeChargeEstH + dureeDechargeEstH + 0.5; // + repos
+            const dureeCycleEstH = (needsDischargeFirst ? 1 : 2) * dureeChargeEstH + dureeDechargeEstH + 0.5; // C->D->C = 2 charges ; D->C = 1 charge
+            const minuteurNominal = Math.max(60, Math.ceil((mah * 1.5 / (courantCharge * 1000)) * 60 / 10) * 10);
+            const minuteurEffectif = Math.max(minuteurNominal, Math.ceil((mah * 1.5 / (iEffectifIrAutoA * 1000)) * 60 / 10) * 10);
 
             try {
                 var hint = document.getElementById('calcMahHint');
                 if (hint) {
-                    if (LANG === 'en') {
-                        hint.innerHTML = 'Pro Charge/Cycle: <b>' + mah + ' mAh</b> <span style="color:#e67e22;">(+20% → ' + mahProtection + ' mAh)</span> · Est. charge: <b>~' + formaterDureeHeures(dureeChargeEstH) + '</b> · 1 Cycle: <b>~' + formaterDureeHeures(dureeCycleEstH) + '</b>';
-                    } else {
-                        hint.innerHTML = 'Pro Charge/Cycle : <b>' + mah + ' mAh</b> <span style="color:#e67e22;">(+20 % → ' + mahProtection + ' mAh)</span> · Charge : <b>~' + formaterDureeHeures(dureeChargeEstH) + '</b> · 1 Cycle : <b>~' + formaterDureeHeures(dureeCycleEstH) + '</b>';
-                    }
+                    const profilBadge = needsDischargeFirst
+                        ? (LANG === 'en' ? `🟠 Auto Profile: Old / High-IR Cell (Start w/ Discharge D->C + IR Auto · Max IR threshold: ${irSeuilAuto} mΩ)` : `🟠 Profil Auto : Pile Ancienne / Forte RI (Début par Décharge D->C + IR Auto · Seuil RI : ${irSeuilAuto} mΩ)`)
+                        : (isEneloopOrLsd
+                            ? (LANG === 'en' ? '🟢 Auto Profile: Eneloop / Healthy LSD (Trickle OFF, -ΔV 3mV, Fixed, C->D->C)' : '🟢 Profil Auto : Eneloop / LSD Saine (Trickle OFF, -ΔV 3 mV, Fixé, C->D->C)')
+                            : (LANG === 'en' ? `⚙️ Auto Profile: Standard NiMH/NiCd (Max fault-free IR at ${courantCharge.toFixed(2)}A: ≤ ${irSeuilAuto} mΩ)` : `⚙️ Profil Auto : NiMH/NiCd Standard (Seuil RI sans défaut à ${courantCharge.toFixed(2)} A : ≤ ${irSeuilAuto} mΩ)`));
+                    hint.innerHTML = `${profilBadge}<br>` + (LANG === 'en'
+                        ? `Capacity w/ buffer: <b>${mahProtection} mAh</b> (+20%) · Est. Charge: <b>~${formaterDureeHeures(dureeChargeEstH)}</b> · 1 Cycle: <b>~${formaterDureeHeures(dureeCycleEstH)}</b>`
+                        : `Capacité protection : <b>${mahProtection} mAh</b> (+20 %) · Charge est. : <b>~${formaterDureeHeures(dureeChargeEstH)}</b> · 1 Cycle : <b>~${formaterDureeHeures(dureeCycleEstH)}</b>`);
                 }
             } catch (eHint) {}
-            const minuteur = Math.max(60, Math.ceil((mah * 1.5 / (courantCharge * 1000)) * 60 / 10) * 10);
-
-            const verbRegler = LANG === 'en' ? 'set' : 'régler';
-            const chargeTxt = Math.abs(courantCharge - courantTheorique) > 0.01
-                ? `${courantTheorique.toFixed(2)} A → <b>${verbRegler} ${courantCharge} A</b>`
-                : `<b>${courantCharge} A</b>`;
-            const dechargeTxt = `<b>${courantDecharge} A</b>`;
 
             let warns = [];
             if (chimie !== 'NiMH' && chimie !== 'NiCd') warns.push(LANG === 'en'
@@ -2127,16 +2718,28 @@
                 ? '⚠️ Capacity outside the supported range (100–5000 mAh).'
                 : '⚠️ Capacité hors plage supportée (100–5000 mAh).');
             if (cEffectif < 0.3) warns.push(LANG === 'en'
-                ? `⚠️ ${cEffectif.toFixed(2)}C is too low: the delta peak may not trigger reliably (Panasonic / SkyRC min ≈ 0.3C).`
-                : `⚠️ ${cEffectif.toFixed(2)}C est trop faible : le delta peak risque de ne pas se déclencher de façon fiable (min. Panasonic / SkyRC ≈ 0.3C).`);
+                ? `⚠️ ${cEffectif.toFixed(2)}C is too low: the delta peak may not trigger reliably (min ≈ 0.3C).`
+                : `⚠️ ${cEffectif.toFixed(2)}C est trop faible : le delta peak risque de ne pas se déclencher de façon fiable (min. ≈ 0.3C).`);
             const warnHtml = warns.length
                 ? `<div style="background:#fdebd0;border:1px solid #f39c12;color:#7d5a00;padding:8px 10px;border-radius:6px;margin:8px 0 4px;font-size:0.82rem;line-height:1.4;">${warns.join('<br>')}</div>`
                 : '';
 
-            // Analyse Cycle + Break-in selon pile(s) sélectionnée(s)
+            const optsDyn = {
+                courantCharge,
+                courantDecharge,
+                deltaV,
+                minuteur: minuteurNominal,
+                minuteurEffectif,
+                useIrAuto,
+                iEffectifIrAutoA,
+                needsDischargeFirst,
+                raisonDechargeFr: raisonsFr.join(', '),
+                raisonDechargeEn: raisonsEn.join(', '),
+                openByDefault: (indivVal !== '')
+            };
+
             let cycleHtml = '';
             let breakInHtml = '';
-            const inventaire = JSON.parse(localStorage.getItem('stock_piles')) || [];
             if (indivVal === '__ALL__' && window._calcBatchPiles && window._calcBatchPiles.length) {
                 const lignesCyc = window._calcBatchPiles.map(({ p }) => {
                     const a = analyserPilePourCycle(p);
@@ -2148,19 +2751,10 @@
                         <b>#${escapeHtml(p.id)}</b> · ${last} mAh · ${icon} ${escapeHtml(a.reason)}
                     </div>`;
                 }).join('');
-                const anyCyc = window._calcBatchPiles.some(({ p }) => analyserPilePourCycle(p).useful);
-                cycleHtml = `
-                    <br><strong>🔁 ${LANG === 'en' ? 'CYCLE — batch overview' : 'CYCLE — vue du lot'} :</strong><br>
-                    ${lignesCyc}
-                `;
-                if (anyCyc) {
-                    cycleHtml += htmlCycleBloc(mah, chimie, format, {
-                        useful: true, level: 'yes', cycles: 2,
-                        reason: LANG === 'en'
-                            ? 'Use the settings below for cells marked ✅ or 🟡.'
-                            : 'Utiliser les réglages ci-dessous pour les piles marquées ✅ ou 🟡.'
-                    }, null);
-                }
+                cycleHtml = htmlCycleBloc(mah, chimie, format, {
+                    useful: true, level: 'yes', cycles: 2,
+                    reason: (LANG === 'en' ? 'Batch overview:' : 'Vue d’ensemble du lot :') + lignesCyc
+                }, null, optsDyn);
 
                 const lignesBi = window._calcBatchPiles.map(({ p }) => {
                     const a = analyserPilePourBreakIn(p);
@@ -2172,84 +2766,182 @@
                         <b>#${escapeHtml(p.id)}</b> · ${last} mAh · ${icon} ${escapeHtml(a.reason)}
                     </div>`;
                 }).join('');
-                const anyBi = window._calcBatchPiles.some(({ p }) => analyserPilePourBreakIn(p).useful);
-                breakInHtml = `
-                    <br><strong>🔄 ${LANG === 'en' ? 'BREAK-IN — batch overview' : 'BREAK-IN — vue du lot'} :</strong><br>
-                    ${lignesBi}
-                `;
-                if (anyBi) {
-                    breakInHtml += htmlBreakInBloc(mah, chimie, format, {
-                        useful: true, level: 'yes',
-                        reason: LANG === 'en'
-                            ? 'Use the settings below for cells marked ✅ or 🟡.'
-                            : 'Utiliser les réglages ci-dessous pour les piles marquées ✅ ou 🟡.'
-                    }, null);
-                }
+                breakInHtml = htmlBreakInBloc(mah, chimie, format, {
+                    useful: true, level: 'yes',
+                    reason: (LANG === 'en' ? 'Batch overview:' : 'Vue d’ensemble du lot :') + lignesBi
+                }, null, optsDyn);
             } else if (indivVal !== '' && indivVal !== '__ALL__') {
                 const pile = inventaire[parseInt(indivVal, 10)];
                 if (pile) {
                     const label = `#${pile.id} · ${pile.marque || ''}`.trim();
-                    cycleHtml = htmlCycleBloc(mah, chimie, format, analyserPilePourCycle(pile), label);
-                    breakInHtml = htmlBreakInBloc(mah, chimie, format, analyserPilePourBreakIn(pile), label);
+                    cycleHtml = htmlCycleBloc(mah, chimie, format, analyserPilePourCycle(pile), label, optsDyn);
+                    breakInHtml = htmlBreakInBloc(mah, chimie, format, analyserPilePourBreakIn(pile), label, optsDyn);
                 }
             } else {
-                cycleHtml = htmlCycleBloc(mah, chimie, format, null, null);
-                breakInHtml = htmlBreakInBloc(mah, chimie, format, null, null);
+                cycleHtml = htmlCycleBloc(mah, chimie, format, null, null, optsDyn);
+                breakInHtml = htmlBreakInBloc(mah, chimie, format, null, null, optsDyn);
             }
+
+            const cCharge05 = arrondi01(Math.min(3.0, Math.max(0.2, mah * 0.5 / 1000))).toFixed(2);
+            const cDech02 = courantDecharge.toFixed(2);
+            const minSafe400 = Math.max(240, Math.ceil((mah * 1.5 / 400) * 60 / 10) * 10);
+            const modeCourantTxtFr = useIrAuto ? `<b>IR Auto</b> <small>(activo : plafonne à ${iEffectifIrAutoA.toFixed(2)} A selon RI &gt; 20/40/60 mΩ)</small>` : '<b>Fixé</b> <small>(ou IR Auto)</small>';
+            const modeCourantTxtEn = useIrAuto ? `<b>IR Auto</b> <small>(active: caps at ${iEffectifIrAutoA.toFixed(2)} A based on IR &gt; 20/40/60 mΩ)</small>` : '<b>Fixed</b> <small>(or IR Auto)</small>';
+
+            const diagHtmlFr = `
+                <div class="skyrc-diag">
+                    <strong>🧮 Calcul automatique anti-défaut (U = E + R × I) :</strong><br>
+                    • Seuil de RI retenu : <b>${irSeuilAuto} mΩ</b> <small>(plafond format ${escapeHtml(format)} : ${irSeuilFormat} mΩ · limite physique avant pic ≥ 1,60 V sous ${courantCharge.toFixed(2)} A : ${irSeuilPhysique} mΩ)</small> ${irMaxLot ? `— RI relevée : <b>${irMaxLot} mΩ</b> → V<sub>pic</sub> ≈ <b>${vPicEstimee.toFixed(2)} V</b>` : '(aucune RI relevée)'}<br>
+                    • Décision auto : ${needsDischargeFirst
+                        ? `<b>⚠️ Risque de mise en défaut en charge directe</b> → début par <b>Décharge (D-&gt;C)</b> + <b>IR Auto</b> + Courant coupure déch. <b>100 mA</b> + Minuterie adaptée à <b>${minuteurEffectif} Min</b>.`
+                        : `<b>✅ Aucun risque de pic au démarrage</b> → séquence standard <b>C-&gt;D-&gt;C</b>, Mode Courant <b>${useIrAuto ? 'IR Auto' : 'Fixé'}</b>.`}
+                </div>`;
+            const diagHtmlEn = `
+                <div class="skyrc-diag">
+                    <strong>🧮 Auto Fault-Prevention Calculation (U = E + R × I):</strong><br>
+                    • Retained IR threshold: <b>${irSeuilAuto} mΩ</b> <small>(${escapeHtml(format)} size cap: ${irSeuilFormat} mΩ · physical limit before peak ≥ 1.60 V at ${courantCharge.toFixed(2)} A: ${irSeuilPhysique} mΩ)</small> ${irMaxLot ? `— logged IR: <b>${irMaxLot} mΩ</b> → V<sub>peak</sub> ≈ <b>${vPicEstimee.toFixed(2)} V</b>` : '(no IR logged)'}<br>
+                    • Auto decision: ${needsDischargeFirst
+                        ? `<b>⚠️ Direct-charge fault risk detected</b> → start with <b>Discharge (D-&gt;C)</b> + <b>IR Auto</b> + D. Cut-off Curr <b>100 mA</b> + Timer extended to <b>${minuteurEffectif} Min</b>.`
+                        : `<b>✅ Safe start-up voltage</b> → standard <b>C-&gt;D-&gt;C</b> sequence, Current Mode <b>${useIrAuto ? 'IR Auto' : 'Fixed'}</b>.`}
+                </div>`;
 
             if (LANG === 'en') {
                 box.innerHTML = `
-                    <strong>⚙️ SkyRC NC3000 Pro settings — ${escapeHtml(format)} ${mah} mAh (${escapeHtml(chimie)}):</strong>${warnHtml}<br>
-                    <strong>⚡ CHARGE PROGRAM:</strong><br>
-                    • <strong>Charge Current:</strong> ${chargeTxt} <small>(${cRate}C requested → ${cEffectif.toFixed(2)}C actual · 100 mA steps · est. <b>~${formaterDureeHeures(dureeChargeEstH)}</b>)</small><br>
-                    • <strong>Target Voltage:</strong> 1.65 V <small>(device range 1.47–1.80)</small><br>
-                    • <strong>Delta Peak (-ΔV):</strong> <b>${deltaV} mV</b> <small>(${deltaVNoteEn})</small><br>
-                    • <strong>Cut-off Timer:</strong> ${minuteur} min <small>(≥1.5 × capacity ÷ current — increase if you lower current)</small><br>
-                    • <strong>Capacity to enter:</strong><br>
-                    &nbsp;&nbsp;– <strong>NC3000 Pro (Charge / Cycle / Discharge):</strong> <b>${mah} mAh</b> <span style="color:#e67e22;font-weight:bold;">(+20% → ${mahProtection} mAh)</span><br>
-                    &nbsp;&nbsp;– <strong>NC3000 Pro (Break-in):</strong> <b>${mah} mAh</b> <small>(exact rated — no +20%)</small><br>
-                    &nbsp;&nbsp;– <strong>NC3000 Octa (Charge / Cycle / Discharge):</strong> <b>${mah} mAh</b> <small>(charger auto-adds +20% → ~${mahAvecTampon} mAh)</small><br>
-                    &nbsp;&nbsp;– <strong>NC3000 Octa (Break-in):</strong> <small>fixed at 0.1C (not set manually)</small><br>
-                    • <strong>Trickle:</strong> <b>Off</b> <small>(max ${trickleMax} mA = 0.05C if forced)</small> | <strong>Restart Voltage:</strong> <b>Off</b> | <strong>Current Mode:</strong> ${ageAns >= 8 || (irMaxLot && irMaxLot > 35) ? '<b>IR Auto</b> <small>(recommended for older cells)</small>' : 'Fixed (or IR Auto)'}<br><br>
-                    <strong>🔋 DISCHARGE PROGRAM:</strong><br>
-                    • <strong>Discharge Current:</strong> ${dechargeTxt} <small>(0.2C industry standard · est. <b>~${formaterDureeHeures(dureeDechargeEstH)}</b>)</small><br>
-                    • <strong>D. Cut-off Voltage:</strong> 1.00 V <small>(device range 0.50–1.10)</small><br>
-                    • <strong>Capacity & Timer:</strong> Off
-                    ${cycleHtml}${breakInHtml}<br><br>
-                    <strong>💡 NOTES (Panasonic / SkyRC):</strong><br>
-                    • Recommended charge rate: <b>0.5C–1.0C</b> — Panasonic prefers <b>0.5C</b> when time allows<br>
-                    • Do <b>not</b> go below ≈0.3C: -ΔV detection becomes unreliable<br>
-                    • No trickle charge and no Restart Voltage top-ups on Eneloop (overcharge risk)<br>
-                    • Power: USB-C <b>PD/QC adapter of 30 W or more</b> (NC3000 Pro)<br>
-                    • <b>IR Auto</b> (Current Mode) lowers the current as internal resistance rises (1.5 A &gt; 20 mΩ, 800 mA &gt; 40 mΩ, 400 mA &gt; 60 mΩ) — ideal for old cells<br>
-                    ${chimie === 'NiMH' ? '• If you want to charge this NiMH cell on your <b>XTAR VX4 V2</b> instead, select <b>XTAR VX4 V2</b> in "Charger used" above (0.5 A fixed CVSA)' : '• Note: <b>NiCd</b> is only supported by the <b>SkyRC NC3000 Pro</b> (not officially supported by the XTAR VX4 V2)'}
+                    <strong>⚙️ SkyRC NC3000 Pro — ${escapeHtml(format)} ${mah} mAh (${escapeHtml(chimie)}):</strong>${warnHtml}
+                    ${diagHtmlEn}
+
+                    <details class="skyrc-acc" open>
+                        <summary>💾 Presets to Save in SkyCharger App ("Save" button top-right)</summary>
+                        <div class="skyrc-preset">
+                            <strong>🟢 Preset 1: "Eneloop / Healthy LSD ${escapeHtml(format)} ${mah}"</strong> <small>(No Trickle!)</small><br>
+                            • <b>Charge:</b> Cap <b>${mahProtection} mAh</b> · C.Current <b>${cCharge05} A</b> (0.5C) · Target <b>1.65 V</b> · Timer <b>${minuteurNominal} Min</b> · Restart <b>OFF</b> · -ΔV <b>3 mV</b> · Trickle <b>OFF</b> · Mode <b>Fixed</b><br>
+                            • <b>Cycle (Test):</b> Same + D.Current <b>${cDech02} A</b> · D.Cut-off Curr <b>OFF</b> · D.Cut-off Volt <b>1.00 V</b> · Rest C/D <b>10 Min</b> · Mode <b>C-&gt;D-&gt;C</b> · Count <b>1</b>
+                        </div>
+                        <div class="skyrc-preset warn">
+                            <strong>🟠 Preset 2: "Old / High-IR &gt;${irSeuilAuto}mΩ ${escapeHtml(format)} ${mah} (Anti-Fault)"</strong> <small>(Starts w/ Discharge)</small><br>
+                            • <b>Cycle (Anti-Fault):</b> Cap <b>${mahProtection} mAh</b> · C.Current <b>${cCharge05} A</b> · D.Current <b>${cDech02} A</b> · D.Cut-off Curr <b>100 mA</b> · Target <b>1.65 V</b> · D.Cut-off <b>1.00 V</b> · Timer <b>${minSafe400} Min</b> · Rest C/D <b>15 Min</b> · -ΔV <b>5 mV</b> · Cycle Mode <b>D-&gt;C</b> (1 cyc) or <b>D-&gt;C-&gt;D</b> (2 cyc) · Current Mode <b>IR Auto</b>
+                        </div>
+                        <small>💡 <b>App tip:</b> Uncheck <i>"Value will be set up in all channels!"</i> at the bottom before pressing START if other slots have different batteries.</small>
+                    </details>
+
+                    <details class="skyrc-acc" ${indivVal === '' ? 'open' : ''}>
+                        <summary>⚡ Mode: Charge (~${formaterDureeHeures(dureeChargeEstH)})</summary>
+                        • <strong>Capacity:</strong> <b>${mahProtection} mAh</b> <small>(rated ${mah} mAh + 20% protection buffer)</small><br>
+                        • <strong>C. Current (Charge current):</strong> <b>${courantCharge.toFixed(2)} A</b> <small>(${cRate}C requested → ${cEffectif.toFixed(2)}C actual)</small><br>
+                        • <strong>Target Volt:</strong> <b>1.65 V</b> <small>(range 1.47–1.80 V)</small><br>
+                        • <strong>Cut-off Timer:</strong> <b>${minuteurEffectif} Min</b> <small>(auto-extended if IR Auto throttles current)</small><br>
+                        • <strong>Restart Volt:</strong> <b>OFF</b> <small>(never enable on Eneloop)</small><br>
+                        • <strong>Delta Peak (-ΔV):</strong> <b>${deltaV} mV</b> <small>(${deltaVNoteEn})</small><br>
+                        • <strong>Trickle Charge:</strong> <b>OFF</b> <small>(Eneloop/LSD hate trickle charge)</small><br>
+                        • <strong>Current Mode:</strong> ${modeCourantTxtEn}
+                    </details>
+
+                    <details class="skyrc-acc">
+                        <summary>🔋 Mode: Discharge (~${formaterDureeHeures(dureeDechargeEstH)})</summary>
+                        • <strong>Capacity:</strong> <b>${mahProtection} mAh</b> <small>(or OFF)</small><br>
+                        • <strong>D. Current:</strong> <b>${courantDecharge.toFixed(2)} A</b> <small>(0.2C standard)</small><br>
+                        • <strong>D. Cut-off Volt:</strong> <b>1.00 V</b><br>
+                        • <strong>D. Cut-off Curr.:</strong> <b>${needsDischargeFirst ? '100 mA' : 'OFF'}</b> <small>(100 mA holds 1.00 V while tapering current to suppress voltage rebound before charging)</small><br>
+                        • <strong>Cut-off Timer:</strong> <b>${Math.max(180, Math.ceil((mah / (courantDecharge * 1000)) * 75 / 10) * 10)} Min</b>
+                    </details>
+
+                    ${cycleHtml}
+                    ${breakInHtml}
+
+                    <details class="skyrc-acc">
+                        <summary>🚀 Other Modes: MaxBoost &amp; Turbo</summary>
+                        • <strong>MaxBoost (Racing):</strong> Fully charges the cell, then discharges a set <b>D. Capacity</b>. Re-run <b>Charge</b> right before use.<br>
+                        • <strong>Turbo (Up to 3.00 A × 4 slots):</strong> For healthy low-IR cells only. ⚠️ <b>Stops with "High Internal Resistance!" error if IR &gt; 40 mΩ.</b>
+                    </details>
+
+                    <details class="skyrc-acc">
+                        <summary>📖 Manual Reference: IR Auto Tiers, Error Codes &amp; LED Status</summary>
+                        <strong>1. Automatic Current Adjustment (IR Auto Mode — Manual p.12):</strong>
+                        <table class="skyrc-tbl">
+                            <tr><th>Internal Resistance (IR)</th><th>NC3000 Pro Action</th></tr>
+                            <tr><td>≤ 20 mΩ</td><td>Full programmed current (up to 3.00 A)</td></tr>
+                            <tr><td>20 mΩ &lt; IR ≤ 40 mΩ</td><td>Charge current limited to <b>1.50 A</b></td></tr>
+                            <tr><td>40 mΩ &lt; IR ≤ 60 mΩ</td><td>Limited to <b>800 mA</b> (Turbo mode stops with error)</td></tr>
+                            <tr><td>&gt; 60 mΩ</td><td>Limited to <b>400 mA</b></td></tr>
+                        </table>
+                        <strong>2. Error Messages Explained (Manual p.14):</strong><br>
+                        • <b>Calibration Failed!:</b> High-IR cell rejected at charge start → <i>Fix: start with Discharge (Cycle <b>D-&gt;C</b>) + <b>IR Auto</b>.</i><br>
+                        • <b>Capacity Limit Reached!:</b> Charged mAh hit the Capacity setting before -ΔV triggered → <i>Fix: set Capacity to Rated + 20% (${mahProtection} mAh).</i><br>
+                        • <b>Time's Up!:</b> Safety Cut-off Timer expired → <i>Fix: set Timer to ${minSafe400} Min when IR Auto throttles to 400 mA.</i><br>
+                        • <b>High Internal Resistance!:</b> IR &gt; 40 mΩ in Turbo mode → <i>Fix: use Charge or Cycle mode with IR Auto.</i><br>
+                        • <b>Connection Break! / DC In Too Low!:</b> Dirty contacts (insert <b>−</b> terminal first) or USB-C adapter &lt; 30W PD/QC.<br><br>
+                        <strong>3. LED Status (Manual p.12):</strong> Yellow solid = Standby/Rest · Green blink = Charging · Red blink = Discharging · Green solid = Charge Done · Red solid = Discharge Done · Red/Green alternating = Error.<br>
+                        <strong>4. Bluetooth App Note (Manual p.13):</strong> Never pair in Android Bluetooth Settings! Connect directly inside the <b>SkyCharger</b> app via <b>+</b>.
+                    </details>
                 `;
             } else {
                 box.innerHTML = `
-                    <strong>⚙️ Réglages SkyRC NC3000 Pro — ${escapeHtml(format)} ${mah} mAh (${escapeHtml(chimie)}) :</strong>${warnHtml}<br>
-                    <strong>⚡ PROGRAMME CHARGE :</strong><br>
-                    • <strong>Courant de charge :</strong> ${chargeTxt} <small>(demande ${cRate}C → ${cEffectif.toFixed(2)}C effectif · pas de 100 mA · durée est. <b>~${formaterDureeHeures(dureeChargeEstH)}</b>)</small><br>
-                    • <strong>Tension cible :</strong> 1.65 V <small>(plage appareil 1.47–1.80)</small><br>
-                    • <strong>Delta Peak (-ΔV) :</strong> <b>${deltaV} mV</b> <small>(${deltaVNoteFr})</small><br>
-                    • <strong>Minuteur de coupure :</strong> ${minuteur} min <small>(≥1.5 × capacité ÷ courant — augmenter si vous baissez le courant)</small><br>
-                    • <strong>Capacité à régler :</strong><br>
-                    &nbsp;&nbsp;– <strong>NC3000 Pro (Charge / Cycle / Décharge) :</strong> <b>${mah} mAh</b> <span style="color:#e67e22;font-weight:bold;">(+20 % → ${mahProtection} mAh)</span><br>
-                    &nbsp;&nbsp;– <strong>NC3000 Pro (Break-in) :</strong> <b>${mah} mAh</b> <small>(nominale exacte — pas de +20 %)</small><br>
-                    &nbsp;&nbsp;– <strong>NC3000 Octa (Charge / Cycle / Décharge) :</strong> <b>${mah} mAh</b> <small>(le chargeur ajoute +20 % → ~${mahAvecTampon} mAh)</small><br>
-                    &nbsp;&nbsp;– <strong>NC3000 Octa (Break-in) :</strong> <small>fixe à 0.1C (non réglable)</small><br>
-                    • <strong>Trickle :</strong> <b>Off</b> <small>(max ${trickleMax} mA = 0.05C si forcé)</small> | <strong>Restart Voltage :</strong> <b>Off</b> | <strong>Current Mode :</strong> ${ageAns >= 8 || (irMaxLot && irMaxLot > 35) ? '<b>IR Auto</b> <small>(recommandé pour ces piles anciennes)</small>' : 'Fixed (ou IR Auto)'}<br><br>
-                    <strong>🔋 PROGRAMME DÉCHARGE :</strong><br>
-                    • <strong>Courant de décharge :</strong> ${dechargeTxt} <small>(standard industrie 0.2C · durée est. <b>~${formaterDureeHeures(dureeDechargeEstH)}</b>)</small><br>
-                    • <strong>Tension de coupure :</strong> 1.00 V <small>(plage appareil 0.50–1.10)</small><br>
-                    • <strong>Capacité & Minuteur :</strong> Off
-                    ${cycleHtml}${breakInHtml}<br><br>
-                    <strong>💡 NOTES (Panasonic / SkyRC) :</strong><br>
-                    • Vitesse de charge recommandée : <b>0.5C–1.0C</b> — Panasonic préfère <b>0.5C</b> quand le temps le permet<br>
-                    • Ne pas descendre sous ≈0.3C : la détection -ΔV devient peu fiable<br>
-                    • Pas de charge d’entretien (trickle) ni de Restart Voltage sur les Eneloop (risque de surcharge)<br>
-                    • Alimentation : adaptateur USB-C <b>PD/QC de 30 W minimum</b> (NC3000 Pro)<br>
-                    • <b>IR Auto</b> réduit automatiquement le courant quand la résistance interne monte (1,5 A &gt; 20 mΩ, 800 mA &gt; 40 mΩ, 400 mA &gt; 60 mΩ) — très utile pour les vieilles piles<br>
-                    ${chimie === 'NiMH' ? '• Si vous souhaitez charger cette pile NiMH sur votre <b>XTAR VX4 V2</b>, choisissez <b>XTAR VX4 V2</b> dans « Chargeur utilisé » en haut (charge CVSA à 0,5 A fixe)' : '• Note : la chimie <b>NiCd</b> est gérée uniquement par le <b>SkyRC NC3000 Pro</b> (non supportée officiellement par le XTAR VX4 V2)'}
+                    <strong>⚙️ SkyRC NC3000 Pro — ${escapeHtml(format)} ${mah} mAh (${escapeHtml(chimie)}) :</strong>${warnHtml}
+                    ${diagHtmlFr}
+
+                    <details class="skyrc-acc" open>
+                        <summary>💾 Programmes types à sauvegarder dans l’app SkyCharger (« Enregistrer » en haut à droite)</summary>
+                        <div class="skyrc-preset">
+                            <strong>🟢 Programme 1 : « Eneloop / NiMH Saine ${escapeHtml(format)} ${mah} »</strong> <small>(Sans Trickle !)</small><br>
+                            • <b>En mode Charge :</b> Capacité <b>${mahProtection} mAh</b> · Courant de charge <b>${cCharge05} A</b> (0.5C) · Tension cible <b>1,65 V</b> · Minuterie <b>${minuteurNominal} Min</b> · Restart Volt <b>OFF</b> · Delta Peak -ΔV <b>3 mV</b> · Trickle <b>OFF</b> · Mode Courant <b>Fixé</b><br>
+                            • <b>En mode Cycle (Mesure) :</b> Idem + Courant décharge <b>${cDech02} A</b> · Courant coupure décharge <b>OFF</b> · Tension coupure déch. <b>1,00 V</b> · Temps repos charge/déch. <b>10 Min</b> · Mode cycle <b>C-&gt;D-&gt;C</b> · Nombre cycle <b>1</b>
+                        </div>
+                        <div class="skyrc-preset warn">
+                            <strong>🟠 Programme 2 : « Vieille pile / Forte RI &gt;${irSeuilAuto}mΩ ${escapeHtml(format)} ${mah} (Anti-Défaut) »</strong> <small>(Débute par Décharge)</small><br>
+                            • <b>En mode Cycle (Anti-défaut) :</b> Capacité <b>${mahProtection} mAh</b> · Courant charge <b>${cCharge05} A</b> · Courant décharge <b>${cDech02} A</b> · Courant coupure décharge <b>100 mA</b> · Tension cible <b>1,65 V</b> · Coupure déch. <b>1,00 V</b> · Minuterie <b>${minSafe400} Min</b> · Temps repos C/D <b>15 Min</b> · Delta Peak -ΔV <b>5 mV</b> · Mode cycle <b>D-&gt;C</b> (1 cycle, finit pleine) ou <b>D-&gt;C-&gt;D</b> (2 cycles) · Mode Courant <b>IR Auto</b>
+                        </div>
+                        <small>💡 <b>Rappel App SkyCharger :</b> décochez <i>« La valeur sera réglée sur tous les canaux! »</i> en bas avant d’appuyer sur <b>START</b> si vous panachez des piles différentes.</small>
+                    </details>
+
+                    <details class="skyrc-acc" ${indivVal === '' ? 'open' : ''}>
+                        <summary>⚡ Mode : Charge (~${formaterDureeHeures(dureeChargeEstH)})</summary>
+                        • <strong>Capacité :</strong> <b>${mahProtection} mAh</b> <small>(nominale ${mah} mAh + 20 % sécurité anti-surcharge)</small><br>
+                        • <strong>Courant de charge :</strong> <b>${courantCharge.toFixed(2)} A</b> <small>(demande ${cRate}C → ${cEffectif.toFixed(2)}C effectif · pas de 0,10 A)</small><br>
+                        • <strong>Tension cible :</strong> <b>1,65 V</b> <small>(plage 1,47–1,80 V)</small><br>
+                        • <strong>Minuterie de coupure :</strong> <b>${minuteurEffectif} Min</b> <small>(ajustée automatiquement si IR Auto bride le courant)</small><br>
+                        • <strong>Tension de redémarrage (Restart Volt) :</strong> <b>OFF</b> <small>(interdit sur Eneloop)</small><br>
+                        • <strong>Delta Peak -ΔV :</strong> <b>${deltaV} mV</b> <small>(${deltaVNoteFr})</small><br>
+                        • <strong>Charge d’entretien (Trickle Charge) :</strong> <b>OFF</b> <small>(les Eneloop/LSD n’aiment pas le Trickle : provoque chauffe et assèchement)</small><br>
+                        • <strong>Mode Courant :</strong> ${modeCourantTxtFr}
+                    </details>
+
+                    <details class="skyrc-acc">
+                        <summary>🔋 Mode : Décharge (~${formaterDureeHeures(dureeDechargeEstH)})</summary>
+                        • <strong>Capacité :</strong> <b>${mahProtection} mAh</b> <small>(ou OFF)</small><br>
+                        • <strong>Courant de décharge :</strong> <b>${courantDecharge.toFixed(2)} A</b> <small>(0.2C standard mesure)</small><br>
+                        • <strong>Tension de coupure en décharge :</strong> <b>1,00 V</b> <small>(plage 0,50–1,10 V)</small><br>
+                        • <strong>Courant de coupure en décharge :</strong> <b>${needsDischargeFirst ? '100 mA' : 'OFF'}</b> <small>(100 mA maintient 1,00 V en réduisant le courant pour supprimer l’effet rebond avant la recharge)</small><br>
+                        • <strong>Minuterie de coupure :</strong> <b>${Math.max(180, Math.ceil((mah / (courantDecharge * 1000)) * 75 / 10) * 10)} Min</b>
+                    </details>
+
+                    ${cycleHtml}
+                    ${breakInHtml}
+
+                    <details class="skyrc-acc">
+                        <summary>🚀 Autres Modes : MaxBoost &amp; Turbo</summary>
+                        • <strong>MaxBoost (Compétition RC) :</strong> charge la pile à 100 %, puis la décharge d’une quantité choisie (<b>D. Capacity</b>). Relancer <b>Charge</b> juste avant utilisation.<br>
+                        • <strong>Turbo (Jusqu’à 3,00 A sur les 4 baies) :</strong> réservé aux piles très saines. ⚠️ <b>Coupe en erreur (« High Internal Resistance! ») dès que la RI dépasse 40 mΩ.</b>
+                    </details>
+
+                    <details class="skyrc-acc">
+                        <summary>📖 Aide Manuel SkyRC : Paliers IR Auto, Codes d’erreur &amp; LED</summary>
+                        <strong>1. Paliers de réduction automatique du courant en mode « IR Auto » (Manuel p.12) :</strong>
+                        <table class="skyrc-tbl">
+                            <tr><th>Résistance Interne (RI) mesurée</th><th>Action du SkyRC NC3000 Pro</th></tr>
+                            <tr><td>≤ 20 mΩ</td><td>Courant programmé plein (jusqu’à 3,00 A)</td></tr>
+                            <tr><td>20 mΩ &lt; RI ≤ 40 mΩ</td><td>Courant de charge plafonné à <b>1,50 A</b></td></tr>
+                            <tr><td>40 mΩ &lt; RI ≤ 60 mΩ</td><td>Plafonné à <b>800 mA (0,80 A)</b> · <i>Le mode Turbo s’arrête</i></td></tr>
+                            <tr><td>&gt; 60 mΩ</td><td>Plafonné à <b>400 mA (0,40 A)</b> pour éviter la surchauffe</td></tr>
+                        </table>
+                        <strong>2. Explication des erreurs et remèdes (Manuel p.14) :</strong><br>
+                        • <b>Calibration Failed! :</b> pile rejetée au démarrage de la charge → <i>Solution : commencer par une décharge (Cycle en <b>D-&gt;C</b>) et activer <b>IR Auto</b>.</i><br>
+                        • <b>Capacity Limit Reached! :</b> plafond de capacité atteint avant le -ΔV → <i>Solution : régler Capacité sur Nominale + 20 % (${mahProtection} mAh).</i><br>
+                        • <b>Time's Up! :</b> minuterie expirée → <i>Solution : régler la Minuterie sur ${minSafe400} Min quand IR Auto bride le courant à 400 mA.</i><br>
+                        • <b>High Internal Resistance! :</b> RI &gt; 40 mΩ en mode Turbo → <i>Solution : passer en mode Charge ou Cycle avec IR Auto.</i><br>
+                        • <b>Connection Break! / DC In Too Low! :</b> faux contact (insérer le pôle <b>−</b> en premier) ou adaptateur USB-C inférieur à 30 W PD/QC.<br><br>
+                        <strong>3. Signification des LED (Manuel p.12) :</strong> Jaune fixe = Veille / Repos · Vert clignotant = Charge · Rouge clignotant = Décharge · Vert fixe = Charge terminée · Rouge fixe = Décharge terminée · Rouge/Vert alterné = Erreur.<br>
+                        <strong>4. Connexion Bluetooth SkyCharger (Manuel p.13) :</strong> ne <b>jamais</b> appairer le chargeur dans les paramètres Bluetooth d’Android ! Ouvrir directement l’application <b>SkyCharger</b> et appuyer sur <b>+</b>.
+                    </details>
                 `;
             }
         }
@@ -3031,6 +3723,1138 @@
             document.getElementById('dash-rec').innerText = stats.Recycler;
             document.getElementById('dash-tst').innerText = stats.ToTest;
             majRepartition(inventaireTraite);
+            analyserAlertes(inventaireTraite);
+        }
+
+        
+        // ===== GESTES TACTILES MOBILE =====
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchEndX = 0;
+        let touchEndY = 0;
+        const minSwipeDistance = 50;
+
+        document.addEventListener('touchstart', function(e) {
+            touchStartX = e.changedTouches[0].screenX;
+            touchStartY = e.changedTouches[0].screenY;
+        }, { passive: true });
+
+        document.addEventListener('touchend', function(e) {
+            touchEndX = e.changedTouches[0].screenX;
+            touchEndY = e.changedTouches[0].screenY;
+            handleSwipe();
+        }, { passive: true });
+
+        function handleSwipe() {
+            const deltaX = touchEndX - touchStartX;
+            const deltaY = touchEndY - touchStartY;
+
+            // Swipe horizontal uniquement (pas vertical)
+            if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > minSwipeDistance) {
+                const tabs = ['liste', 'ajouter', 'calculateur', 'sauvegarde'];
+                const currentTab = localStorage.getItem('tab_actif') || 'liste';
+                const currentIdx = tabs.indexOf(currentTab);
+
+                if (deltaX > 0 && currentIdx > 0) {
+                    // Swipe droite -> onglet précédent
+                    ouvrirOnglet(tabs[currentIdx - 1]);
+                } else if (deltaX < 0 && currentIdx < tabs.length - 1) {
+                    // Swipe gauche -> onglet suivant
+                    ouvrirOnglet(tabs[currentIdx + 1]);
+                }
+            }
+        }
+
+        // Pull to refresh sur l'onglet liste
+        let pullStartY = 0;
+        let pullDistance = 0;
+        const pullThreshold = 80;
+
+        document.addEventListener('touchstart', function(e) {
+            if ((localStorage.getItem('tab_actif') || 'liste') === 'liste' && window.scrollY === 0) {
+                pullStartY = e.touches[0].clientY;
+            }
+        }, { passive: true });
+
+        document.addEventListener('touchmove', function(e) {
+            if (pullStartY > 0) {
+                pullDistance = e.touches[0].clientY - pullStartY;
+                if (pullDistance > 0 && pullDistance < 150) {
+                    // Feedback visuel optionnel
+                }
+            }
+        }, { passive: true });
+
+        document.addEventListener('touchend', function() {
+            if (pullDistance > pullThreshold) {
+                chargerPiles();
+                showToast('🔄 Actualisé');
+            }
+            pullStartY = 0;
+            pullDistance = 0;
+        }, { passive: true });
+
+        // Double-tap pour remonter en haut
+        let lastTap = 0;
+        document.addEventListener('touchend', function(e) {
+            const now = Date.now();
+            if (now - lastTap < 300) {
+                // Double tap détecté
+                if (e.target.closest('.tab-bar') || e.target.closest('h1')) {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            }
+            lastTap = now;
+        }, { passive: true });
+
+        // Vibration haptique sur actions importantes (si supporté)
+        function hapticFeedback(type = 'light') {
+            if ('vibrate' in navigator) {
+                const patterns = {
+                    light: [10],
+                    medium: [20],
+                    heavy: [30, 50, 30],
+                    success: [10, 50, 10],
+                    error: [50, 100, 50]
+                };
+                navigator.vibrate(patterns[type] || patterns.light);
+            }
+        }
+
+        // Ajouter haptic sur boutons importants
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.btn-primary') || e.target.closest('.wizard-btn.primary')) {
+                hapticFeedback('success');
+            } else if (e.target.closest('.delete-btn') || e.target.closest('.wizard-btn.danger')) {
+                hapticFeedback('error');
+            }
+        }, { passive: true });
+
+        // ===== FIN GESTES TACTILES =====
+
+        // ===== STATISTIQUES AVANCÉES =====
+        let statsVisible = false;
+        let statsTabActif = 'vue';
+
+        window.toggleStats = function() {
+            statsVisible = !statsVisible;
+            const content = document.getElementById('statsContent');
+            const icon = document.getElementById('statsToggleIcon');
+            if (content) {
+                content.style.display = statsVisible ? 'block' : 'none';
+                icon.textContent = statsVisible ? '▶' : '▼';
+            }
+        };
+
+        window.setStatsTab = function(tab) {
+            statsTabActif = tab;
+            document.querySelectorAll('.stats-tab').forEach(t => {
+                t.classList.toggle('active', t.dataset.tab === tab);
+            });
+            document.querySelectorAll('.stats-tab-content').forEach(c => {
+                c.classList.toggle('active', c.id === 'statsTab-' + tab);
+            });
+            calculerStats();
+        };
+
+        function calculerStats() {
+            const inventaire = JSON.parse(localStorage.getItem('stock_piles')) || [];
+            if (inventaire.length === 0) {
+                document.getElementById('statsContainer').style.display = 'none';
+                return;
+            }
+
+            document.getElementById('statsContainer').style.display = 'block';
+
+            // Préparer les données
+            const pilesAvecMesures = inventaire.filter(p => p.mesures && p.mesures.some(m => !estEnCours(m)));
+            const toutesMesures = [];
+            const parMarque = {};
+            const parEtat = { Excellent: 0, Bon: 0, Fatigue: 0, Recycler: 0, ToTest: 0 };
+            const parFormat = {};
+            const parMois = {};
+
+            inventaire.forEach(p => {
+                const mesuresOk = (p.mesures || []).filter(m => !estEnCours(m)).sort((a,b) => new Date(a.date) - new Date(b.date));
+                const derniere = mesuresOk[mesuresOk.length - 1];
+
+                // Par état
+                const etat = mesuresOk.length === 0 ? 'ToTest' : evaluerEtat(derniere.mah, p.mahNominal, p.type, p.format);
+                parEtat[etat]++;
+
+                // Par format
+                const fmt = p.format || 'Autre';
+                parFormat[fmt] = (parFormat[fmt] || 0) + 1;
+
+                // Par marque
+                const marque = p.marque || 'Sans marque';
+                if (!parMarque[marque]) {
+                    parMarque[marque] = { total: 0, avecMesures: 0, capacites: [], ratios: [], ris: [], etats: [] };
+                }
+                parMarque[marque].total++;
+                if (derniere) {
+                    parMarque[marque].avecMesures++;
+                    parMarque[marque].capacites.push(derniere.mah);
+                    if (p.mahNominal) parMarque[marque].ratios.push((derniere.mah / p.mahNominal) * 100);
+                    if (derniere.ir) parMarque[marque].ris.push(derniere.ir);
+                    parMarque[marque].etats.push(etat);
+                }
+
+                // Par mois (pour tendances)
+                mesuresOk.forEach(m => {
+                    const d = new Date(m.date);
+                    const mois = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+                    parMois[mois] = (parMois[mois] || 0) + 1;
+                    toutesMesures.push({ date: m.date, mah: m.mah, pile: p });
+                });
+            });
+
+            // Afficher selon l'onglet actif
+            switch(statsTabActif) {
+                case 'vue': afficherStatsVue(parEtat, parFormat, inventaire, pilesAvecMesures); break;
+                case 'marques': afficherStatsMarques(parMarque); break;
+                case 'tendances': afficherStatsTendances(parMois, inventaire); break;
+                case 'recuperation': afficherStatsRecuperation(inventaire); break;
+            }
+        }
+
+        function afficherStatsVue(parEtat, parFormat, inventaire, pilesAvecMesures) {
+            const total = inventaire.length;
+            const testees = pilesAvecMesures.length;
+            const aRecycler = parEtat.Recycler;
+            const excellentes = parEtat.Excellent;
+            const tauxTest = total > 0 ? Math.round((testees / total) * 100) : 0;
+            const tauxSatisfaisant = testees > 0 ? Math.round(((excellentes + parEtat.Bon) / testees) * 100) : 0;
+
+            // Grid cards
+            document.getElementById('statsVueGrid').innerHTML = `
+                <div class="stats-card">
+                    <div class="stats-card-value">${total}</div>
+                    <div class="stats-card-label">Total piles</div>
+                </div>
+                <div class="stats-card">
+                    <div class="stats-card-value info">${testees}</div>
+                    <div class="stats-card-label">Testées (${tauxTest}%)</div>
+                </div>
+                <div class="stats-card">
+                    <div class="stats-card-value">${excellentes + parEtat.Bon}</div>
+                    <div class="stats-card-label">Bon état (${tauxSatisfaisant}%)</div>
+                </div>
+                <div class="stats-card">
+                    <div class="stats-card-value warning">${parEtat.Fatigue}</div>
+                    <div class="stats-card-label">Fatiguées</div>
+                </div>
+                <div class="stats-card">
+                    <div class="stats-card-value danger">${aRecycler}</div>
+                    <div class="stats-card-label">À recycler</div>
+                </div>
+            `;
+
+            // Barres par état
+            const maxEtat = Math.max(...Object.values(parEtat));
+            const etatColors = { Excellent: 'excellent', Bon: 'bon', Fatigue: 'fatigue', Recycler: 'recycler', ToTest: 'totest' };
+            const etatLabels = { Excellent: 'Excellent', Bon: 'Bon', Fatigue: 'Fatigue', Recycler: 'Recycler', ToTest: 'À tester' };
+
+            document.getElementById('statsEtatsBars').innerHTML = Object.entries(parEtat).map(([etat, count]) => {
+                const pct = maxEtat > 0 ? (count / maxEtat) * 100 : 0;
+                return `
+                    <div class="stats-bar-container">
+                        <span class="stats-bar-label">${etatLabels[etat]}</span>
+                        <div class="stats-bar-wrapper">
+                            <div class="stats-bar-fill ${etatColors[etat]}" style="width: ${pct}%">${count}</div>
+                        </div>
+                        <span class="stats-bar-value">${count}</span>
+                    </div>
+                `;
+            }).join('');
+
+            // Chart par format
+            const formats = Object.entries(parFormat).sort((a,b) => b[1] - a[1]);
+            const maxFormat = Math.max(...formats.map(f => f[1]));
+
+            document.getElementById('statsFormatChart').innerHTML = `
+                <div class="stats-chart">
+                    ${formats.map(([fmt, count]) => `
+                        <div class="stats-chart-bar" style="height: ${(count/maxFormat)*100}%" data-value="${count}" title="${fmt}: ${count}"></div>
+                    `).join('')}
+                </div>
+                <div class="stats-chart-labels">
+                    ${formats.map(([fmt, count]) => `<div class="stats-chart-label">${fmt}</div>`).join('')}
+                </div>
+            `;
+        }
+
+        function afficherStatsMarques(parMarque) {
+            const tbody = document.querySelector('#statsMarquesTable tbody');
+            const marques = Object.entries(parMarque)
+                .filter(([_, data]) => data.avecMesures > 0)
+                .sort((a, b) => b[1].avecMesures - a[1].avecMesures);
+
+            if (marques.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="stats-empty">Aucune marque avec des mesures</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = marques.map(([marque, data]) => {
+                const capMoy = Math.round(data.capacites.reduce((a,b) => a+b, 0) / data.capacites.length);
+                const ratioMoy = data.ratios.length > 0 ? Math.round(data.ratios.reduce((a,b) => a+b, 0) / data.ratios.length) : null;
+                const riMoy = data.ris.length > 0 ? Math.round(data.ris.reduce((a,b) => a+b, 0) / data.ris.length) : null;
+
+                const etatCounts = { Excellent: 0, Bon: 0, Fatigue: 0, Recycler: 0 };
+                data.etats.forEach(e => etatCounts[e]++);
+                const etatDominant = Object.entries(etatCounts).sort((a,b) => b[1] - a[1])[0];
+                const etatBadge = etatDominant[0] === 'Excellent' || etatDominant[0] === 'Bon' ? 'success' : 
+                                  etatDominant[0] === 'Fatigue' ? 'warning' : 'danger';
+
+                return `
+                    <tr>
+                        <td><strong>${escapeHtml(marque)}</strong></td>
+                        <td>${data.total}</td>
+                        <td>${capMoy} mAh</td>
+                        <td>${ratioMoy !== null ? ratioMoy + '%' : '—'}</td>
+                        <td>${riMoy !== null ? riMoy + ' mΩ' : '—'}</td>
+                        <td><span class="stats-badge ${etatBadge}">${etatDominant[0]}</span></td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function afficherStatsTendances(parMois, inventaire) {
+            const mois = Object.keys(parMois).sort();
+            if (mois.length === 0) {
+                document.getElementById('statsTendancesChart').innerHTML = '<div class="stats-empty">Pas assez de données</div>';
+                return;
+            }
+
+            const maxCount = Math.max(...Object.values(parMois));
+
+            document.getElementById('statsTendancesChart').innerHTML = `
+                <div class="stats-chart" style="height: 120px;">
+                    ${mois.map(m => `
+                        <div class="stats-chart-bar" style="height: ${(parMois[m]/maxCount)*100}%" data-value="${parMois[m]}" title="${m}: ${parMois[m]} mesures"></div>
+                    `).join('')}
+                </div>
+                <div class="stats-chart-labels">
+                    ${mois.map(m => `<div class="stats-chart-label">${m.substring(2)}</div>`).join('')}
+                </div>
+                <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 10px;">
+                    Total: ${Object.values(parMois).reduce((a,b) => a+b, 0)} mesures sur ${mois.length} mois
+                </p>
+            `;
+
+            // Piles les plus anciennes
+            const avecAnnee = inventaire
+                .filter(p => p.annee)
+                .sort((a, b) => String(a.annee).localeCompare(String(b.annee)))
+                .slice(0, 5);
+
+            document.getElementById('statsAnciennes').innerHTML = avecAnnee.length > 0 ? `
+                <table class="stats-table">
+                    <thead><tr><th>Pile</th><th>Année</th><th>Âge</th><th>État</th></tr></thead>
+                    <tbody>
+                        ${avecAnnee.map(p => {
+                            const age = new Date().getFullYear() - parseInt(String(p.annee).substring(0,4));
+                            const mesures = (p.mesures || []).filter(m => !estEnCours(m));
+                            const etat = mesures.length > 0 ? evaluerEtat(mesures[mesures.length-1].mah, p.mahNominal, p.type, p.format) : 'ToTest';
+                            return `<tr>
+                                <td>#${escapeHtml(p.id)} ${escapeHtml(p.marque || '')}</td>
+                                <td>${escapeHtml(p.annee)}</td>
+                                <td>${age} ans</td>
+                                <td><span class="stats-badge ${etat === 'Excellent' || etat === 'Bon' ? 'success' : etat === 'Fatigue' ? 'warning' : 'danger'}">${etat}</span></td>
+                            </tr>`;
+                        }).join('')}
+                    </tbody>
+                </table>
+            ` : '<div class="stats-empty">Aucune date enregistrée</div>';
+        }
+
+        function afficherStatsRecuperation(inventaire) {
+            // Analyser les break-ins et leur succès
+            let breakInTentes = 0;
+            let breakInReussis = 0;
+            let breakInEchecs = 0;
+            const dureeVieParMarque = {};
+
+            inventaire.forEach(p => {
+                const mesures = (p.mesures || []).filter(m => !estEnCours(m)).sort((a,b) => new Date(a.date) - new Date(b.date));
+                const aBreakIn = mesures.some(m => m.mode === 'breakin');
+                const marque = p.marque || 'Autre';
+
+                if (!dureeVieParMarque[marque]) {
+                    dureeVieParMarque[marque] = { total: 0, ages: [], etats: [] };
+                }
+                dureeVieParMarque[marque].total++;
+
+                if (p.annee) {
+                    const age = new Date().getFullYear() - parseInt(String(p.annee).substring(0,4));
+                    dureeVieParMarque[marque].ages.push(age);
+                }
+
+                const derniere = mesures[mesures.length - 1];
+                if (derniere) {
+                    const etat = evaluerEtat(derniere.mah, p.mahNominal, p.type, p.format);
+                    dureeVieParMarque[marque].etats.push(etat);
+                }
+
+                if (aBreakIn && mesures.length >= 2) {
+                    breakInTentes++;
+                    const idxBreakIn = mesures.findIndex(m => m.mode === 'breakin');
+                    if (idxBreakIn < mesures.length - 1) {
+                        const avantBreakIn = mesures.slice(0, idxBreakIn);
+                        const apresBreakIn = mesures.slice(idxBreakIn);
+                        const capAvant = avantBreakIn.length > 0 ? avantBreakIn[avantBreakIn.length-1].mah : 0;
+                        const capApres = apresBreakIn[apresBreakIn.length-1].mah;
+
+                        if (capApres > capAvant * 1.10) breakInReussis++;
+                        else breakInEchecs++;
+                    }
+                }
+            });
+
+            const tauxRecup = breakInTentes > 0 ? Math.round((breakInReussis / breakInTentes) * 100) : null;
+
+            document.getElementById('statsRecupGrid').innerHTML = `
+                <div class="stats-card">
+                    <div class="stats-card-value info">${breakInTentes}</div>
+                    <div class="stats-card-label">Break-in tentés</div>
+                </div>
+                <div class="stats-card">
+                    <div class="stats-card-value">${breakInReussis}</div>
+                    <div class="stats-card-label">Réussis (+10%)</div>
+                </div>
+                <div class="stats-card">
+                    <div class="stats-card-value ${breakInEchecs > breakInReussis ? 'danger' : 'warning'}">${breakInEchecs}</div>
+                    <div class="stats-card-label">Échecs</div>
+                </div>
+                <div class="stats-card">
+                    <div class="stats-card-value ${tauxRecup !== null && tauxRecup >= 50 ? '' : 'warning'}">${tauxRecup !== null ? tauxRecup + '%' : '—'}</div>
+                    <div class="stats-card-label">Taux récupération</div>
+                </div>
+            `;
+
+            // Durée de vie par marque
+            const marquesAvecAges = Object.entries(dureeVieParMarque)
+                .filter(([_, data]) => data.ages.length > 0)
+                .sort((a, b) => {
+                    const ageA = a[1].ages.reduce((x,y) => x+y, 0) / a[1].ages.length;
+                    const ageB = b[1].ages.reduce((x,y) => x+y, 0) / b[1].ages.length;
+                    return ageB - ageA;
+                });
+
+            document.getElementById('statsDureeVie').innerHTML = marquesAvecAges.length > 0 ? `
+                <table class="stats-table">
+                    <thead><tr><th>Marque</th><th>Piles</th><th>Âge moyen</th><th>État dominant</th></tr></thead>
+                    <tbody>
+                        ${marquesAvecAges.map(([marque, data]) => {
+                            const ageMoy = Math.round(data.ages.reduce((a,b) => a+b, 0) / data.ages.length);
+                            const etatCounts = { Excellent: 0, Bon: 0, Fatigue: 0, Recycler: 0 };
+                            data.etats.forEach(e => etatCounts[e]++);
+                            const etatDom = Object.entries(etatCounts).sort((a,b) => b[1] - a[1])[0];
+                            return `<tr>
+                                <td><strong>${escapeHtml(marque)}</strong></td>
+                                <td>${data.total}</td>
+                                <td>${ageMoy} ans</td>
+                                <td><span class="stats-badge ${etatDom[0] === 'Excellent' || etatDom[0] === 'Bon' ? 'success' : etatDom[0] === 'Fatigue' ? 'warning' : 'danger'}">${etatDom[0]}</span></td>
+                            </tr>`;
+                        }).join('')}
+                    </tbody>
+                </table>
+            ` : '<div class="stats-empty">Pas assez de données sur les dates</div>';
+        }
+
+        // Appeler calculerStats après chargerPiles
+        const originalChargerPiles = window.chargerPiles;
+        window.chargerPiles = function() {
+            originalChargerPiles();
+            calculerStats();
+        };
+
+        // ===== WIZARD RÉCUPÉRATION AVANCÉE =====
+        let wizardPileIdx = null;
+        let wizardStep = 0;
+        let wizardData = {
+            breakInDone: false,
+            cyclesDone: 0,
+            capacites: [],
+            v24: null
+        };
+
+        window.ouvrirWizard = function(pileIdx = null) {
+            wizardPileIdx = pileIdx;
+            wizardStep = 0;
+            wizardData = { breakInDone: false, cyclesDone: 0, capacites: [], v24: null };
+
+            // Remplir le select
+            const select = document.getElementById('wizardPileSelect');
+            const inventaire = JSON.parse(localStorage.getItem('stock_piles')) || [];
+            select.innerHTML = '<option value="">-- Choisir une pile --</option>';
+            inventaire.forEach((p, idx) => {
+                const etat = p.mesures && p.mesures.length > 0 ? 
+                    evaluerEtat(p.mesures[p.mesures.length-1].mah, p.mahNominal, p.type, p.format) : 'ToTest';
+                const etatIcon = { 'Excellent': '🟢', 'Bon': '🟢', 'Fatigue': '🟡', 'Recycler': '🔴', 'ToTest': '⚪' }[etat] || '⚪';
+                select.innerHTML += `<option value="${idx}">${etatIcon} #${p.id} ${p.marque || ''} (${p.format})</option>`;
+            });
+
+            if (pileIdx !== null) {
+                select.value = pileIdx;
+                wizardAnalyserPile(pileIdx);
+            }
+
+            document.getElementById('wizardOverlay').style.display = 'block';
+            wizardShowStep(0);
+        };
+
+        window.fermerWizard = function() {
+            document.getElementById('wizardOverlay').style.display = 'none';
+        };
+
+        window.wizardShowStep = function(step) {
+            wizardStep = step;
+            for (let i = 0; i <= 4; i++) {
+                document.getElementById('wizardStep' + i).classList.toggle('active', i === step);
+                const progress = document.getElementById('progress' + (i + 1));
+                if (progress) progress.style.width = i <= step ? '100%' : '0%';
+            }
+        };
+
+        document.getElementById('wizardPileSelect').addEventListener('change', function() {
+            const idx = this.value;
+            document.getElementById('btnWizardStart').disabled = !idx;
+            if (idx) wizardAnalyserPile(parseInt(idx));
+        });
+
+        function wizardAnalyserPile(idx) {
+            const inventaire = JSON.parse(localStorage.getItem('stock_piles')) || [];
+            const p = inventaire[idx];
+            if (!p) return;
+
+            const mesures = (p.mesures || []).filter(m => !estEnCours(m)).sort((a,b) => new Date(a.date) - new Date(b.date));
+            const derniere = mesures[mesures.length - 1];
+            const ratio = derniere && p.mahNominal ? Math.round((derniere.mah / p.mahNominal) * 100) : null;
+
+            let html = '<div class="wizard-params"><div class="wizard-params-title">📊 Analyse</div>';
+            html += `<div class="wizard-param-row"><span class="wizard-param-label">Pile</span><span class="wizard-param-value">#${p.id} ${p.marque || ''}</span></div>`;
+            html += `<div class="wizard-param-row"><span class="wizard-param-label">Format</span><span class="wizard-param-value">${p.format} ${p.type}</span></div>`;
+            html += `<div class="wizard-param-row"><span class="wizard-param-label">Capacité nominale</span><span class="wizard-param-value">${p.mahNominal || '?'} mAh</span></div>`;
+            if (derniere) {
+                html += `<div class="wizard-param-row"><span class="wizard-param-label">Dernier relevé</span><span class="wizard-param-value">${derniere.mah} mAh (${ratio}%)</span></div>`;
+                if (derniere.ir) html += `<div class="wizard-param-row"><span class="wizard-param-label">RI</span><span class="wizard-param-value">${derniere.ir} mΩ</span></div>`;
+            } else {
+                html += `<div class="wizard-param-row"><span class="wizard-param-label">État</span><span class="wizard-param-value">Jamais testée</span></div>`;
+            }
+
+            // Recommandation
+            let reco = '';
+            if (!derniere) reco = 'Commencer par un Cycle de mesure';
+            else if (ratio < 40) reco = 'Tentative de récupération peu probable (< 40%)';
+            else if (ratio < 60) reco = 'Break-in recommandé puis Cycles';
+            else if (ratio < 80) reco = 'Cycles suffisants probablement';
+            else reco = 'Pile en bon état - pas de récupération nécessaire';
+            html += `<div class="wizard-param-row"><span class="wizard-param-label">Recommandation</span><span class="wizard-param-value">${reco}</span></div>`;
+            html += '</div>';
+
+            document.getElementById('wizardPileInfo').innerHTML = html;
+        }
+
+        window.wizardAnalyser = function() {
+            const idx = document.getElementById('wizardPileSelect').value;
+            if (!idx) return;
+            wizardPileIdx = parseInt(idx);
+            wizardShowStep(1);
+            wizardPreparerBreakIn();
+        };
+
+        function wizardPreparerBreakIn() {
+            const inventaire = JSON.parse(localStorage.getItem('stock_piles')) || [];
+            const p = inventaire[wizardPileIdx];
+            if (!p) return;
+
+            const mah = p.mahNominal || 1900;
+            const c01 = (mah * 0.1 / 1000).toFixed(2);
+            const c02 = (mah * 0.2 / 1000).toFixed(2);
+
+            document.getElementById('wizardBreakInParams').innerHTML = `
+                <div class="wizard-params-title">⚙️ Paramètres Break-in (SkyRC NC3000 Pro)</div>
+                <div class="wizard-param-row"><span class="wizard-param-label">Mode</span><span class="wizard-param-value">Break-in (Rôdage)</span></div>
+                <div class="wizard-param-row"><span class="wizard-param-label">Capacité</span><span class="wizard-param-value">${mah} mAh (exact)</span></div>
+                <div class="wizard-param-row"><span class="wizard-param-label">Courant charge</span><span class="wizard-param-value">${c01} A (0.1C)</span></div>
+                <div class="wizard-param-row"><span class="wizard-param-label">Courant décharge</span><span class="wizard-param-value">${c02} A (0.2C)</span></div>
+                <div class="wizard-param-row"><span class="wizard-param-label">Durée charge</span><span class="wizard-param-value">16h00</span></div>
+                <div class="wizard-param-row"><span class="wizard-param-label">Séquence</span><span class="wizard-param-value">C→D→C</span></div>
+                <div class="wizard-param-row"><span class="wizard-param-label">Repos C/D</span><span class="wizard-param-value">10 min</span></div>
+            `;
+        }
+
+        window.wizardLancerBreakIn = function() {
+            // Ouvrir la modale d'ajout avec mode break-in pré-sélectionné
+            ouvrirModaleAjoutMesure(wizardPileIdx);
+            // Pré-sélectionner le mode break-in si le champ existe
+            setTimeout(() => {
+                const modeSelect = document.getElementById('modeCycle');
+                if (modeSelect) modeSelect.value = 'breakin';
+            }, 100);
+            wizardData.breakInDone = true;
+            document.getElementById('wizardBreakInTimer').style.display = 'block';
+            wizardShowStep(2);
+        };
+
+        window.wizardSkipBreakIn = function() {
+            wizardShowStep(2);
+        };
+
+        window.wizardLancerCycle = function() {
+            ouvrirModaleAjoutMesure(wizardPileIdx);
+            setTimeout(() => {
+                const modeSelect = document.getElementById('modeCycle');
+                if (modeSelect) modeSelect.value = 'cycle';
+            }, 100);
+            wizardData.cyclesDone++;
+            document.getElementById('check' + wizardData.cyclesDone).classList.add('done');
+
+            if (wizardData.cyclesDone >= 3) {
+                wizardShowStep(3);
+            }
+        };
+
+        window.wizardSkipCycles = function() {
+            wizardShowStep(3);
+        };
+
+        window.wizardNoterT24 = function() {
+            const inventaire = JSON.parse(localStorage.getItem('stock_piles')) || [];
+            const p = inventaire[wizardPileIdx];
+            if (!p || !p.mesures || p.mesures.length === 0) return;
+
+            const dernierIdx = p.mesures.length - 1;
+            ouvrirModaleMesure(wizardPileIdx, dernierIdx, true);
+
+            // Attendre la sauvegarde puis analyser
+            setTimeout(() => {
+                wizardAnalyserResultat();
+            }, 500);
+        };
+
+        function wizardAnalyserResultat() {
+            const inventaire = JSON.parse(localStorage.getItem('stock_piles')) || [];
+            const p = inventaire[wizardPileIdx];
+            if (!p) return;
+
+            const mesures = (p.mesures || []).filter(m => !estEnCours(m)).sort((a,b) => new Date(a.date) - new Date(b.date));
+            const derniere = mesures[mesures.length - 1];
+            if (!derniere) return;
+
+            const ratio = p.mahNominal ? Math.round((derniere.mah / p.mahNominal) * 100) : 0;
+            const v24 = derniere.volt24h;
+
+            let resultHtml = '';
+            let decision = '';
+            let icon = '';
+
+            // Analyse capacité
+            if (ratio >= 80) {
+                icon = '🟢';
+                decision = 'EXCELLENT - Pile récupérée !';
+            } else if (ratio >= 60) {
+                icon = '🟢';
+                decision = 'BON - Pile utilisable';
+            } else if (ratio >= 40) {
+                icon = '🟡';
+                decision = 'FATIGUÉ - Usage faible conso uniquement';
+            } else {
+                icon = '🔴';
+                decision = 'RECYCLER - Capacité insuffisante';
+            }
+
+            // Ajustement selon autodécharge
+            if (v24) {
+                if (v24 < 1.20) {
+                    icon = '🔴';
+                    decision = 'RECYCLER - Fuite interne détectée';
+                } else if (v24 < 1.28 && ratio >= 60) {
+                    icon = '🟡';
+                    decision = 'FATIGUÉ - Autodécharge rapide';
+                }
+            }
+
+            resultHtml = `
+                <div class="wizard-result-icon">${icon}</div>
+                <div class="wizard-result-title">${decision}</div>
+                <div class="wizard-result-desc">
+                    <strong>Capacité finale :</strong> ${derniere.mah} mAh (${ratio}% du nominal)<br>
+                    ${derniere.ir ? `<strong>RI :</strong> ${derniere.ir} mΩ<br>` : ''}
+                    ${v24 ? `<strong>Tension 24h :</strong> ${v24} V<br>` : ''}
+                    <strong>Cycles effectués :</strong> ${wizardData.cyclesDone}<br>
+                    <strong>Break-in :</strong> ${wizardData.breakInDone ? 'Oui' : 'Non'}
+                </div>
+            `;
+
+            document.getElementById('wizardResult').innerHTML = resultHtml;
+            wizardShowStep(4);
+        }
+
+        window.wizardPrev = function(step) {
+            wizardShowStep(step);
+        };
+
+        window.wizardRestart = function() {
+            wizardData = { breakInDone: false, cyclesDone: 0, capacites: [], v24: null };
+            document.getElementById('wizardPileSelect').value = '';
+            document.getElementById('wizardPileInfo').innerHTML = '';
+            document.getElementById('btnWizardStart').disabled = true;
+            for (let i = 1; i <= 3; i++) {
+                document.getElementById('check' + i).classList.remove('done');
+            }
+            document.getElementById('wizardBreakInTimer').style.display = 'none';
+            wizardShowStep(0);
+        };
+
+        // ===== BASE DE DONNÉES DE RÉFÉRENCE =====
+        const REF_DB = [
+            // === PANASONIC ENELLOOP (LSD - Low Self-Discharge) ===
+            { marque: "Eneloop", modele: "Standard (BK-3MCC)", format: "AA", type: "NiMH", chimie: "LSD", capacite: 1900, voltage: 1.2, cycles: 2100, courantCharge: "0.5C-1C", courantDecharge: "0.2C", notes: "Génération standard, blanche", anneeMin: 2005 },
+            { marque: "Eneloop", modele: "Standard (BK-4MCC)", format: "AAA", type: "NiMH", chimie: "LSD", capacite: 750, voltage: 1.2, cycles: 2100, courantCharge: "0.5C-1C", courantDecharge: "0.2C", notes: "Génération standard, blanche", anneeMin: 2005 },
+            { marque: "Eneloop", modele: "Pro (BK-3HCD)", format: "AA", type: "NiMH", chimie: "LSD", capacite: 2500, voltage: 1.2, cycles: 500, courantCharge: "0.5C-1C", courantDecharge: "0.2C", notes: "Haute capacité, noire", anneeMin: 2010 },
+            { marque: "Eneloop", modele: "Pro (BK-4HCD)", format: "AAA", type: "NiMH", chimie: "LSD", capacite: 930, voltage: 1.2, cycles: 500, courantCharge: "0.5C-1C", courantDecharge: "0.2C", notes: "Haute capacité, noire", anneeMin: 2010 },
+            { marque: "Eneloop", modele: "Lite (BK-3LCC)", format: "AA", type: "NiMH", chimie: "LSD", capacite: 1000, voltage: 1.2, cycles: 3000, courantCharge: "0.5C-1C", courantDecharge: "0.2C", notes: "Économique, moins de cycles", anneeMin: 2011 },
+            { marque: "Eneloop", modele: "Lite (BK-4LCC)", format: "AAA", type: "NiMH", chimie: "LSD", capacite: 550, voltage: 1.2, cycles: 3000, courantCharge: "0.5C-1C", courantDecharge: "0.2C", notes: "Économique", anneeMin: 2011 },
+            { marque: "Eneloop", modele: "XX (BK-3MCCE)", format: "AA", type: "NiMH", chimie: "LSD", capacite: 2450, voltage: 1.2, cycles: 500, courantCharge: "0.5C-1C", courantDecharge: "0.2C", notes: "Ancienne génération Pro", anneeMin: 2009 },
+
+            // === PANASONIC ÉVOLTA ===
+            { marque: "Panasonic", modele: "Evolta (HHR-3MRT)", format: "AA", type: "NiMH", chimie: "Standard", capacite: 2000, voltage: 1.2, cycles: 1800, courantCharge: "0.5C-1C", courantDecharge: "0.2C", notes: "Standard", anneeMin: 2010 },
+            { marque: "Panasonic", modele: "Evolta (HHR-4MRT)", format: "AAA", type: "NiMH", chimie: "Standard", capacite: 800, voltage: 1.2, cycles: 1800, courantCharge: "0.5C-1C", courantDecharge: "0.2C", notes: "Standard", anneeMin: 2010 },
+            { marque: "Panasonic", modele: "Evolta Premium", format: "AA", type: "NiMH", chimie: "LSD", capacite: 2100, voltage: 1.2, cycles: 2000, courantCharge: "0.5C-1C", courantDecharge: "0.2C", notes: "LSD amélioré", anneeMin: 2015 },
+
+            // === FUJITSU (anciennes usines FDK) ===
+            { marque: "Fujitsu", modele: "FDK HR-3UTC", format: "AA", type: "NiMH", chimie: "LSD", capacite: 1900, voltage: 1.2, cycles: 2100, courantCharge: "0.5C-1C", courantDecharge: "0.2C", notes: "Équivalent Eneloop gén. 2", anneeMin: 2010 },
+            { marque: "Fujitsu", modele: "FDK HR-4UTC", format: "AAA", type: "NiMH", chimie: "LSD", capacite: 750, voltage: 1.2, cycles: 2100, courantCharge: "0.5C-1C", courantDecharge: "0.2C", notes: "Équivalent Eneloop gén. 2", anneeMin: 2010 },
+            { marque: "Fujitsu", modele: "FDK HR-3UTCEX", format: "AA", type: "NiMH", chimie: "LSD", capacite: 2450, voltage: 1.2, cycles: 500, courantCharge: "0.5C-1C", courantDecharge: "0.2C", notes: "Haute capacité", anneeMin: 2012 },
+
+            // === IKEA LADDA ===
+            { marque: "Ikea", modele: "Ladda 2450", format: "AA", type: "NiMH", chimie: "LSD", capacite: 2450, voltage: 1.2, cycles: 1000, courantCharge: "0.5C-1C", courantDecharge: "0.2C", notes: "Fait par FDK (Eneloop Pro)", anneeMin: 2016 },
+            { marque: "Ikea", modele: "Ladda 1000", format: "AAA", type: "NiMH", chimie: "LSD", capacite: 1000, voltage: 1.2, cycles: 1000, courantCharge: "0.5C-1C", courantDecharge: "0.2C", notes: "Fait par FDK", anneeMin: 2016 },
+            { marque: "Ikea", modele: "Ladda 750", format: "AAA", type: "NiMH", chimie: "LSD", capacite: 750, voltage: 1.2, cycles: 1000, courantCharge: "0.5C-1C", courantDecharge: "0.2C", notes: "Fait par FDK (Eneloop std)", anneeMin: 2016 },
+            { marque: "Ikea", modele: "Ladda 1900", format: "AA", type: "NiMH", chimie: "LSD", capacite: 1900, voltage: 1.2, cycles: 1000, courantCharge: "0.5C-1C", courantDecharge: "0.2C", notes: "Fait par FDK (Eneloop std)", anneeMin: 2016 },
+
+            // === AMAZON BASICS ===
+            { marque: "Amazon Basics", modele: "AA High-Capacity", format: "AA", type: "NiMH", chimie: "LSD", capacite: 2400, voltage: 1.2, cycles: 500, courantCharge: "0.5C-1C", courantDecharge: "0.2C", notes: "Fait par FDK", anneeMin: 2017 },
+            { marque: "Amazon Basics", modele: "AAA High-Capacity", format: "AAA", type: "NiMH", chimie: "LSD", capacite: 850, voltage: 1.2, cycles: 500, courantCharge: "0.5C-1C", courantDecharge: "0.2C", notes: "Fait par FDK", anneeMin: 2017 },
+            { marque: "Amazon Basics", modele: "AA Standard", format: "AA", type: "NiMH", chimie: "LSD", capacite: 2000, voltage: 1.2, cycles: 1000, courantCharge: "0.5C-1C", courantDecharge: "0.2C", notes: "Fait par FDK", anneeMin: 2017 },
+
+            // === VARTA ===
+            { marque: "Varta", modele: "Recharge Accu Power", format: "AA", type: "NiMH", chimie: "LSD", capacite: 2600, voltage: 1.2, cycles: 500, courantCharge: "0.5C-1C", courantDecharge: "0.2C", notes: "Haute capacité", anneeMin: 2015 },
+            { marque: "Varta", modele: "Recharge Accu Power", format: "AAA", type: "NiMH", chimie: "LSD", capacite: 1000, voltage: 1.2, cycles: 500, courantCharge: "0.5C-1C", courantDecharge: "0.2C", notes: "Haute capacité", anneeMin: 2015 },
+            { marque: "Varta", modele: "Recharge Accu Endless", format: "AA", type: "NiMH", chimie: "LSD", capacite: 2100, voltage: 1.2, cycles: 3500, courantCharge: "0.5C-1C", courantDecharge: "0.2C", notes: "Très longue durée de vie", anneeMin: 2018 },
+            { marque: "Varta", modele: "Recharge Accu Endless", format: "AAA", type: "NiMH", chimie: "LSD", capacite: 800, voltage: 1.2, cycles: 3500, courantCharge: "0.5C-1C", courantDecharge: "0.2C", notes: "Très longue durée de vie", anneeMin: 2018 },
+
+            // === GP BATTERIES ===
+            { marque: "GP", modele: "ReCyko Pro", format: "AA", type: "NiMH", chimie: "LSD", capacite: 2100, voltage: 1.2, cycles: 1500, courantCharge: "0.5C-1C", courantDecharge: "0.2C", notes: "Professionnel", anneeMin: 2015 },
+            { marque: "GP", modele: "ReCyko", format: "AA", type: "NiMH", chimie: "LSD", capacite: 2000, voltage: 1.2, cycles: 1000, courantCharge: "0.5C-1C", courantDecharge: "0.2C", notes: "Grand public", anneeMin: 2015 },
+            { marque: "GP", modele: "ReCyko", format: "AAA", type: "NiMH", chimie: "LSD", capacite: 850, voltage: 1.2, cycles: 1000, courantCharge: "0.5C-1C", courantDecharge: "0.2C", notes: "Grand public", anneeMin: 2015 },
+
+            // === SANYO (anciennes Eneloop) ===
+            { marque: "Sanyo", modele: "Eneloop HR-3UTGA", format: "AA", type: "NiMH", chimie: "LSD", capacite: 1900, voltage: 1.2, cycles: 1500, courantCharge: "0.5C-1C", courantDecharge: "0.2C", notes: "Génération 2 (2009-2012)", anneeMin: 2009 },
+            { marque: "Sanyo", modele: "Eneloop HR-4UTGA", format: "AAA", type: "NiMH", chimie: "LSD", capacite: 750, voltage: 1.2, cycles: 1500, courantCharge: "0.5C-1C", courantDecharge: "0.2C", notes: "Génération 2", anneeMin: 2009 },
+            { marque: "Sanyo", modele: "Eneloop HR-3UTG", format: "AA", type: "NiMH", chimie: "LSD", capacite: 2000, voltage: 1.2, cycles: 1000, courantCharge: "0.5C-1C", courantDecharge: "0.2C", notes: "Génération 1 (2005-2009)", anneeMin: 2005 },
+
+            // === DURACELL ===
+            { marque: "Duracell", modele: "Recharge Ultra", format: "AA", type: "NiMH", chimie: "LSD", capacite: 2500, voltage: 1.2, cycles: 400, courantCharge: "0.5C-1C", courantDecharge: "0.2C", notes: "Haute capacité", anneeMin: 2015 },
+            { marque: "Duracell", modele: "Recharge Ultra", format: "AAA", type: "NiMH", chimie: "LSD", capacite: 900, voltage: 1.2, cycles: 400, courantCharge: "0.5C-1C", courantDecharge: "0.2C", notes: "Haute capacité", anneeMin: 2015 },
+            { marque: "Duracell", modele: "Recharge Plus", format: "AA", type: "NiMH", chimie: "LSD", capacite: 2000, voltage: 1.2, cycles: 500, courantCharge: "0.5C-1C", courantDecharge: "0.2C", notes: "Standard", anneeMin: 2015 },
+            { marque: "Duracell", modele: "Recharge Plus", format: "AAA", type: "NiMH", chimie: "LSD", capacite: 800, voltage: 1.2, cycles: 500, courantCharge: "0.5C-1C", courantDecharge: "0.2C", notes: "Standard", anneeMin: 2015 },
+            { marque: "Duracell", modele: "Rechargeable (2004)", format: "AAA", type: "NiMH", chimie: "Standard", capacite: 1000, voltage: 1.2, cycles: 1000, courantCharge: "0.5C-1C", courantDecharge: "0.2C", notes: "Ancienne génération pré-LSD", anneeMin: 2004 },
+
+            // === ENERGIZER ===
+            { marque: "Energizer", modele: "Recharge Extreme", format: "AA", type: "NiMH", chimie: "LSD", capacite: 2300, voltage: 1.2, cycles: 500, courantCharge: "0.5C-1C", courantDecharge: "0.2C", notes: "Haute capacité", anneeMin: 2015 },
+            { marque: "Energizer", modele: "Recharge Extreme", format: "AAA", type: "NiMH", chimie: "LSD", capacite: 800, voltage: 1.2, cycles: 500, courantCharge: "0.5C-1C", courantDecharge: "0.2C", notes: "Haute capacité", anneeMin: 2015 },
+            { marque: "Energizer", modele: "Recharge Power Plus", format: "AA", type: "NiMH", chimie: "LSD", capacite: 2000, voltage: 1.2, cycles: 700, courantCharge: "0.5C-1C", courantDecharge: "0.2C", notes: "Standard", anneeMin: 2015 },
+
+            // === ANSMANN ===
+            { marque: "Ansmann", modele: "MaxE Pro", format: "AA", type: "NiMH", chimie: "LSD", capacite: 2000, voltage: 1.2, cycles: 2000, courantCharge: "0.5C-1C", courantDecharge: "0.2C", notes: "Professionnel", anneeMin: 2015 },
+            { marque: "Ansmann", modele: "MaxE Pro", format: "AAA", type: "NiMH", chimie: "LSD", capacite: 800, voltage: 1.2, cycles: 2000, courantCharge: "0.5C-1C", courantDecharge: "0.2C", notes: "Professionnel", anneeMin: 2015 },
+
+            // === XTAR ===
+            { marque: "XTAR", modele: "AA 2600", format: "AA", type: "NiMH", chimie: "LSD", capacite: 2600, voltage: 1.2, cycles: 500, courantCharge: "0.5C-1C", courantDecharge: "0.2C", notes: "Haute capacité", anneeMin: 2018 },
+            { marque: "XTAR", modele: "AAA 1200", format: "AAA", type: "NiMH", chimie: "LSD", capacite: 1200, voltage: 1.2, cycles: 500, courantCharge: "0.5C-1C", courantDecharge: "0.2C", notes: "Haute capacité", anneeMin: 2018 },
+
+            // === NITECORE ===
+            { marque: "Nitecore", modele: "NL1826R", format: "AA", type: "NiMH", chimie: "LSD", capacite: 2600, voltage: 1.2, cycles: 500, courantCharge: "0.5C-1C", courantDecharge: "0.2C", notes: "Haute capacité", anneeMin: 2019 },
+
+            // === LI-ION 1.5V (AA/AAA régulés) ===
+            { marque: "XTAR", modele: "1.5V Li-ion AA", format: "AA", type: "Li-ion", chimie: "1.5V Regulé", capacite: 3300, voltage: 1.5, cycles: 1200, courantCharge: "0.5C", courantDecharge: "1C", notes: "mWh réels ~3000 (perte convertisseur)", anneeMin: 2020 },
+            { marque: "XTAR", modele: "1.5V Li-ion AAA", format: "AAA", type: "Li-ion", chimie: "1.5V Regulé", capacite: 1200, voltage: 1.5, cycles: 1200, courantCharge: "0.5C", courantDecharge: "1C", notes: "mWh réels ~1100", anneeMin: 2020 },
+            { marque: "Nitecore", modele: "NL2145LTHPi", format: "AA", type: "Li-ion", chimie: "1.5V Regulé", capacite: 4500, voltage: 1.5, cycles: 500, courantCharge: "0.5C", courantDecharge: "1C", notes: "Haute capacité Li-ion 1.5V", anneeMin: 2021 },
+            { marque: "Kentli", modele: "1.5V AA", format: "AA", type: "Li-ion", chimie: "1.5V Regulé", capacite: 3000, voltage: 1.5, cycles: 1000, courantCharge: "0.5C", courantDecharge: "1C", notes: "Ancienne génération", anneeMin: 2015 },
+
+            // === NIMH HAUTE CAPACITÉ (non-LSD) ===
+            { marque: "Generic", modele: "Ultra High 2700", format: "AA", type: "NiMH", chimie: "Standard", capacite: 2700, voltage: 1.2, cycles: 300, courantCharge: "0.5C-1C", courantDecharge: "0.2C", notes: "Haute capacité mais forte autodécharge", anneeMin: 2010 },
+            { marque: "Generic", modele: "Ultra High 1000", format: "AAA", type: "NiMH", chimie: "Standard", capacite: 1000, voltage: 1.2, cycles: 300, courantCharge: "0.5C-1C", courantDecharge: "0.2C", notes: "Haute capacité mais forte autodécharge", anneeMin: 2010 },
+
+            // === ANCIENNES NiCd ===
+            { marque: "Sanyo", modele: "Cadnica KR-3AS", format: "AA", type: "NiCd", chimie: "Standard", capacite: 600, voltage: 1.2, cycles: 500, courantCharge: "0.5C-1C", courantDecharge: "0.2C", notes: "Ancienne génération NiCd", anneeMin: 1990 },
+            { marque: "Panasonic", modele: "NiCd AA", format: "AA", type: "NiCd", chimie: "Standard", capacite: 700, voltage: 1.2, cycles: 500, courantCharge: "0.5C-1C", courantDecharge: "0.2C", notes: "Ancienne génération", anneeMin: 1995 },
+        ];
+
+        let refDbFilterActif = 'all';
+        let refDbSelection = null;
+
+        window.toggleRefDb = function() {
+            const content = document.getElementById('refdbContent');
+            const toggle = document.getElementById('refdbToggle');
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                toggle.textContent = '▼';
+            } else {
+                content.style.display = 'none';
+                toggle.textContent = '▶';
+            }
+        };
+
+        window.setRefDbFilter = function(filter) {
+            refDbFilterActif = filter;
+            document.querySelectorAll('.refdb-filter').forEach(f => {
+                f.classList.toggle('active', f.dataset.filter === filter);
+            });
+            filtrerRefDb();
+        };
+
+        window.filtrerRefDb = function() {
+            const search = document.getElementById('refdbSearch').value.toLowerCase().trim();
+            const grid = document.getElementById('refdbGrid');
+
+            let results = REF_DB.filter(item => {
+                // Filtre par catégorie
+                if (refDbFilterActif === 'AA' && item.format !== 'AA') return false;
+                if (refDbFilterActif === 'AAA' && item.format !== 'AAA') return false;
+                if (refDbFilterActif === 'NiMH' && item.type !== 'NiMH') return false;
+                if (refDbFilterActif === 'LSD' && item.chimie !== 'LSD') return false;
+                if (refDbFilterActif === 'HighCap' && item.capacite < 2000) return false;
+
+                // Recherche texte
+                if (search) {
+                    const txt = `${item.marque} ${item.modele} ${item.format} ${item.type} ${item.chimie} ${item.capacite}`.toLowerCase();
+                    if (!txt.includes(search)) return false;
+                }
+                return true;
+            });
+
+            if (results.length === 0) {
+                grid.innerHTML = '<div class="refdb-empty">Aucune pile trouvée dans la base de données</div>';
+                return;
+            }
+
+            grid.innerHTML = results.map((item, idx) => {
+                const isSelected = refDbSelection && refDbSelection.marque === item.marque && refDbSelection.modele === item.modele;
+                return `
+                    <div class="refdb-card ${isSelected ? 'selected' : ''}" onclick="selectionnerRefDb(${REF_DB.indexOf(item)})">
+                        <div class="refdb-card-header">
+                            <div>
+                                <div class="refdb-card-name">${escapeHtml(item.marque)} ${escapeHtml(item.modele)}</div>
+                                <div class="refdb-card-brand">${escapeHtml(item.notes)}</div>
+                            </div>
+                            <span class="badge ${classeFormat(item.format)}">${item.format}</span>
+                        </div>
+                        <div class="refdb-card-specs">
+                            <span class="refdb-spec highlight">${item.capacite} mAh</span>
+                            <span class="refdb-spec">${item.voltage}V</span>
+                            <span class="refdb-spec">${item.type}</span>
+                            <span class="refdb-spec">${item.chimie}</span>
+                            <span class="refdb-spec">~${item.cycles} cycles</span>
+                        </div>
+                        ${isSelected ? '<div class="refdb-match">✅ Sélectionné - Formulaire pré-rempli</div>' : ''}
+                    </div>
+                `;
+            }).join('');
+        };
+
+        window.selectionnerRefDb = function(idx) {
+            const item = REF_DB[idx];
+            refDbSelection = item;
+
+            // Pré-remplir le formulaire
+            document.getElementById('marque').value = item.marque;
+            document.getElementById('format').value = item.format;
+            document.getElementById('type').value = item.type;
+            document.getElementById('voltNominal').value = item.voltage;
+            document.getElementById('mahNominal').value = item.capacite;
+            if (document.getElementById('annee') && item.anneeMin) {
+                document.getElementById('annee').value = item.anneeMin;
+            }
+
+            // Déclencher les vérifications
+            verifierPileExistante();
+            filtrerRefDb();
+
+            // Feedback visuel
+            showToast(`✅ ${item.marque} ${item.modele} sélectionné`);
+        };
+
+        // Initialiser la base de données au chargement
+        document.addEventListener('DOMContentLoaded', function() {
+            filtrerRefDb();
+        });
+
+        // ===== ALERTES INTELLIGENTES =====
+        let alertesDetailVisible = false;
+
+        window.toggleAlertesDetail = function() {
+            alertesDetailVisible = !alertesDetailVisible;
+            const detail = document.getElementById('alertesDetail');
+            const caret = document.getElementById('alertesCaret');
+            if (detail) detail.style.display = alertesDetailVisible ? 'block' : 'none';
+            if (caret) caret.textContent = alertesDetailVisible ? '▴' : '▾';
+        };
+
+        function analyserAlertes(items) {
+            const alertes = {
+                critique: [],  // Recycler, effondrement
+                warning: [],   // Fatigue, autodécharge rapide
+                info: [],      // À tester, pas de test 24h
+                success: []    // Amélioration, plateau atteint
+            };
+
+            const maintenant = Date.now();
+            const TROIS_MOIS = 90 * 24 * 3600 * 1000;
+            const SIX_MOIS = 180 * 24 * 3600 * 1000;
+
+            items.forEach(item => {
+                const p = item.pile;
+                const mesuresOk = (p.mesures || []).filter(m => !estEnCours(m)).sort((a,b) => new Date(a.date) - new Date(b.date));
+                const derniere = mesuresOk[mesuresOk.length - 1];
+                const avantDerniere = mesuresOk[mesuresOk.length - 2];
+
+                // 1. ALERTE CRITIQUE : Pile à recycler
+                if (item.etatGlobal === 'Recycler') {
+                    alertes.critique.push({
+                        pile: p,
+                        icon: '🔴',
+                        titre: 'À recycler',
+                        desc: `Capacité ${derniere?.mah || 0} mAh < 40% du nominal`,
+                        action: 'recycler',
+                        actionLabel: 'Voir'
+                    });
+                }
+
+                // 2. ALERTE CRITIQUE : Effondrement (0 mAh ou chute brutale)
+                if (derniere && derniere.mah === 0) {
+                    alertes.critique.push({
+                        pile: p,
+                        icon: '⚡',
+                        titre: 'Effondrement détecté',
+                        desc: '0 mAh sous charge - RI critique',
+                        action: 'test',
+                        actionLabel: 'Test 24h'
+                    });
+                }
+
+                // 3. ALERTE WARNING : Pile fatiguée
+                if (item.etatGlobal === 'Fatigue' && item.etatGlobal !== 'Recycler') {
+                    alertes.warning.push({
+                        pile: p,
+                        icon: '🟡',
+                        titre: 'Pile fatiguée',
+                        desc: `Capacité ${Math.round((derniere?.mah / p.mahNominal) * 100)}% - Surveiller`,
+                        action: 'cycle',
+                        actionLabel: '+ Cycle'
+                    });
+                }
+
+                // 4. ALERTE WARNING : Autodécharge rapide (tension 24h < 1.28V)
+                if (derniere?.volt24h && derniere.volt24h < 1.28 && derniere.volt24h >= 1.20) {
+                    alertes.warning.push({
+                        pile: p,
+                        icon: '📉',
+                        titre: 'Autodécharge rapide',
+                        desc: `${derniere.volt24h}V après 24h (< 1.28V)`,
+                        action: 'test',
+                        actionLabel: 'Détails'
+                    });
+                }
+
+                // 5. ALERTE CRITIQUE : Fuite interne (tension 24h < 1.20V)
+                if (derniere?.volt24h && derniere.volt24h < 1.20) {
+                    alertes.critique.push({
+                        pile: p,
+                        icon: '🔋',
+                        titre: 'Fuite interne',
+                        desc: `${derniere.volt24h}V après 24h - Micro-court-circuit`,
+                        action: 'recycler',
+                        actionLabel: 'Recycler'
+                    });
+                }
+
+                // 6. ALERTE INFO : Jamais testée
+                if (item.totalCycles === 0) {
+                    alertes.info.push({
+                        pile: p,
+                        icon: '❓',
+                        titre: 'Jamais testée',
+                        desc: 'Ajouter un premier cycle',
+                        action: 'cycle',
+                        actionLabel: '+ Cycle'
+                    });
+                }
+
+                // 7. ALERTE INFO : Pas de test 24h après cycle suspect
+                if (derniere && !derniere.volt24h && item.totalCycles > 0) {
+                    const t2 = new Date(derniere.date).getTime();
+                    const heuresEcoulees = (maintenant - t2) / 3600000;
+                    if (heuresEcoulees >= 20 && heuresEcoulees <= 48) {
+                        alertes.info.push({
+                            pile: p,
+                            icon: '🧪',
+                            titre: 'Test 24h disponible',
+                            desc: `Repos ${Math.round(heuresEcoulees)}h - Mesurer tension`,
+                            action: 'test',
+                            actionLabel: 'Noter V'
+                        });
+                    }
+                }
+
+                // 8. ALERTE INFO : Pas de cycle depuis 3+ mois
+                if (derniere && item.etatGlobal !== 'Recycler') {
+                    const joursDepuisCycle = (maintenant - new Date(derniere.date).getTime()) / (24 * 3600 * 1000);
+                    if (joursDepuisCycle > 90) {
+                        alertes.info.push({
+                            pile: p,
+                            icon: '📅',
+                            titre: 'Maintenance due',
+                            desc: `Dernier cycle il y a ${Math.round(joursDepuisCycle)} jours`,
+                            action: 'cycle',
+                            actionLabel: '+ Cycle'
+                        });
+                    }
+                }
+
+                // 9. ALERTE SUCCESS : Amélioration > 10%
+                if (derniere && avantDerniere && derniere.mah > avantDerniere.mah * 1.10) {
+                    alertes.success.push({
+                        pile: p,
+                        icon: '📈',
+                        titre: 'Amélioration +10%',
+                        desc: `${avantDerniere.mah} → ${derniere.mah} mAh`,
+                        action: 'voir',
+                        actionLabel: 'Voir'
+                    });
+                }
+
+                // 10. ALERTE SUCCESS : Plateau atteint (stagnation)
+                if (item.stagnation && item.totalCycles >= 3) {
+                    alertes.success.push({
+                        pile: p,
+                        icon: '✅',
+                        titre: 'Capacité maximale atteinte',
+                        desc: `Stable à ${derniere?.mah} mAh`,
+                        action: 'voir',
+                        actionLabel: 'Détails'
+                    });
+                }
+
+                // 11. ALERTE WARNING : Baisse de capacité > 15%
+                if (derniere && avantDerniere && derniere.mah < avantDerniere.mah * 0.85 && derniere.mah > 0) {
+                    alertes.warning.push({
+                        pile: p,
+                        icon: '📉',
+                        titre: 'Baisse de capacité',
+                        desc: `${avantDerniere.mah} → ${derniere.mah} mAh (-${Math.round((1 - derniere.mah/avantDerniere.mah) * 100)}%)`,
+                        action: 'cycle',
+                        actionLabel: '+ Cycle'
+                    });
+                }
+
+                // 12. ALERTE INFO : Break-in recommandé
+                if (item.totalCycles >= 2 && item.etatGlobal === 'Fatigue' && !mesuresOk.some(m => m.mode === 'breakin')) {
+                    alertes.info.push({
+                        pile: p,
+                        icon: '🔄',
+                        titre: 'Rôdage recommandé',
+                        desc: 'Essayer Break-in pour récupérer',
+                        action: 'cycle',
+                        actionLabel: 'Rôdage'
+                    });
+                }
+            });
+
+            afficherAlertes(alertes);
+        }
+
+        function afficherAlertes(alertes) {
+            const container = document.getElementById('alertesContainer');
+            const resume = document.getElementById('alertesResume');
+            const detail = document.getElementById('alertesDetail');
+
+            const total = alertes.critique.length + alertes.warning.length + alertes.info.length + alertes.success.length;
+
+            if (total === 0) {
+                container.style.display = 'none';
+                return;
+            }
+
+            container.style.display = 'block';
+
+            // Résumé compact : une seule ligne de pastilles + chevron (clic = détail)
+            const pastille = (cls, icone, n, cle) => n > 0
+                ? `<span class="alertes-chip ${cls}" title="${n} ${T(cle)}">${icone} ${n}</span>` : '';
+            resume.innerHTML = `<span class="alertes-title">${T('alertes_titre')}</span>`
+                + pastille('critical', '🔴', alertes.critique.length, 'alertes_critique')
+                + pastille('warning', '🟡', alertes.warning.length, 'alertes_warning')
+                + pastille('info', 'ℹ️', alertes.info.length, 'alertes_info')
+                + pastille('success', '✅', alertes.success.length, 'alertes_success')
+                + `<span class="alertes-caret" id="alertesCaret">${alertesDetailVisible ? '▴' : '▾'}</span>`;
+
+            // Détail complet
+            let detailHtml = '';
+            const toutesAlertes = [
+                ...alertes.critique.map(a => ({...a, niveau: 'critical'})),
+                ...alertes.warning.map(a => ({...a, niveau: 'warning'})),
+                ...alertes.info.map(a => ({...a, niveau: 'info'})),
+                ...alertes.success.map(a => ({...a, niveau: 'success'}))
+            ];
+
+            toutesAlertes.forEach(a => {
+                const pileIdx = (JSON.parse(localStorage.getItem('stock_piles')) || []).findIndex(p => 
+                    p.id === a.pile.id && p.marque === a.pile.marque
+                );
+                detailHtml += `<div class="alerte-detail">
+                    <span class="alerte-pile">#${escapeHtml(a.pile.id)} ${escapeHtml(a.pile.marque || '')}</span>
+                    <span class="alerte-desc">${a.icon} ${a.titre} - ${escapeHtml(a.desc)}</span>
+                    <button class="alerte-action ${a.action}" onclick="actionAlerte(${pileIdx}, '${a.action}')">${a.actionLabel}</button>
+                </div>`;
+            });
+
+            detail.innerHTML = detailHtml;
+        }
+
+        window.actionAlerte = function(pileIdx, action) {
+            if (pileIdx < 0) return;
+
+            switch(action) {
+                case 'cycle':
+                    ouvrirModaleAjoutMesure(pileIdx);
+                    break;
+                case 'test':
+                    // Ouvrir la modale du dernier cycle pour ajouter test 24h
+                    const inv = JSON.parse(localStorage.getItem('stock_piles')) || [];
+                    const p = inv[pileIdx];
+                    if (p && p.mesures && p.mesures.length > 0) {
+                        const dernierIdx = p.mesures.length - 1;
+                        ouvrirModaleMesure(pileIdx, dernierIdx, true);
+                    }
+                    break;
+                case 'recycler':
+                    // Filtrer par Recycler pour voir les piles concernées
+                    filtrerParEtat('Recycler');
+                    break;
+                case 'voir':
+                default:
+                    // Scroll vers la pile
+                    const cards = document.querySelectorAll('.pile-card');
+                    if (cards[pileIdx]) {
+                        cards[pileIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        cards[pileIdx].style.boxShadow = '0 0 0 3px #3498db';
+                        setTimeout(() => { cards[pileIdx].style.boxShadow = ''; }, 2000);
+                    }
+                    break;
+            }
         }
 
         window.clonerPile = function(index) {
@@ -3351,7 +5175,23 @@
 
                 let formatDisplay = item.pile.format;
 
-                let cyclesTxt = `<span class="badge badge-cycles">${T('cyclesLbl')} ${item.totalCycles}</span>`;
+                // Détecter le mode dominant (Cycle vs Break-in) et le nombre d'exécutions
+                let modeCycleTxt = '';
+                if (item.totalCycles > 0) {
+                    // Analyser les mesures pour détecter le mode
+                    const mesuresTerminees = item.pile.mesures.filter(m => !estEnCours(m));
+                    const aBreakIn = mesuresTerminees.some(m => m.mode === 'breakin' || m.mode === 'rodage');
+                    const aCycle = mesuresTerminees.some(m => m.mode === 'cycle');
+
+                    if (aBreakIn && !aCycle) {
+                        modeCycleTxt = ` <span class="badge badge-breakin">🔄 Rôdage ×${item.totalCycles}</span>`;
+                    } else if (aCycle && !aBreakIn) {
+                        modeCycleTxt = ` <span class="badge badge-mode">🔁 Cycle ×${item.totalCycles}</span>`;
+                    } else if (aCycle && aBreakIn) {
+                        modeCycleTxt = ` <span class="badge badge-mode">🔁 Cycle</span> <span class="badge badge-breakin">🔄 Rôdage</span>`;
+                    }
+                }
+                let cyclesTxt = `<span class="badge badge-cycles">${T('cyclesLbl')} ${item.totalCycles}</span>${modeCycleTxt}`;
                 let warningStagnation = item.stagnation ? `<span class="warning-icon" title="${T('clickInfo')}" onclick="afficherConseilStagnation(${item.lastMah}, ${item.prevMah})">⚠️</span>` : '';
 
                 let conseilHtml = '';
@@ -3491,6 +5331,7 @@
                             </div>
                             <div class="action-btns">
                                 <button class="small-btn add-cycle-btn" onclick="ouvrirModaleAjoutMesure(${item.originalIndex})">${T('addCycleBtn')}</button>
+                                <button class="small-btn recup-btn" onclick="ouvrirWizard(${item.originalIndex})" title="Récupération avancée" style="background: linear-gradient(135deg, #8e44ad, #9b59b6);">🔄 Récup.</button>
                                 <button class="small-btn clone-btn" onclick="clonerPile(${item.originalIndex})">${T('clone')}</button>
                                 <button class="small-btn edit-btn" onclick="ouvrirModalePile(${item.originalIndex})">✏️ ${T('pileWord')}</button>
                                 <button class="small-btn delete-btn" onclick="supprimerPile(${item.originalIndex})">${T('del')}</button>
@@ -3663,9 +5504,14 @@
                 }
                 const chg = lireChargeur('Add');
                 const aEnCours = !aMesure && dateDebut !== '' && !document.getElementById('ir').value && !stress;
+                // Détecter le mode selon la durée ou un champ explicite
+                const dureeCycleH = dateDebut ? (new Date(date) - new Date(dateDebut)) / 3600000 : 0;
+                const modeDetecte = document.getElementById('modeCycle')?.value || 
+                    (dureeCycleH >= 12 ? 'breakin' : 'cycle'); // Break-in = ~16h+, Cycle = 3-6h
+
                 const nouvelleMesure = aMesure
-                    ? { date, dateDebut: dateDebut || undefined, voltage, mah, ir, stress, surveille, volt24h: (volt24h && !isNaN(volt24h)) ? volt24h : null, dateVolt24h, ...chg }
-                    : (aEnCours ? { date: dateDebut, dateDebut, voltage: null, mah: null, ir: null, stress: '', surveille, volt24h: null, enCours: true, ...chg } : null);
+                    ? { date, dateDebut: dateDebut || undefined, voltage, mah, ir, stress, surveille, mode: modeDetecte, volt24h: (volt24h && !isNaN(volt24h)) ? volt24h : null, dateVolt24h, ...chg }
+                    : (aEnCours ? { date: dateDebut, dateDebut, voltage: null, mah: null, ir: null, stress: '', surveille, mode: modeDetecte, volt24h: null, enCours: true, ...chg } : null);
                 const idsACreer = idEnd ? genererIdsLot(idStart, idEnd) : [idStart];
                 let inventaire = JSON.parse(localStorage.getItem('stock_piles')) || [];
 
@@ -3861,6 +5707,7 @@
             document.getElementById('editMesureMah').value = m.mah ?? '';
             document.getElementById('editMesureIr').value = m.ir || '';
             document.getElementById('editMesureStress').value = m.stress || '';
+            if (document.getElementById('editMesureMode')) document.getElementById('editMesureMode').value = m.mode || '';
             if (document.getElementById('editMesureVolt24h')) document.getElementById('editMesureVolt24h').value = m.volt24h || '';
             if (document.getElementById('editMesureDateVolt24h')) {
                 document.getElementById('editMesureDateVolt24h').value = m.dateVolt24h || (focus24h ? isoNow : '');
@@ -3910,6 +5757,10 @@
                         dateV24Val = n.toISOString().slice(0, 16);
                     }
                 }
+                const modeCycleEdit = document.getElementById('editMesureMode')?.value || '';
+                const dureeEditH = dateDebutVal ? (new Date(dateFinVal) - new Date(dateDebutVal)) / 3600000 : 0;
+                const modeFinal = modeCycleEdit || (dureeEditH >= 12 ? 'breakin' : 'cycle');
+
                 mesureObj = {
                     date: dateFinVal,
                     dateDebut: dateDebutVal || undefined,
@@ -3917,6 +5768,7 @@
                     mah: parseInt(mahStr, 10),
                     ir: document.getElementById('editMesureIr').value ? parseInt(document.getElementById('editMesureIr').value, 10) : null,
                     stress: document.getElementById('editMesureStress').value,
+                    mode: modeFinal,
                     surveille,
                     volt24h: (v24Val && !isNaN(v24Val)) ? v24Val : null,
                     dateVolt24h: (v24Val && !isNaN(v24Val) && dateV24Val) ? dateV24Val : undefined,
