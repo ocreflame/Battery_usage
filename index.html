@@ -2219,21 +2219,22 @@
         }
 
         function analyserPilePourCycle(pile) {
-            // Cycle = mesurer / stabiliser (max 3 sur NC3000)
+            // Cycle = mesurer / stabiliser (toujours 1 cycle à la fois pour lire chaque résultat et éviter le timeout 24h)
             // Seuils alignés : ≥80 Exc · ≥60 Bon · ≥40 Fatigue · <40 Recycler
             const mesures = Array.isArray(pile.mesures) ? pile.mesures.filter(function(m){ return !estEnCours(m); }).sort(function(a,b){ return new Date(a.date) - new Date(b.date); }) : [];
             const n = mesures.length;
             const mahNom = pile.mahNominal || 0;
             if (n === 0) {
                 return {
-                    useful: true, level: 'yes', cycles: 2,
+                    useful: true, level: 'yes', cycles: 1,
                     reason: LANG === 'en'
-                        ? 'No reading yet — run 1–2 Cycle(s) first to measure real capacity before deciding on Break-in.'
-                        : 'Aucun relevé — faire 1–2 Cycle(s) d’abord pour mesurer la capacité réelle avant un éventuel Break-in.'
+                        ? 'No reading yet — run 1 Cycle at a time to log each result before deciding on Break-in.'
+                        : 'Aucun relevé — lancer 1 Cycle à la fois pour noter chaque résultat avant un éventuel Break-in.'
                 };
             }
             const last = mesures[n - 1];
             const ratio = mahNom > 0 ? (last.mah / mahNom) * 100 : null;
+            const lastIr = last.ir ? Number(last.ir) : null;
             let climbing = false, plateau = false;
             if (n >= 3) {
                 const recent = mesures.slice(-3).map(function(m){ return m.mah; });
@@ -2246,13 +2247,23 @@
                 climbing = last.mah > mesures[n - 2].mah * 1.05;
             }
 
+            // RI critique (≥ 120 mΩ, ex. Sony 136 mΩ) : un cycle de mesure n'a plus de sens
+            if (lastIr !== null && lastIr >= 120) {
+                return {
+                    useful: false, level: 'no', cycles: 0,
+                    reason: LANG === 'en'
+                        ? `Critical internal resistance (${lastIr} mΩ ≥ 120 mΩ). A measurement cycle no longer makes sense — cell is degraded, recycle.`
+                        : `Résistance interne critique (${lastIr} mΩ ≥ 120 mΩ). Un cycle de mesure n’a plus de sens — pile très dégradée, à recycler.`
+                };
+            }
+
             // Déjà bonne (≥60 %) — 1 Cycle suffit pour revérifier
             if (ratio != null && ratio >= 60) {
                 return {
                     useful: true, level: 'maybe', cycles: 1,
                     reason: LANG === 'en'
-                        ? `Capacity already good (${Math.round(ratio)}%). One Cycle is enough to refresh / re-check capacity.`
-                        : `Capacité déjà correcte (${Math.round(ratio)} %). Un seul Cycle suffit pour rafraîchir / revérifier.`
+                        ? `Capacity already good (${Math.round(ratio)}%). 1 Cycle is enough to refresh / re-check capacity.`
+                        : `Capacité déjà correcte (${Math.round(ratio)} %). 1 seul Cycle suffit pour rafraîchir / revérifier.`
                 };
             }
             // Fin de vie : <40 % après ≥6 cycles sans hausse
@@ -2275,36 +2286,44 @@
             }
             // Encore en récupération ou peu de cycles
             if (n <= 4 || (ratio != null && ratio < 60 && climbing)) {
-                const nb = n <= 2 ? 3 : 2;
+                const nbRestants = n <= 2 ? 3 : 2;
                 return {
-                    useful: true, level: 'yes', cycles: nb,
+                    useful: true, level: 'yes', cycles: 1,
                     reason: LANG === 'en'
-                        ? `${n} cycle(s) so far, capacity ${ratio != null ? Math.round(ratio) + '%' : '?'}${climbing ? ' and still rising' : ''}. Run ${nb} more Cycle(s) (device max 3).`
-                        : `${n} cycle(s) déjà, capacité ${ratio != null ? Math.round(ratio) + ' %' : '?'}${climbing ? ' et encore en hausse' : ''}. Faire encore ${nb} Cycle(s) (max 3 sur l’appareil).`
+                        ? `${n} cycle(s) so far, capacity ${ratio != null ? Math.round(ratio) + '%' : '?'}${climbing ? ' and still rising' : ''}. Set Cycle Count to 1 (to read each result and avoid the 24h timeout) and repeat up to ${nbRestants}× if capacity/IR improves.`
+                        : `${n} cycle(s) déjà, capacité ${ratio != null ? Math.round(ratio) + ' %' : '?'}${climbing ? ' et encore en hausse' : ''}. Régler « Nombre cycle » à 1 (pour lire chaque résultat et éviter le timeout de 24 h), à relancer jusqu’à ${nbRestants}× tant que capacité ou RI s’améliorent.`
                 };
             }
             // Zone Fatigue 40–60 %
             if (ratio != null && ratio >= 40 && ratio < 60) {
                 return {
-                    useful: true, level: 'yes', cycles: 2,
+                    useful: true, level: 'yes', cycles: 1,
                     reason: LANG === 'en'
-                        ? `Moderate capacity (${Math.round(ratio)}%, ${n} cycles). 1–2 Cycle(s) to stabilise / measure, then normal 0.5C charge.`
-                        : `Capacité moyenne (${Math.round(ratio)} %, ${n} cycles). 1–2 Cycle(s) pour stabiliser / mesurer, puis charge 0.5C.`
+                        ? `Moderate capacity (${Math.round(ratio)}%, ${n} cycles). Run 1 Cycle at a time to stabilise / measure, then normal 0.5C charge.`
+                        : `Capacité moyenne (${Math.round(ratio)} %, ${n} cycles). Lancer 1 Cycle à la fois pour stabiliser / mesurer, puis charge 0.5C.`
                 };
             }
             return {
                 useful: true, level: 'maybe', cycles: 1,
                 reason: LANG === 'en'
-                    ? 'One Cycle to re-check capacity is reasonable.'
-                    : 'Un Cycle pour revérifier la capacité est raisonnable.'
+                    ? '1 Cycle to re-check capacity is reasonable.'
+                    : '1 Cycle pour revérifier la capacité est raisonnable.'
             };
         }
 
         // ----- Minuterie & durée de programme (NC3000 Pro) -----
-        // MIN_MAX : plafond de minuterie relevé sur l'appli SkyCharger (pas de 10 min).
-        // DECH_OBS : relevé réel (3 piles à 96–101 mΩ, 0,20 A réglés) : décharge observée à ~0,02–0,05 A ;
-        //            cause non documentée dans le manuel.
-        function constantesCycle() { return { MIN_MAX: 1400, DECH_OBS: 0.05 }; }
+        // MIN_MAX : plafond de minuterie de l'appli SkyCharger (1440 Min = 24 h, pas de 10 min).
+        function constantesCycle() { return { MIN_MAX: 1440 }; }
+
+        // Courant de décharge réellement observé sur NC3000 Pro selon l'IR (relevés utilisateur ; cause non
+        // documentée dans le manuel). Normal jusqu'à 77 mΩ (cycles synchrones à 35 / 69 / 77 mΩ),
+        // puis ≈ 0,10 A à 86 mΩ, ≈ 0,05 A à 96 mΩ, ≈ 0,02 A à 101 mΩ. null = courant réglé respecté.
+        function dechargeObservee(ir) {
+            if (!ir || ir <= 80) return null;
+            if (ir <= 90) return 0.10;
+            if (ir <= 100) return 0.05;
+            return 0.02;
+        }
 
         // Durée estimée d'un programme (sens ex. 'D->C->D', nbCyc répétitions, repos après chaque routine)
         // et minuterie conseillée = durée × 1,25 (par précaution elle couvre tout le programme), plafonnée.
@@ -2319,31 +2338,36 @@
             return { tC, tD, total, timer, depasse: total * 1.25 > K.MIN_MAX, impossible: total > K.MIN_MAX };
         }
 
-        // Tableau « fort ou pas d'IR » : courant de charge bridé par IR Auto (> 20 / 40 / 60 mΩ), durée, minuterie
+        // Tableau « fort ou pas d'IR » : courant de charge bridé par IR Auto (> 20 / 40 / 60 mΩ),
+        // courant de décharge observé (* si plus lent que le réglage), durée et minuterie
         function htmlTableauIrCycle(mah, cCharge, cDech, sens, nbCyc, repos, irMaxLot) {
             const K = constantesCycle();
             const paliers = [
-                { lbl: '≤ 20 mΩ', max: 20, limite: null },
-                { lbl: '20–40 mΩ', max: 40, limite: 1.5 },
-                { lbl: '40–60 mΩ', max: 60, limite: 0.8 },
-                { lbl: '&gt; 60 mΩ *', max: Infinity, limite: 0.4, dechObs: K.DECH_OBS }
+                { lbl: '≤ 20', max: 20, ref: 10, limite: null },
+                { lbl: '20–40', max: 40, ref: 30, limite: 1.5 },
+                { lbl: '40–60', max: 60, ref: 50, limite: 0.8 },
+                { lbl: '60–80', max: 80, ref: 70, limite: 0.4 },
+                { lbl: '80–90', max: 90, ref: 85, limite: 0.4 },
+                { lbl: '90–100', max: 100, ref: 95, limite: 0.4 },
+                { lbl: '&gt; 100', max: Infinity, ref: 105, limite: 0.4 }
             ];
             let prev = 0;
             const lignes = paliers.map(p => {
                 const iC = p.limite ? Math.min(cCharge, p.limite) : cCharge;
-                const iD = p.dechObs ? Math.min(cDech, p.dechObs) : cDech;
+                const obs = dechargeObservee(p.ref);
+                const iD = obs ? Math.min(cDech, obs) : cDech;
                 const pl = planCycle(mah, iC, iD, sens, nbCyc, repos);
                 const actif = !!irMaxLot && irMaxLot > prev && irMaxLot <= p.max;
                 prev = p.max;
                 const timerTxt = pl.impossible ? `⛔ &gt; ${K.MIN_MAX}` : `${pl.timer} Min`;
                 const st = actif ? ' style="font-weight:bold;background:rgba(39,174,96,0.15);"' : '';
-                return `<tr${st}><td>${p.lbl}${actif ? ' ◀' : ''}</td><td>${iC.toFixed(2)} A</td><td>~${formaterDureeHeures(pl.total / 60)}</td><td>${timerTxt}</td></tr>`;
+                return `<tr${st}><td>${p.lbl}${actif ? ' ◀' : ''}</td><td>${iC.toFixed(2)}</td><td>${iD.toFixed(2)}${obs ? ' *' : ''}</td><td>~${formaterDureeHeures(pl.total / 60)}</td><td>${timerTxt}</td></tr>`;
             }).join('');
-            const th = LANG === 'en' ? ['IR', 'Charge', 'Program', 'Timer'] : ['RI', 'Charge', 'Programme', 'Minuterie'];
+            const th = LANG === 'en' ? ['IR mΩ', 'Chg A', 'Dis A', 'Program', 'Timer'] : ['RI mΩ', 'Ch. A', 'Déch. A', 'Programme', 'Minuterie'];
             const note = LANG === 'en'
-                ? `* &gt; 60 mΩ: discharge calculated at ${K.DECH_OBS.toFixed(2)} A — measured on the NC3000 Pro (3 cells at 96–101 mΩ, 0.20 A set). Cause not documented in the manual.`
-                : `* &gt; 60 mΩ : décharge calculée à ${K.DECH_OBS.toFixed(2).replace('.', ',')} A — relevé réel sur NC3000 Pro (3 piles à 96–101 mΩ, 0,20 A réglés). Cause non expliquée par le manuel.`;
-            return `<table class="skyrc-tbl"><tr><th>${th[0]}</th><th>${th[1]}</th><th>${th[2]}</th><th>${th[3]}</th></tr>${lignes}</table><small>${note}</small>`;
+                ? '* Discharge slower than set, observed on the NC3000 Pro (≈ 0.10 A at 86 mΩ, ≈ 0.05 A at 96 mΩ, ≈ 0.02 A at 101 mΩ; normal up to 77 mΩ). Cause not documented in the manual.'
+                : '* Décharge plus lente que le réglage, observée sur NC3000 Pro (≈ 0,10 A à 86 mΩ, ≈ 0,05 A à 96 mΩ, ≈ 0,02 A à 101 mΩ ; normale jusqu’à 77 mΩ). Cause non expliquée par le manuel.';
+            return `<table class="skyrc-tbl"><tr><th>${th[0]}</th><th>${th[1]}</th><th>${th[2]}</th><th>${th[3]}</th><th>${th[4]}</th></tr>${lignes}</table><small>${note}</small>`;
         }
 
         function htmlCycleBloc(mah, chimie, format, analyse, pileLabel, opts) {
@@ -2358,14 +2382,14 @@
             let minuteur = 0; // calculé plus bas : durée du programme complet
             const modeCourantFr = opts.useIrAuto ? `IR Auto (actif -> ${opts.iEffectifIrAutoA ? opts.iEffectifIrAutoA.toFixed(2) + ' A' : 'auto'})` : 'Fixé (Fixed)';
             const modeCourantEn = opts.useIrAuto ? `IR Auto (active -> ${opts.iEffectifIrAutoA ? opts.iEffectifIrAutoA.toFixed(2) + ' A' : 'auto'})` : 'Fixed';
-            let nbCyc = (analyse && analyse.cycles) ? analyse.cycles : 1;
+            const nbCyc = 1; // Toujours 1 pour rendre chaque cycle lisible et éviter le timeout de 24 h
             const dCutCurr = opts.needsDischargeFirst ? '100 mA' : 'OFF';
 
             let sensConseille = 'C->D->C';
             let noteSensFr = 'termine par une charge (pile prête à l’emploi). Attention : C->D laisse la pile vide (1,00 V) !';
             let noteSensEn = 'ends with a charge (ready to use). Warning: C->D leaves the cell empty (1.00 V)!';
             if (opts.needsDischargeFirst) {
-                sensConseille = nbCyc === 1 ? 'D->C' : 'D->C->D';
+                sensConseille = 'D->C';
                 noteSensFr = `⚠️ début par DÉCHARGE (${sensConseille}) calculé automatiquement (${opts.raisonDechargeFr || 'forte RI / tension crête'}) pour éviter la mise en défaut au démarrage`;
                 noteSensEn = `⚠️ start with DISCHARGE (${sensConseille}) auto-selected (${opts.raisonDechargeEn || 'high IR / peak voltage'}) to prevent start-up fault`;
             }
@@ -2373,28 +2397,44 @@
             const K = constantesCycle();
             const iEffCharge = (opts.useIrAuto && opts.iEffectifIrAutoA) ? opts.iEffectifIrAutoA : cCharge;
             const reposMin = opts.needsDischargeFirst ? 15 : 10;
-            // RI > 60 mΩ : décharge calculée au courant réellement observé (≈ 0,05 A), pas au courant réglé
-            const forteRi = !!opts.irMaxLot && opts.irMaxLot > 60;
-            const iDechEff = forteRi ? Math.min(cDech, K.DECH_OBS) : cDech;
-            // Réduit le nombre de cycles tant que (durée × 1,25) dépasse le plafond de minuterie
-            const nbCycDemande = nbCyc;
-            while (nbCyc > 1 && planCycle(mah, iEffCharge, iDechEff, sensConseille, nbCyc, reposMin).depasse) nbCyc--;
-            if (nbCyc !== nbCycDemande && opts.needsDischargeFirst && nbCyc === 1) sensConseille = 'D->C';
+            // RI > 80 mΩ : décharge calculée au courant réellement observé, pas au courant réglé
+            const dObs = dechargeObservee(opts.irMaxLot);
+            const forteRi = dObs !== null;
+            const iDechEff = forteRi ? Math.min(cDech, dObs) : cDech;
             const plan = planCycle(mah, iEffCharge, iDechEff, sensConseille, nbCyc, reposMin);
+            const planCDC = planCycle(mah, iEffCharge, iDechEff, 'C->D->C', 1, reposMin);
+            const planDC  = planCycle(mah, iEffCharge, iDechEff, 'D->C', 1, reposMin);
             minuteur = plan.timer;
             const tableauIr = htmlTableauIrCycle(mah, cCharge, cDech, sensConseille, nbCyc, reposMin, opts.irMaxLot);
-            const noteReduitFr = nbCyc !== nbCycDemande ? `<br>ℹ️ Nombre de cycles ramené de ${nbCycDemande} à ${nbCyc} pour tenir sous ${K.MIN_MAX} Min.` : '';
-            const noteReduitEn = nbCyc !== nbCycDemande ? `<br>ℹ️ Cycle count reduced from ${nbCycDemande} to ${nbCyc} to stay under ${K.MIN_MAX} Min.` : '';
-            const noteRiFr = forteRi ? `<br>⚠️ RI ${opts.irMaxLot} mΩ &gt; 60 : décharge calculée à ${K.DECH_OBS.toFixed(2).replace('.', ',')} A (valeur observée), pas au ${cDech.toFixed(2).replace('.', ',')} A réglé.` : '';
-            const noteRiEn = forteRi ? `<br>⚠️ IR ${opts.irMaxLot} mΩ &gt; 60: discharge calculated at ${K.DECH_OBS.toFixed(2)} A (observed), not the ${cDech.toFixed(2)} A set.` : '';
-            const alerteDureeFr = noteReduitFr + noteRiFr + (plan.impossible
+
+            const detailPhasesFr = `<br>• <b>Détail théorique (1 cycle à ${mah} mAh) :</b> `
+                + `1 Charge (${iEffCharge.toFixed(2)} A) ≈ <b>${formaterDureeHeures(plan.tC / 60)}</b> · `
+                + `1 Décharge (${iDechEff.toFixed(2)} A) ≈ <b>${formaterDureeHeures(plan.tD / 60)}</b> · `
+                + `Repos : <b>${reposMin} min</b>/phase`
+                + `<br>• <b>Durée théorique selon le mode :</b> `
+                + `<b>D-&gt;C</b> = <b>~${formaterDureeHeures(planDC.total / 60)}</b> (minuterie ${planDC.timer} Min) · `
+                + `<b>C-&gt;D-&gt;C</b> = <b>~${formaterDureeHeures(planCDC.total / 60)}</b> (minuterie ${planCDC.timer} Min)`
+                + (planCDC.total * 3 > K.MIN_MAX ? ` <small style="color:#e67e22;">(⚠️ 3 × C-&gt;D-&gt;C = ~${formaterDureeHeures((planCDC.total * 3) / 60)} &gt; 24 h → timeout assuré si Nombre cycle = 3 !)</small>` : '');
+
+            const detailPhasesEn = `<br>• <b>Theoretical breakdown (1 cycle at ${mah} mAh):</b> `
+                + `1 Charge (${iEffCharge.toFixed(2)} A) ≈ <b>${formaterDureeHeures(plan.tC / 60)}</b> · `
+                + `1 Discharge (${iDechEff.toFixed(2)} A) ≈ <b>${formaterDureeHeures(plan.tD / 60)}</b> · `
+                + `Rest: <b>${reposMin} min</b>/step`
+                + `<br>• <b>Theoretical duration by mode:</b> `
+                + `<b>D-&gt;C</b> = <b>~${formaterDureeHeures(planDC.total / 60)}</b> (timer ${planDC.timer} Min) · `
+                + `<b>C-&gt;D-&gt;C</b> = <b>~${formaterDureeHeures(planCDC.total / 60)}</b> (timer ${planCDC.timer} Min)`
+                + (planCDC.total * 3 > K.MIN_MAX ? ` <small style="color:#e67e22;">(⚠️ 3 × C-&gt;D-&gt;C = ~${formaterDureeHeures((planCDC.total * 3) / 60)} &gt; 24h → guaranteed timeout if Cycle Count = 3!)</small>` : '');
+
+            const noteRiFr = forteRi ? `<br>⚠️ RI ${opts.irMaxLot} mΩ : la décharge a été observée à ≈ ${dObs.toFixed(2).replace('.', ',')} A sur ce niveau d’IR (pas les ${cDech.toFixed(2).replace('.', ',')} A réglés) — durée calculée avec cette valeur.` : '';
+            const noteRiEn = forteRi ? `<br>⚠️ IR ${opts.irMaxLot} mΩ: discharge was observed at ≈ ${dObs.toFixed(2)} A at this IR level (not the ${cDech.toFixed(2)} A set) — duration calculated with that value.` : '';
+            const alerteDureeFr = noteRiFr + (plan.impossible
                 ? `<br>⛔ Durée estimée supérieure à ${K.MIN_MAX} Min : impossible en un seul programme. ${forteRi ? 'Essaie d’abord une <b>Charge seule</b> (IR Auto) puis refais la mesure de RI.' : 'Augmente le courant de décharge (0,4 A) ou sépare Décharge puis Charge.'}`
                 : (plan.depasse ? `<br>⚠️ Marge réduite : la minuterie est au plafond (${K.MIN_MAX} Min).` : ''));
-            const alerteDureeEn = noteReduitEn + noteRiEn + (plan.impossible
+            const alerteDureeEn = noteRiEn + (plan.impossible
                 ? `<br>⛔ Estimated duration exceeds ${K.MIN_MAX} Min: not possible in a single program. ${forteRi ? 'Try a plain <b>Charge</b> first (IR Auto), then re-measure IR.' : 'Raise the discharge current (0.4 A) or split Discharge then Charge.'}`
                 : (plan.depasse ? `<br>⚠️ Reduced margin: timer is at the ${K.MIN_MAX} Min ceiling.` : ''));
-            const blocDureeFr = `<div class="skyrc-diag"><strong>⏱️ Durée &amp; minuterie</strong> (${nbCyc} × ${sensConseille}) : <b>~${formaterDureeHeures(plan.total / 60)}</b> estimées → minuterie <b>${minuteur} Min</b> <small>(durée × 1,25 · max appareil ${K.MIN_MAX} Min · par précaution elle couvre tout le programme)</small>${alerteDureeFr}${tableauIr}</div>`;
-            const blocDureeEn = `<div class="skyrc-diag"><strong>⏱️ Duration &amp; timer</strong> (${nbCyc} × ${sensConseille}): <b>~${formaterDureeHeures(plan.total / 60)}</b> estimated → timer <b>${minuteur} Min</b> <small>(duration × 1.25 · device max ${K.MIN_MAX} Min · as a precaution it covers the whole program)</small>${alerteDureeEn}${tableauIr}</div>`;
+            const blocDureeFr = `<div class="skyrc-diag"><strong>⏱️ Durée &amp; minuterie</strong> (${nbCyc} × ${sensConseille}) : <b>~${formaterDureeHeures(plan.total / 60)}</b> estimées → minuterie <b>${minuteur} Min</b> <small>(durée × 1,25 · max appareil ${K.MIN_MAX} Min · par précaution elle couvre tout le programme)</small>${detailPhasesFr}${alerteDureeFr}${tableauIr}</div>`;
+            const blocDureeEn = `<div class="skyrc-diag"><strong>⏱️ Duration &amp; timer</strong> (${nbCyc} × ${sensConseille}): <b>~${formaterDureeHeures(plan.total / 60)}</b> estimated → timer <b>${minuteur} Min</b> <small>(duration × 1.25 · device max ${K.MIN_MAX} Min · as a precaution it covers the whole program)</small>${detailPhasesEn}${alerteDureeEn}${tableauIr}</div>`;
 
             const badgeVerdict = !analyse ? '' : (analyse.level === 'yes' ? '✅' : analyse.level === 'maybe' ? '🟡' : '⛔');
             const titre = LANG === 'en' ? `🔁 Mode: Cycle ${badgeVerdict}` : `🔁 Mode : Cycle ${badgeVerdict}`;
@@ -2423,7 +2463,7 @@
                     • <strong>Resting After D.:</strong> <b>${opts.needsDischargeFirst ? 15 : 10} Min</b><br>
                     • <strong>Delta Peak (-ΔV):</strong> <b>${deltaV} mV</b><br>
                     • <strong>Cycle Mode:</strong> <b>${sensConseille}</b> <small>(${noteSensEn})</small><br>
-                    • <strong>Cycle Count:</strong> <b>${nbCyc}</b> <small>(max 3)</small><br>
+                    • <strong>Cycle Count:</strong> <b>1</b> <small>(always 1 so each cycle result is readable and avoids the 24h timeout)</small><br>
                     • <strong>Current Mode:</strong> <b>${modeCourantEn}</b>
                     ${blocDureeEn}
                 </details>`;
@@ -2443,7 +2483,7 @@
                     • <strong>Repos décharge :</strong> <b>${opts.needsDischargeFirst ? 15 : 10} Min</b><br>
                     • <strong>Delta Peak -ΔV :</strong> <b>${deltaV} mV</b><br>
                     • <strong>Mode cycle :</strong> <b>${sensConseille}</b> <small>(${noteSensFr})</small><br>
-                    • <strong>Nombre cycle :</strong> <b>${nbCyc}</b> <small>(max appareil 3)</small><br>
+                    • <strong>Nombre cycle :</strong> <b>1</b> <small>(toujours 1 pour lire le résultat de chaque cycle et éviter le timeout de 24 h)</small><br>
                     • <strong>Mode Courant :</strong> <b>${modeCourantFr}</b>
                     ${blocDureeFr}
                 </details>`;
@@ -2771,14 +2811,16 @@
             try {
                 var hint = document.getElementById('calcMahHint');
                 if (hint) {
+                    const planCDC_Hint = planCycle(mah, iEffectifIrAutoA, courantDecharge, 'C->D->C', 1, needsDischargeFirst ? 15 : 10);
+                    const planDC_Hint  = planCycle(mah, iEffectifIrAutoA, courantDecharge, 'D->C', 1, needsDischargeFirst ? 15 : 10);
                     const profilBadge = needsDischargeFirst
                         ? (LANG === 'en' ? `🟠 Auto Profile: Old / High-IR Cell (Start w/ Discharge D->C + IR Auto · Max IR threshold: ${irSeuilAuto} mΩ)` : `🟠 Profil Auto : Pile Ancienne / Forte RI (Début par Décharge D->C + IR Auto · Seuil RI : ${irSeuilAuto} mΩ)`)
                         : (isEneloopOrLsd
                             ? (LANG === 'en' ? '🟢 Auto Profile: Eneloop / Healthy LSD (Trickle OFF, -ΔV 3mV, Fixed, C->D->C)' : '🟢 Profil Auto : Eneloop / LSD Saine (Trickle OFF, -ΔV 3 mV, Fixé, C->D->C)')
                             : (LANG === 'en' ? `⚙️ Auto Profile: Standard NiMH/NiCd (Max fault-free IR at ${courantCharge.toFixed(2)}A: ≤ ${irSeuilAuto} mΩ)` : `⚙️ Profil Auto : NiMH/NiCd Standard (Seuil RI sans défaut à ${courantCharge.toFixed(2)} A : ≤ ${irSeuilAuto} mΩ)`));
                     hint.innerHTML = `${profilBadge}<br>` + (LANG === 'en'
-                        ? `Capacity w/ buffer: <b>${mahProtection} mAh</b> (+20%) · Est. Charge: <b>~${formaterDureeHeures(dureeChargeEstH)}</b> · 1 Cycle: <b>~${formaterDureeHeures(dureeCycleEstH)}</b>`
-                        : `Capacité protection : <b>${mahProtection} mAh</b> (+20 %) · Charge est. : <b>~${formaterDureeHeures(dureeChargeEstH)}</b> · 1 Cycle : <b>~${formaterDureeHeures(dureeCycleEstH)}</b>`);
+                        ? `Capacity w/ buffer: <b>${mahProtection} mAh</b> (+20%) · 1 Charge: <b>~${formaterDureeHeures(dureeChargeEstH)}</b> · 1 Disch.: <b>~${formaterDureeHeures(dureeDechargeEstH)}</b> · 1 Cycle D-&gt;C: <b>~${formaterDureeHeures(planDC_Hint.total / 60)}</b> · 1 Cycle C-&gt;D-&gt;C: <b>~${formaterDureeHeures(planCDC_Hint.total / 60)}</b>`
+                        : `Capacité protection : <b>${mahProtection} mAh</b> (+20 %) · 1 Charge : <b>~${formaterDureeHeures(dureeChargeEstH)}</b> · 1 Déch. : <b>~${formaterDureeHeures(dureeDechargeEstH)}</b> · 1 Cycle D-&gt;C : <b>~${formaterDureeHeures(planDC_Hint.total / 60)}</b> · 1 Cycle C-&gt;D-&gt;C : <b>~${formaterDureeHeures(planCDC_Hint.total / 60)}</b>`);
                 }
             } catch (eHint) {}
 
@@ -2828,7 +2870,7 @@
                     </div>`;
                 }).join('');
                 cycleHtml = htmlCycleBloc(mah, chimie, format, {
-                    useful: true, level: 'yes', cycles: 2,
+                    useful: true, level: 'yes', cycles: 1,
                     reason: (LANG === 'en' ? 'Batch overview:' : 'Vue d’ensemble du lot :') + lignesCyc
                 }, null, optsDyn);
 
@@ -2860,7 +2902,7 @@
 
             const cCharge05 = arrondi01(Math.min(3.0, Math.max(0.2, mah * 0.5 / 1000))).toFixed(2);
             const cDech02 = courantDecharge.toFixed(2);
-            // Minuterie = durée estimée du programme complet × 1,25 (plafond appareil 1400 Min), charge bridée à 0,40 A (forte RI)
+            // Minuterie = durée estimée du programme complet × 1,25 (plafond appareil 1440 Min), charge bridée à 0,40 A (forte RI)
             const minSafe400 = planCycle(mah, Math.min(parseFloat(cCharge05), 0.40), courantDecharge, 'D->C', 1, 15).timer;
             const minuteurCycleP1 = planCycle(mah, parseFloat(cCharge05), courantDecharge, 'C->D->C', 1, 10).timer;
             const modeCourantTxtFr = useIrAuto ? `<b>IR Auto</b> <small>(actif : plafonne à ${iEffectifIrAutoA.toFixed(2)} A selon RI &gt; 20/40/60 mΩ)</small>` : '<b>Fixé</b> <small>(ou IR Auto)</small>';
@@ -2897,7 +2939,7 @@
                         </div>
                         <div class="skyrc-preset warn">
                             <strong>🟠 Preset 2: "Old / High-IR &gt;${irSeuilAuto}mΩ ${escapeHtml(format)} ${mah} (Anti-Fault)"</strong> <small>(Starts w/ Discharge)</small><br>
-                            • <b>Cycle (Anti-Fault):</b> Cap <b>${mahProtection} mAh</b> · C.Current <b>${cCharge05} A</b> · D.Current <b>${cDech02} A</b> · D.Cut-off Curr <b>100 mA</b> · Target <b>1.65 V</b> · D.Cut-off <b>1.00 V</b> · Timer <b>${minSafe400} Min</b> · Rest C/D <b>15 Min</b> · -ΔV <b>5 mV</b> · Cycle Mode <b>D-&gt;C</b> (1 cyc) or <b>D-&gt;C-&gt;D</b> (2 cyc) · Current Mode <b>IR Auto</b>
+                            • <b>Cycle (Anti-Fault):</b> Cap <b>${mahProtection} mAh</b> · C.Current <b>${cCharge05} A</b> · D.Current <b>${cDech02} A</b> · D.Cut-off Curr <b>100 mA</b> · Target <b>1.65 V</b> · D.Cut-off <b>1.00 V</b> · Timer <b>${minSafe400} Min</b> · Rest C/D <b>15 Min</b> · -ΔV <b>5 mV</b> · Cycle Mode <b>D-&gt;C</b> · Count <b>1</b> <small>(1 cycle at a time to read each result and avoid the 24h timeout)</small> · Current Mode <b>IR Auto</b>
                         </div>
                         <small>💡 <b>App tip:</b> Uncheck <i>"Value will be set up in all channels!"</i> at the bottom before pressing START if other slots have different batteries.</small>
                     </details>
@@ -2945,7 +2987,7 @@
                         <strong>2. Error Messages Explained (Manual p.14):</strong><br>
                         • <b>Calibration Failed!:</b> High-IR cell rejected at charge start → <i>Fix: start with Discharge (Cycle <b>D-&gt;C</b>) + <b>IR Auto</b>.</i><br>
                         • <b>Capacity Limit Reached!:</b> Charged mAh hit the Capacity setting before -ΔV triggered → <i>Fix: set Capacity to Rated + 20% (${mahProtection} mAh).</i><br>
-                        • <b>Time's Up!:</b> Safety Cut-off Timer expired → <i>Fix: Timer must cover the whole program (estimated duration × 1.25, device max 1400 Min) — see the Cycle block.</i><br>
+                        • <b>Time's Up!:</b> Safety Cut-off Timer expired → <i>Fix: Timer must cover the whole program (estimated duration × 1.25, device max 1440 Min) — see the Cycle block.</i><br>
                         • <b>High Internal Resistance!:</b> IR &gt; 40 mΩ in Turbo mode → <i>Fix: use Charge or Cycle mode with IR Auto.</i><br>
                         • <b>Connection Break! / DC In Too Low!:</b> Dirty contacts (insert <b>−</b> terminal first) or USB-C adapter &lt; 30W PD/QC.<br><br>
                         <strong>3. LED Status (Manual p.12):</strong> Yellow solid = Standby/Rest · Green blink = Charging · Red blink = Discharging · Green solid = Charge Done · Red solid = Discharge Done · Red/Green alternating = Error.<br>
@@ -2966,7 +3008,7 @@
                         </div>
                         <div class="skyrc-preset warn">
                             <strong>🟠 Programme 2 : « Vieille pile / Forte RI &gt;${irSeuilAuto}mΩ ${escapeHtml(format)} ${mah} (Anti-Défaut) »</strong> <small>(Débute par Décharge)</small><br>
-                            • <b>En mode Cycle (Anti-défaut) :</b> Capacité <b>${mahProtection} mAh</b> · Courant charge <b>${cCharge05} A</b> · Courant décharge <b>${cDech02} A</b> · Courant coupure décharge <b>100 mA</b> · Tension cible <b>1,65 V</b> · Coupure déch. <b>1,00 V</b> · Minuterie <b>${minSafe400} Min</b> · Temps repos C/D <b>15 Min</b> · Delta Peak -ΔV <b>5 mV</b> · Mode cycle <b>D-&gt;C</b> (1 cycle, finit pleine) ou <b>D-&gt;C-&gt;D</b> (2 cycles) · Mode Courant <b>IR Auto</b>
+                            • <b>En mode Cycle (Anti-défaut) :</b> Capacité <b>${mahProtection} mAh</b> · Courant charge <b>${cCharge05} A</b> · Courant décharge <b>${cDech02} A</b> · Courant coupure décharge <b>100 mA</b> · Tension cible <b>1,65 V</b> · Coupure déch. <b>1,00 V</b> · Minuterie <b>${minSafe400} Min</b> · Temps repos C/D <b>15 Min</b> · Delta Peak -ΔV <b>5 mV</b> · Mode cycle <b>D-&gt;C</b> (finit pleine) · Nombre cycle <b>1</b> <small>(1 cycle à la fois pour lire chaque résultat et éviter le timeout 24h)</small> · Mode Courant <b>IR Auto</b>
                         </div>
                         <small>💡 <b>Rappel App SkyCharger :</b> décochez <i>« La valeur sera réglée sur tous les canaux! »</i> en bas avant d’appuyer sur <b>START</b> si vous panachez des piles différentes.</small>
                     </details>
@@ -3014,7 +3056,7 @@
                         <strong>2. Explication des erreurs et remèdes (Manuel p.14) :</strong><br>
                         • <b>Calibration Failed! :</b> pile rejetée au démarrage de la charge → <i>Solution : commencer par une décharge (Cycle en <b>D-&gt;C</b>) et activer <b>IR Auto</b>.</i><br>
                         • <b>Capacity Limit Reached! :</b> plafond de capacité atteint avant le -ΔV → <i>Solution : régler Capacité sur Nominale + 20 % (${mahProtection} mAh).</i><br>
-                        • <b>Time's Up! :</b> minuterie expirée → <i>Solution : la minuterie doit couvrir tout le programme (durée estimée × 1,25, max appareil 1400 Min) — voir le bloc Cycle.</i><br>
+                        • <b>Time's Up! :</b> minuterie expirée → <i>Solution : la minuterie doit couvrir tout le programme (durée estimée × 1,25, max appareil 1440 Min) — voir le bloc Cycle.</i><br>
                         • <b>High Internal Resistance! :</b> RI &gt; 40 mΩ en mode Turbo → <i>Solution : passer en mode Charge ou Cycle avec IR Auto.</i><br>
                         • <b>Connection Break! / DC In Too Low! :</b> faux contact (insérer le pôle <b>−</b> en premier) ou adaptateur USB-C inférieur à 30 W PD/QC.<br><br>
                         <strong>3. Signification des LED (Manuel p.12) :</strong> Jaune fixe = Veille / Repos · Vert clignotant = Charge · Rouge clignotant = Décharge · Vert fixe = Charge terminée · Rouge fixe = Décharge terminée · Rouge/Vert alterné = Erreur.<br>
@@ -3286,15 +3328,35 @@
             const strDebut = mesureActuelle.dateDebut || (mesurePrecedente ? mesurePrecedente.date : null);
 
             const mah = Number(mesureActuelle.mah) || 0;
-            // Profil du chargeur utilisé : XTAR VX4 V2 (300 mA / 500 mA fixes) ou SkyRC NC3000 Pro (courants saisis sur le cycle)
+            const mahNom = (pile && Number(pile.mahNominal)) || mah || 750;
+            const irM = Number(mesureActuelle.ir) || 0;
             const estNc = mesureActuelle.chargeur === 'nc3000';
-            const iDechP = estNc ? Number(mesureActuelle.iDecharge) : 300;
-            const iChgP = estNc ? Number(mesureActuelle.iCharge) : 500;
+            let iDechP = estNc ? Number(mesureActuelle.iDecharge) : 300;
+            let iChgP = estNc ? Number(mesureActuelle.iCharge) : 500;
+            const profilSaisi = iDechP > 0 && iChgP > 0;
+            let profilEstime = false;
+            if (estNc && !profilSaisi && mah > 0) {
+                let iC_A = Math.round(Math.min(3.0, Math.max(0.2, (mahNom * 0.5) / 1000)) * 10) / 10;
+                if (irM > 60) iC_A = Math.min(iC_A, 0.40);
+                else if (irM > 40) iC_A = Math.min(iC_A, 0.80);
+                else if (irM > 20) iC_A = Math.min(iC_A, 1.50);
+                let iD_A = Math.round(Math.min(2.5, Math.max(0.2, (mahNom * 0.2) / 1000)) * 10) / 10;
+                const dObs = dechargeObservee(irM);
+                if (dObs !== null) iD_A = Math.min(iD_A, dObs);
+                iChgP = Math.round(iC_A * 1000);
+                iDechP = Math.round(iD_A * 1000);
+                profilEstime = true;
+            } else if (estNc && profilSaisi && irM > 0) {
+                if (irM > 60 && iChgP > 400) iChgP = 400;
+                else if (irM > 40 && iChgP > 800) iChgP = 800;
+                else if (irM > 20 && iChgP > 1500) iChgP = 1500;
+                const dObs = dechargeObservee(irM);
+                if (dObs !== null && iDechP > dObs * 1000) iDechP = Math.round(dObs * 1000);
+            }
             const profilConnu = iDechP > 0 && iChgP > 0;
             const iDechTxt = iDechP > 0 ? iDechP : '?';
             const iChgTxt = iChgP > 0 ? iChgP : '?';
             const nomChg = estNc ? 'SkyRC NC3000 Pro' : 'XTAR VX4 V2';
-            // Cas spécial : 0 mAh renvoyé par le chargeur (effondrement immédiat sous 300 mA au début de la décharge Grad)
             if (mah === 0 && mesureActuelle.mah != null && mesureActuelle.voltage != null) {
                 let dStr0 = '';
                 if (strDebut) {
@@ -3311,24 +3373,67 @@
                         : `⚠️ 0 mAh relevé par le chargeur (tension fin : ${mesureActuelle.voltage} V) !\n\nLors du passage en décharge (${iDechTxt} mA sur ${nomChg}), la tension s'est effondrée instantanément sous le seuil de coupure (0,9–1,0 V) à cause d'une résistance interne (RI) critique (électrolyte sec / oxydation interne), avant de remonter à ${mesureActuelle.voltage} V en recharge sans charge.\n\n👉 Même si la tension à vide semble haute (${mesureActuelle.voltage} V), cette pile s'écroule dès qu'on lui demande du courant.`
                 };
             }
-            if (!strDebut || !(mah > 0)) return null;
+            if (!(mah > 0)) return null;
 
-            const t1 = new Date(strDebut).getTime();
-            const t2 = new Date(mesureActuelle.date).getTime();
-            if (isNaN(t1) || isNaN(t2) || t2 <= t1) return null;
-            const deltaH = (t2 - t1) / 3600000;
-            if (deltaH < 0.08 || (!aDebutExplicite && deltaH > 48)) return null;
-            // NC3000 sans courants saisis : durée et vitesse seulement, sans jugement (pas de base de calcul fiable)
-            if (!profilConnu) {
+            const tDechargeH = profilConnu ? (mah / iDechP) : 0;
+            const facteurChg = estNc ? 1.32 : 1.25;
+            const tRechargeTheoH = profilConnu ? ((mah * facteurChg) / iChgP) : 0;
+            const tReposUnitaireH = estNc ? ((irM >= 40 ? 15 : 10) / 60) : 0.10;
+            const tTheoDCH = profilConnu ? ((estNc ? 2 * tReposUnitaireH : 0.20) + tDechargeH + tRechargeTheoH) : 0;
+            const tTheoCDCH = profilConnu ? ((estNc ? 3 * tReposUnitaireH : (0.10 + tRechargeTheoH)) + tDechargeH + (estNc ? 2 * tRechargeTheoH : tRechargeTheoH)) : 0;
+            const theoDCStr = formaterDureeHeures(tTheoDCH);
+            const theoCDCStr = formaterDureeHeures(tTheoCDCH);
+
+            const baseCalculFr = profilConnu
+                ? `\n\n📐 Durées théoriques ${nomChg}${profilEstime ? ' (profil auto 0,5C/0,2C + IR Auto)' : ''} pour ${mah} mAh :\n• 1 Décharge à ${iDechTxt} mA${estNc ? '' : ' fixes'} : ~${formaterDureeHeures(tDechargeH)} (incompressible)\n• 1 Charge à ${iChgTxt} mA (+${Math.round((facteurChg - 1) * 100)}%) : ~${formaterDureeHeures(tRechargeTheoH)}\n• 1 Cycle D->C (ou pile déjà pleine) : ~${theoDCStr}\n• 1 Cycle C->D->C complet : ~${theoCDCStr}`
+                : '';
+            const baseCalculEn = profilConnu
+                ? `\n\n📐 Theoretical durations on ${nomChg}${profilEstime ? ' (auto 0.5C/0.2C + IR Auto profile)' : ''} for ${mah} mAh:\n• 1 Discharge at ${iDechTxt} mA${estNc ? '' : ' fixed'}: ~${formaterDureeHeures(tDechargeH)} (minimum)\n• 1 Charge at ${iChgTxt} mA (+${Math.round((facteurChg - 1) * 100)}%): ~${formaterDureeHeures(tRechargeTheoH)}\n• 1 Cycle D->C (or already full cell): ~${theoDCStr}\n• 1 Full Cycle C->D->C: ~${theoCDCStr}`
+                : '';
+
+            let deltaH = null;
+            if (strDebut) {
+                const t1 = new Date(strDebut).getTime();
+                const t2 = new Date(mesureActuelle.date).getTime();
+                if (!isNaN(t1) && !isNaN(t2) && t2 > t1) {
+                    const dh = (t2 - t1) / 3600000;
+                    if (dh >= 0.08 && (aDebutExplicite || dh <= 48)) deltaH = dh;
+                }
+            }
+            if (deltaH === null) {
+                if (!profilConnu) return null;
+                const lblTheoSeul = estNc
+                    ? `⏱️ ${LANG === 'en' ? 'theo.' : 'théo.'} D->C ~${theoDCStr} · C->D->C ~${theoCDCStr}`
+                    : `⏱️ ${LANG === 'en' ? 'theo.' : 'théo.'} ~${theoDCStr}–${theoCDCStr}`;
+                return {
+                    cls: 'speed-unwatched',
+                    suspect24h: false,
+                    lbl: lblTheoSeul,
+                    detail: LANG === 'en'
+                        ? `Theoretical cycle duration for ${mah} mAh on ${nomChg} (no start time logged for this cycle).${baseCalculEn}`
+                        : `Durée théorique du cycle pour ${mah} mAh sur ${nomChg} (heure de début non renseignée sur ce cycle).${baseCalculFr}`
+                };
+            }
+
+            const estBreakIn = mesureActuelle.mode === 'breakin' || mesureActuelle.mode === 'rodage';
+            const tTheoBreakInH = (16 + (mah / Math.max(iDechP, 100)) + 16 + 0.33);
+            const tTheoH = estBreakIn
+                ? tTheoBreakInH
+                : (Math.abs(deltaH - tTheoCDCH) < Math.abs(deltaH - tTheoDCH) ? tTheoCDCH : tTheoDCH);
+            const modeTheoLbl = estBreakIn ? 'Break-in' : (tTheoH === tTheoCDCH ? 'C->D->C' : 'D->C');
+            const theoStr = formaterDureeHeures(tTheoH);
+            const theoCourt = ` (${LANG === 'en' ? 'theo.' : 'théo.'} ~${theoStr})`;
+
+            if (!profilSaisi && estNc) {
                 const vitNeutre = Math.round(mah / deltaH);
                 const dNeutre = formaterDureeHeures(deltaH);
                 return {
                     cls: 'speed-unwatched',
                     suspect24h: false,
-                    lbl: `⚙️ ${dNeutre} · ${vitNeutre} mAh/h`,
+                    lbl: `⚙️ ${dNeutre}${theoCourt} · ${vitNeutre} mAh/h`,
                     detail: LANG === 'en'
-                        ? `Cycle duration: ${dNeutre} for ${mah} mAh (${vitNeutre} mAh/h) on the SkyRC NC3000 Pro.\n\nEnter the discharge and charge currents set on the charger (✏️ Cycle) to enable the speed analysis (too fast / slow).`
-                        : `Durée du cycle : ${dNeutre} pour ${mah} mAh (${vitNeutre} mAh/h) sur le SkyRC NC3000 Pro.\n\nRenseignez les courants de décharge et de charge réglés sur le chargeur (✏️ Cycle) pour activer l'analyse de vitesse (trop rapide / lent).`
+                        ? `Cycle duration: ${dNeutre} for ${mah} mAh (${vitNeutre} mAh/h) on the SkyRC NC3000 Pro (theoretical ${modeTheoLbl}: ~${theoStr}).${baseCalculEn}\n\nTip: enter the exact discharge and charge currents set on the charger (✏️ Cycle) if different from 0.5C/0.2C.`
+                        : `Durée du cycle : ${dNeutre} pour ${mah} mAh (${vitNeutre} mAh/h) sur le SkyRC NC3000 Pro (théorique ${modeTheoLbl} : ~${theoStr}).${baseCalculFr}\n\nAstuce : renseignez les courants de décharge et de charge réglés sur le chargeur (✏️ Cycle) s'ils diffèrent de 0,5C/0,2C.`
                 };
             }
 
@@ -3337,19 +3442,13 @@
             const memeJour = new Date(strDebut).toDateString() === new Date(mesureActuelle.date).toDateString();
             const TraverseNuit = (!memeJour && (h1 >= 21 || h2 <= 8) && deltaH >= 5.5);
 
-            // Durées physiques sur le XTAR VX4 V2 :
-            const tDechargeH = mah / iDechP; // Décharge à 300 mA fixes (incompressible)
-            const tRechargeTheoH = (mah * 1.25) / iChgP; // Recharge NiMH à 500 mA max
-            const tTheoH = (estNc ? 0.10 : 0.20) + tDechargeH + tRechargeTheoH;
-
-            // Médiane des cycles rapides/surveillés ou à début explicite de cette pile (filtre les écarts < 0.3h ou > 12h pour éviter les saisies erronées)
             let dureesRapides = [];
             if (Array.isArray(toutesMesures) && toutesMesures.length >= 1) {
                 for (let i = 0; i < toutesMesures.length; i++) {
                     const b = toutesMesures[i];
                     const a = (i > 0 && !estEnCours(toutesMesures[i - 1])) ? toutesMesures[i - 1] : null;
                     if (estEnCours(b) || !(Number(b.mah) > 0)) continue;
-                    if ((b.chargeur === 'nc3000') !== estNc) continue; // médiane calculée sur le même chargeur uniquement
+                    if ((b.chargeur === 'nc3000') !== estNc) continue;
                     const sDeb = b.dateDebut || (a ? a.date : null);
                     if (!sDeb || !b.date) continue;
                     const dh = (new Date(b.date).getTime() - new Date(sDeb).getTime()) / 3600000;
@@ -3363,54 +3462,46 @@
             const tHabH = dureesRapides.length >= 2 ? dureesRapides[Math.floor(dureesRapides.length / 2)] : null;
 
             const dStr = formaterDureeHeures(deltaH);
-            const theoStr = formaterDureeHeures(tTheoH);
             const vitMahH = Math.round(mah / deltaH);
-            // Surveillé = case « 👁️ Cycle surveillé » cochée. Saisir l'heure de début ne suffit pas : pile laissée au chargeur (jour ou nuit), l'heure de relevé n'est pas la fin de charge
             const estSurveille = mesureActuelle.surveille === true;
             const ratioTheo = deltaH / tTheoH;
             const ratioHab = tHabH ? (deltaH / tHabH) : ratioTheo;
-            const baseCalculFr = `\n\n📐 Base de calcul ${nomChg} pour ${mah} mAh :\n• Décharge à ${iDechTxt} mA${estNc ? '' : ' fixes'} : ${formaterDureeHeures(tDechargeH)} (incompressible)\n• Recharge à ${iChgTxt} mA (+25%) : ~${formaterDureeHeures(tRechargeTheoH)}\n• Total théorique : ~${theoStr} (~135–165 mAh/h)`;
-            const baseCalculEn = `\n\n📐 ${nomChg} calculation basis for ${mah} mAh:\n• ${estNc ? '' : 'Fixed '}${iDechTxt} mA discharge: ${formaterDureeHeures(tDechargeH)} (minimum)\n• ${iChgTxt} mA recharge (+25%): ~${formaterDureeHeures(tRechargeTheoH)}\n• Total theoretical: ~${theoStr} (~135–165 mAh/h)`;
 
-            // Cas 0 : Cycle TROP RAPIDE (physiquement suspect : temps total inférieur à Décharge 300mA + 65% Recharge 500mA)
             const tMinPhysiqueH = tDechargeH + (mah / iChgP) * 0.65;
             if (deltaH < tMinPhysiqueH && mah >= 150) {
                 return {
                     cls: 'speed-fast',
                     suspect24h: true,
                     reason24h: LANG === 'en' ? 'Cycle abnormally fast (premature charge cut-off / false peak)' : 'Cycle anormalement rapide (coupure de charge prématurée / faux pic)',
-                    lbl: `⚡ ${dStr} ⚠️ ${LANG === 'en' ? 'Too fast!' : 'Trop rapide !'} (${vitMahH} mAh/h)`,
+                    lbl: `⚡ ${dStr}${theoCourt} ⚠️ ${LANG === 'en' ? 'Too fast!' : 'Trop rapide !'} (${vitMahH} mAh/h)`,
                     detail: LANG === 'en'
-                        ? `⚠️ Abnormally fast cycle: ${dStr} for ${mah} mAh (${vitMahH} mAh/h)!\n\nJust discharging ${mah} mAh at ${iDechTxt} mA takes ${formaterDureeHeures(tDechargeH)}, leaving only ${formaterDureeHeures(Math.max(0, deltaH - tDechargeH))} for charging.\n\nDiagnosis: Either the start/end time is inaccurate, or the charger suffered a false premature voltage peak (high IR spike) and stopped charging before the cell was truly full.\n👉 Recommended: Measure resting voltage after 24h to verify if the cell holds its charge.${baseCalculEn}`
-                        : `⚠️ Cycle anormalement rapide : ${dStr} pour ${mah} mAh (${vitMahH} mAh/h) !\n\nRien que la décharge de ${mah} mAh à ${iDechTxt} mA prend ${formaterDureeHeures(tDechargeH)}, ce qui ne laisse que ${formaterDureeHeures(Math.max(0, deltaH - tDechargeH))} pour la recharge.\n\nDiagnostic : Soit l'heure de début/fin est imprécise, soit la pile a provoqué un faux pic de tension (coupure prématurée due à la résistance interne) et n'a pas été rechargée à fond.\n👉 Conseil : Faites un test de tension après 24h de repos pour vérifier si elle tient la charge.${baseCalculFr}`
+                        ? `⚠️ Abnormally fast cycle: ${dStr} vs ~${theoStr} theoretical (${modeTheoLbl}) for ${mah} mAh (${vitMahH} mAh/h)!\n\nJust discharging ${mah} mAh at ${iDechTxt} mA takes ${formaterDureeHeures(tDechargeH)}, leaving only ${formaterDureeHeures(Math.max(0, deltaH - tDechargeH))} for charging.\n\nDiagnosis: Either the start/end time is inaccurate, or the charger suffered a false premature voltage peak (high IR spike) and stopped charging before the cell was truly full.\n👉 Recommended: Measure resting voltage after 24h to verify if the cell holds its charge.${baseCalculEn}`
+                        : `⚠️ Cycle anormalement rapide : ${dStr} contre ~${theoStr} théorique (${modeTheoLbl}) pour ${mah} mAh (${vitMahH} mAh/h) !\n\nRien que la décharge de ${mah} mAh à ${iDechTxt} mA prend ${formaterDureeHeures(tDechargeH)}, ce qui ne laisse que ${formaterDureeHeures(Math.max(0, deltaH - tDechargeH))} pour la recharge.\n\nDiagnostic : Soit l'heure de début/fin est imprécise, soit la pile a provoqué un faux pic de tension (coupure prématurée due à la résistance interne) et n'a pas été rechargée à fond.\n👉 Conseil : Faites un test de tension après 24h de repos pour vérifier si elle tient la charge.${baseCalculFr}`
                 };
             }
 
-            // Cas 1 : Cycle de nuit ou long non marqué surveillé
             if (!estSurveille && (TraverseNuit || deltaH > 6.5)) {
                 return {
                     cls: 'speed-unwatched',
                     suspect24h: false,
-                    lbl: `🌙 ${dStr}`,
+                    lbl: `🌙 ${dStr}${theoCourt}`,
                     detail: LANG === 'en'
-                        ? `Elapsed time since previous cycle: ${dStr} (overnight or unattended wait).${baseCalculEn}\n\nTip: check "👁️ Watched cycle" when editing if you monitored it (entering the start time alone is not enough).`
-                        : `Temps écoulé depuis le cycle précédent : ${dStr} (nuit ou attente sans surveillance — non compté comme anomalie).${baseCalculFr}\n\nAstuce : cochez « 👁️ Cycle surveillé » en modifiant le cycle si vous l'avez surveillé (saisir l'heure de début ne suffit pas).`
+                        ? `Elapsed time since previous cycle: ${dStr} (theoretical ${modeTheoLbl}: ~${theoStr} — overnight or unattended wait).${baseCalculEn}\n\nTip: check "👁️ Watched cycle" when editing if you monitored it (entering the start time alone is not enough).`
+                        : `Temps écoulé depuis le cycle précédent : ${dStr} (théorique ${modeTheoLbl} : ~${theoStr} — nuit ou attente sans surveillance).${baseCalculFr}\n\nAstuce : cochez « 👁️ Cycle surveillé » en modifiant le cycle si vous l'avez surveillé (saisir l'heure de début ne suffit pas).`
                 };
             }
 
-            // Cas 2 : Décharge écourtée suivie d'une longue recharge (réveil chimique en cours)
             if (mah < 120 && deltaH >= 2.2 && (estSurveille || !TraverseNuit)) {
                 return {
                     cls: 'speed-wakeup',
                     suspect24h: false,
-                    lbl: `${estSurveille ? '👁️ ' : '⏱️ '}${dStr} · ⚡ ${LANG === 'en' ? 'Wake-up' : 'Réveil'}`,
+                    lbl: `${estSurveille ? '👁️ ' : '⏱️ '}${dStr}${theoCourt} · ⚡ ${LANG === 'en' ? 'Wake-up' : 'Réveil'}`,
                     detail: LANG === 'en'
                         ? `Cycle duration: ${dStr} for only ${mah} mAh (${vitMahH} mAh/h).\n\nThe ${iDechTxt} mA discharge cut off very quickly (~${Math.round(tDechargeH * 60)} min due to initial voltage sag), but the cell then absorbed over ${formaterDureeHeures(deltaH - tDechargeH)} of charge!\n\n👉 Run another Grading cycle: capacity should jump significantly on the next run.${baseCalculEn}`
                         : `Durée du cycle : ${dStr} pour seulement ${mah} mAh (${vitMahH} mAh/h).\n\nLa décharge à ${iDechTxt} mA a coupé très vite (~${Math.round(tDechargeH * 60)} min à cause d'une chute de tension initiale), mais la pile a ensuite absorbé plus de ${formaterDureeHeures(deltaH - tDechargeH)} de charge !\n\n👉 Relancez un cycle Grad : la capacité devrait bondir fortement au prochain relevé.${baseCalculFr}`
                 };
             }
 
-            // Cas 3 : Durée anormalement longue par rapport au théorique (ou à l'habitude de cette pile)
             if (ratioTheo > 1.65 || (tHabH && ratioHab > 1.8 && deltaH > tTheoH * 1.35)) {
                 const tChargeReelleH = Math.max(0.1, deltaH - tDechargeH);
                 const iChargeEff = Math.round(mah / tChargeReelleH);
@@ -3421,31 +3512,30 @@
                         cls: 'speed-slow',
                         suspect24h: true,
                         reason24h: LANG === 'en' ? `Slow charge (${dStr} vs ~${theoStr}, effective ~${iChargeEff} mA)` : `Charge lente (${dStr} contre ~${theoStr}, courant effectif ~${iChargeEff} mA)`,
-                        lbl: `👁️ ${dStr} ⚠️ ${LANG === 'en' ? 'Slow' : 'Lent'} (${vitMahH} mAh/h)`,
+                        lbl: `👁️ ${dStr}${theoCourt} ⚠️ ${LANG === 'en' ? 'Slow' : 'Lent'} (${vitMahH} mAh/h)`,
                         detail: LANG === 'en'
-                            ? `⚠️ Watched cycle took ${dStr}${habTxtEn} vs ~${theoStr} theoretical for ${mah} mAh!\n\n• Remaining charge/rest took ~${formaterDureeHeures(tChargeReelleH)} (effective charge rate dropped to ~${iChargeEff} mA instead of ${iChgTxt} mA).\n\nDiagnosis: The ${nomChg} throttled current due to high internal resistance (IR) or the cell is heating / self-discharging and struggling to reach ${estNc ? 'the -ΔV end-of-charge detection' : 'the 1.45V CVSA cut-off'}.\n👉 Recommended: Do a 24h rest voltage test to check for internal self-discharge.${baseCalculEn}`
-                            : `⚠️ Cycle surveillé anormalement long : ${dStr}${habTxtFr} au lieu de ~${theoStr} théorique pour ${mah} mAh !\n\n• La phase de charge + repos a duré ~${formaterDureeHeures(tChargeReelleH)} (courant effectif tombé à ~${iChargeEff} mA au lieu de ${iChgTxt} mA).\n\nDiagnostic : Soit le ${nomChg} a bridé le courant à cause d'une résistance interne (RI) élevée, soit la pile chauffe/patine (autodécharge interne) sans réussir à déclencher ${estNc ? 'la détection de fin de charge -ΔV' : 'la coupure CVSA à 1,45 V'}.\n👉 Conseil : Faites un test de tension après 24h de repos pour vérifier son autodécharge.${baseCalculFr}`
+                            ? `⚠️ Watched cycle took ${dStr}${habTxtEn} vs ~${theoStr} theoretical (${modeTheoLbl}) for ${mah} mAh!\n\n• Remaining charge/rest took ~${formaterDureeHeures(tChargeReelleH)} (effective charge rate dropped to ~${iChargeEff} mA instead of ${iChgTxt} mA).\n\nDiagnosis: The ${nomChg} throttled current due to high internal resistance (IR) or the cell is heating / self-discharging and struggling to reach ${estNc ? 'the -ΔV end-of-charge detection' : 'the 1.45V CVSA cut-off'}.\n👉 Recommended: Do a 24h rest voltage test to check for internal self-discharge.${baseCalculEn}`
+                            : `⚠️ Cycle surveillé anormalement long : ${dStr}${habTxtFr} au lieu de ~${theoStr} théorique (${modeTheoLbl}) pour ${mah} mAh !\n\n• La phase de charge + repos a duré ~${formaterDureeHeures(tChargeReelleH)} (courant effectif tombé à ~${iChargeEff} mA au lieu de ${iChgTxt} mA).\n\nDiagnostic : Soit le ${nomChg} a bridé le courant à cause d'une résistance interne (RI) élevée, soit la pile chauffe/patine (autodécharge interne) sans réussir à déclencher ${estNc ? 'la détection de fin de charge -ΔV' : 'la coupure CVSA à 1,45 V'}.\n👉 Conseil : Faites un test de tension après 24h de repos pour vérifier son autodécharge.${baseCalculFr}`
                     };
                 } else {
                     return {
                         cls: 'speed-unwatched',
                         suspect24h: false,
-                        lbl: `⏱️ ${dStr} (${LANG === 'en' ? 'unwatched?' : 'oubli / lent ?'})`,
+                        lbl: `⏱️ ${dStr}${theoCourt} (${LANG === 'en' ? 'unwatched?' : 'oubli / lent ?'})`,
                         detail: LANG === 'en'
-                            ? `Elapsed time: ${dStr}${habTxtEn} vs ~${theoStr} theoretical for ${mah} mAh (${vitMahH} mAh/h).\n\n• Either the cell finished after ~${theoStr} and waited in the charger before being logged (unwatched / forgotten),\n• Or if you restarted it right away, it has a charging issue (high IR throttling or delayed cut-off). Enter "Start time" or check "👁️ Watched cycle" when editing if you monitored it.${baseCalculEn}`
-                            : `Temps écoulé : ${dStr}${habTxtFr} contre ~${theoStr} théorique pour ${mah} mAh (${vitMahH} mAh/h).\n\n• Soit la pile a fini son cycle normalement en ~${theoStr} et a attendu avant d'être relevée (non surveillée / oubliée),\n• Soit vous l'avez relancée aussitôt et elle souffre d'un bridage de courant (RI haute / patinage en fin de charge). Renseignez l'« Heure de début » ou cochez « 👁️ Cycle surveillé » si vous étiez présent.${baseCalculFr}`
+                            ? `Elapsed time: ${dStr}${habTxtEn} vs ~${theoStr} theoretical (${modeTheoLbl}) for ${mah} mAh (${vitMahH} mAh/h).\n\n• Either the cell finished after ~${theoStr} and waited in the charger before being logged (unwatched / forgotten),\n• Or if you restarted it right away, it has a charging issue (high IR throttling or delayed cut-off). Enter "Start time" or check "👁️ Watched cycle" when editing if you monitored it.${baseCalculEn}`
+                            : `Temps écoulé : ${dStr}${habTxtFr} contre ~${theoStr} théorique (${modeTheoLbl}) pour ${mah} mAh (${vitMahH} mAh/h).\n\n• Soit la pile a fini son cycle normalement en ~${theoStr} et a attendu avant d'être relevée (non surveillée / oubliée),\n• Soit vous l'avez relancée aussitôt et elle souffre d'un bridage de courant (RI haute / patinage en fin de charge). Renseignez l'« Heure de début » ou cochez « 👁️ Cycle surveillé » si vous étiez présent.${baseCalculFr}`
                     };
                 }
             }
 
-            // Cas 4 : Vitesse normale / charge franche (ratio proche du théorique)
             return {
                 cls: 'speed-ok',
                 suspect24h: false,
-                lbl: `${estSurveille ? '👁️ ' : '⏱️ '}${dStr} · ${vitMahH} mAh/h`,
+                lbl: `${estSurveille ? '👁️ ' : '⏱️ '}${dStr}${theoCourt} · ${vitMahH} mAh/h`,
                 detail: LANG === 'en'
-                    ? `✅ Normal cycle speed: ${dStr} for ${mah} mAh (${vitMahH} mAh/h).\n\nGood current acceptance and clean ${estNc ? '-ΔV' : 'CVSA'} end-of-charge detection.${baseCalculEn}`
-                    : `✅ Vitesse de cycle normale : ${dStr} pour ${mah} mAh (${vitMahH} mAh/h).\n\nBonne acceptation du courant de charge et détection de fin de charge ${estNc ? '-ΔV' : 'CVSA'} franche.${baseCalculFr}`
+                    ? `✅ Normal cycle speed: ${dStr} (theoretical ${modeTheoLbl}: ~${theoStr}) for ${mah} mAh (${vitMahH} mAh/h).\n\nGood current acceptance and clean ${estNc ? '-ΔV' : 'CVSA'} end-of-charge detection.${baseCalculEn}`
+                    : `✅ Vitesse de cycle normale : ${dStr} (théorique ${modeTheoLbl} : ~${theoStr}) pour ${mah} mAh (${vitMahH} mAh/h).\n\nBonne acceptation du courant de charge et détection de fin de charge ${estNc ? '-ΔV' : 'CVSA'} franche.${baseCalculFr}`
             };
         }
 
